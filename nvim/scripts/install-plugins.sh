@@ -81,7 +81,7 @@ if [[ "$CHECK_ONLY" -eq 0 ]]; then
 fi
 
 [[ -f "$CONFIG_DST/lazy-lock.json" ]] || die "缺少 lazy-lock.json：请先联网运行本脚本"
-for name in lazy.nvim fzf-lua markview.nvim; do
+for name in lazy.nvim fzf-lua markview.nvim catppuccin; do
   [[ -d "$LAZY_DIR/$name" ]] || die "缺少插件目录：$LAZY_DIR/$name"
 done
 log "插件目录检查通过：$LAZY_DIR"

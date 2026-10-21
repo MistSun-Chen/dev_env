@@ -181,7 +181,7 @@ PARSER_DST="$DATA_HOME/nvim/site/parser"
 install -d "$PLUGIN_DST" "$PARSER_DST"
 
 log "安装离线 Neovim 插件 ..."
-for name in lazy.nvim fzf-lua markview.nvim; do
+for name in lazy.nvim fzf-lua markview.nvim catppuccin; do
   [[ -d "$BUNDLE_DIR/nvim-plugins/$name" ]] || die "离线包缺少插件目录: $name"
   rm -rf "$PLUGIN_DST/$name"
   cp -a "$BUNDLE_DIR/nvim-plugins/$name" "$PLUGIN_DST/$name"

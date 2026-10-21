@@ -24,6 +24,8 @@ cp -a "$REPO_ROOT/nvim" "$TMP_CONFIG/nvim"
 cat > "$SAMPLE" <<'EOF'
 # Smoke Test
 
+## Details
+
 Inline: $E = mc^2$
 
 ```mermaid
@@ -52,10 +54,11 @@ EXPECTED_LAZY_COMMIT="$(sed -n "s/^local lazy_commit = '\([0-9a-f]*\)'.*/\1/p" "
 ACTUAL_LAZY_COMMIT="$(git -C "$TMP_DATA/nvim/lazy/lazy.nvim" rev-parse HEAD)"
 [[ "$ACTUAL_LAZY_COMMIT" == "$EXPECTED_LAZY_COMMIT" ]]
 
-echo "[test] 检查插件与 parser"
+echo "[test] 检查插件、配色与 TOC"
 XDG_CONFIG_HOME="$TMP_CONFIG" XDG_DATA_HOME="$TMP_DATA" \
-  nvim --headless \
-  "+lua assert(pcall(require,'lazy')); assert(pcall(require,'fzf-lua')); assert(pcall(require,'markview')); assert(vim.treesitter.language.add('latex'))" \
+  nvim --headless "$SAMPLE" \
+  "+set filetype=markdown" \
+  "+lua assert(pcall(require,'lazy')); assert(pcall(require,'fzf-lua')); assert(pcall(require,'markview')); assert(vim.treesitter.language.add('latex')); assert(vim.g.colors_name == 'catppuccin-mocha'); local colors=vim.fn.getcompletion('', 'color'); for _,n in ipairs({'catppuccin-mocha','catppuccin-macchiato','catppuccin-frappe','catppuccin-latte'}) do assert(vim.tbl_contains(colors,n), n) end; local toc=require('config.markdown_toc'); assert(#toc.get_headings(0) >= 2); print('toc/colors: ok')" \
   +qa
 
 echo "[test] 检查 Mermaid extmark"

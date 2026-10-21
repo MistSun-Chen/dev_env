@@ -26,6 +26,9 @@ vim.opt.shortmess:append('I')
 -- 鼠标在所有模式可用（Neovim 默认是 nvi；a = 所有模式）
 vim.opt.mouse = 'a'
 
+-- 开启 24-bit 颜色；绝大多数现代终端支持。若颜色异常，检查终端 true color 设置。
+vim.opt.termguicolors = true
+
 -- 说明：Q 保留 Neovim 默认行为（重复上一次录制的寄存器）。
 -- 旧 vimrc 中的 `nmap Q <Nop>` 没有迁移；如果以后想禁用 Q，再显式添加映射。
 
@@ -52,6 +55,14 @@ local lazy_ok, lazy_err = pcall(require, 'config.lazy')
 if not lazy_ok then
   vim.schedule(function()
     vim.notify(('dev_env: lazy.nvim 初始化失败：%s'):format(tostring(lazy_err)), vim.log.levels.WARN)
+  end)
+end
+
+-- 配色在 lazy.nvim 加载完配色插件后应用。
+local colors_ok, colors_err = pcall(require, 'config.colorscheme')
+if not colors_ok then
+  vim.schedule(function()
+    vim.notify(('dev_env: config.colorscheme 加载失败：%s'):format(tostring(colors_err)), vim.log.levels.WARN)
   end)
 end
 

@@ -21,4 +21,15 @@ return {
       require('config.markdown')
     end,
   },
+  {
+    'catppuccin/nvim',
+    name = 'catppuccin',
+    lazy = false,
+    priority = 1000,
+    config = function()
+      pcall(function()
+        require('catppuccin').setup({ flavour = 'mocha' })
+      end)
+    end,
+  },
 }

@@ -63,6 +63,8 @@ bash tests/ubuntu-24.04-offline.sh
 2026-10-21 迁移到 lazy.nvim 后：
 
 - 本机 `tests/nvim-plugins-smoke.sh` 通过，包含 lazy.nvim commit 固定、`lazy-lock.json`、插件加载、latex parser 和 Mermaid extmark 检查；
+- 2026-10-21 添加 Markdown 目录和配色后，真实环境验证通过：默认 `catppuccin-mocha`，Mocha/Macchiato/Frappe/Latte 四个变体可用，`<leader>mt` 可提取标题；
+- 添加配色后的隔离 smoke test 再次运行时，在临时环境 clone lazy.nvim 阶段遇到 GitHub 443 连接失败，未完成；这是网络问题，不是配置错误；
 - `nvim/scripts/stage-plugins.sh` 在临时目录生成 lazy.nvim 根目录、lockfile 和 `latex.so`，并用 `--check` 在无插件安装步骤下加载成功；
 - `tests/ubuntu-24.04-offline.sh` 本次未完成：联网容器在 `apt-get update` 拉取 Ubuntu `universe` 索引时连接失败（`Connection failed`），尚未进入插件 staging 阶段，属于网络问题，待网络恢复后重跑。
 
@@ -145,7 +147,7 @@ XDG_CONFIG_HOME="$TMP_CONFIG" XDG_DATA_HOME="$TMP_DATA" \
 TMP_CONFIG="$(mktemp -d)"
 TMP_DATA="$(mktemp -d)"
 XDG_CONFIG_HOME="$TMP_CONFIG" XDG_DATA_HOME="$TMP_DATA" \
-  nvim --headless "+lua assert(pcall(require,'lazy')); assert(pcall(require,'fzf-lua')); assert(pcall(require,'markview')); assert(vim.treesitter.language.add('latex'))" +qa
+  nvim --headless "+lua assert(pcall(require,'lazy')); assert(pcall(require,'fzf-lua')); assert(pcall(require,'markview')); assert(vim.treesitter.language.add('latex')); assert(vim.g.colors_name == 'catppuccin-mocha'); local colors=vim.fn.getcompletion('', 'color'); for _,n in ipairs({'catppuccin-mocha','catppuccin-macchiato','catppuccin-frappe','catppuccin-latte'}) do assert(vim.tbl_contains(colors,n), n) end; assert(require('config.markdown_toc').get_headings(0))" +qa
 ```
 
 ### 4.3 Markdown + Mermaid 冒烟测试
@@ -167,7 +169,7 @@ XDG_CONFIG_HOME="$TMP_CONFIG" XDG_DATA_HOME="$TMP_DATA" \
 bash nvim/scripts/install-plugins.sh --check
 ```
 
-确认 `lazy-lock.json`、`lazy/{lazy.nvim,fzf-lua,markview.nvim}`、`site/parser/latex.so` 都存在，并且启动过程不访问网络。
+确认 `lazy-lock.json`、`lazy/{lazy.nvim,fzf-lua,markview.nvim,配色插件}`、`site/parser/latex.so` 都存在，并且启动过程不访问网络。
 
 ## 5. 手动验证清单
 

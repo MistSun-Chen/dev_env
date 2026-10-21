@@ -94,7 +94,7 @@ macOS：
 
 ### 3.1 插件安装
 
-插件清单在 `nvim/lua/config/plugins.lua`。lazy.nvim 自身由 `nvim/lua/config/lazy.lua` 引导并固定 commit；`fzf-lua` 和 `markview.nvim` 的实际 revision 由 `nvim/lazy-lock.json` 固定。单独安装：
+插件清单在 `nvim/lua/config/plugins.lua`。lazy.nvim 自身由 `nvim/lua/config/lazy.lua` 引导并固定 commit；其他插件的实际 revision 由 `nvim/lazy-lock.json` 固定。单独安装：
 
 ```sh
 bash nvim/scripts/install-plugins.sh
@@ -111,6 +111,7 @@ bash nvim/scripts/install-plugins.sh --check
 - `lazy.nvim`
 - `fzf-lua`
 - `markview.nvim`
+- `catppuccin` 配色插件
 
 插件安装位置：
 
@@ -118,6 +119,7 @@ bash nvim/scripts/install-plugins.sh --check
 ~/.local/share/nvim/lazy/lazy.nvim
 ~/.local/share/nvim/lazy/fzf-lua
 ~/.local/share/nvim/lazy/markview.nvim
+~/.local/share/nvim/lazy/catppuccin
 ```
 
 `lazy-lock.json` 位于配置目录，软链接模式下就是仓库的 `nvim/lazy-lock.json`，需要提交到 git。lazy.nvim 自身固定到 `nvim/lua/config/lazy.lua` 中的 commit，升级时修改该常量并删除旧插件目录后重新启动。
@@ -148,9 +150,13 @@ ${XDG_DATA_HOME:-$HOME/.local/share}/nvim/site/parser/latex.so
 
 | 键位/命令 | 功能 |
 |---|---|
+| `<leader>mt` | Markdown 标题目录选择器 |
 | `<leader>mp` / `:Markview Toggle` | 当前 buffer 预览开关 |
 | `<leader>ms` / `:Markview splitToggle` | 分屏预览 |
 | `<leader>mm` / `:MermaidRender` | 重新渲染 Mermaid 块 |
+| `<leader>uc` / `:FzfLua colorschemes` | 切换 Catppuccin 变体 |
+
+默认配色是 `catppuccin-mocha`；配色切换只在当前 Neovim 会话生效。
 | `:MermaidClear` | 清除 Mermaid 文本图 |
 
 能力与限制：

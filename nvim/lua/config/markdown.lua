@@ -27,6 +27,11 @@ end
 vim.keymap.set('n', '<leader>mp', '<Cmd>Markview Toggle<CR>', { desc = 'Markdown 预览开关' })
 vim.keymap.set('n', '<leader>ms', '<Cmd>Markview splitToggle<CR>', { desc = 'Markdown 分屏预览' })
 
+local toc_ok, toc = pcall(require, 'config.markdown_toc')
+if toc_ok then
+  vim.keymap.set('n', '<leader>mt', toc.pick, { desc = 'Markdown 目录' })
+end
+
 if not pcall(vim.treesitter.language.add, 'latex') then
   vim.schedule(function()
     vim.notify(
