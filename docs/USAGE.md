@@ -38,7 +38,7 @@ bash platforms/linux/ubuntu/24.04/install.sh
 exec "$SHELL" -l
 ```
 
-只安装工具、不接管 Neovim 配置：
+只安装工具、不接管 Neovim 配置（也不会安装插件/公式 parser）：
 
 ```sh
 bash platforms/linux/ubuntu/24.04/install.sh --skip-config
@@ -61,7 +61,7 @@ bash platforms/macos/install.sh
 exec "$SHELL" -l
 ```
 
-只安装工具、不接管 Neovim 配置：
+只安装工具、不接管 Neovim 配置（也不会安装插件/公式 parser）：
 
 ```sh
 bash platforms/macos/install.sh --skip-config
