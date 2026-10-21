@@ -47,7 +47,7 @@ sha256_file() {
 download() {
   local url="$1"
   local dest="$2"
-  curl -fL --http1.1 --retry 3 --retry-delay 2 --connect-timeout 15 "$url" -o "$dest"
+  curl -fL --http1.1 --retry 3 --retry-all-errors --retry-delay 2 --connect-timeout 15 "$url" -o "$dest"
 }
 
 SRC_TAR="$TMP_DIR/tree-sitter-latex.tar.gz"

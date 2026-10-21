@@ -202,9 +202,9 @@ install_fzf() {
   local checksum_file="$TMP_DIR/fzf-checksums.txt"
 
   log "下载 fzf ${FZF_VERSION}（${FZF_ARCH}）..."
-  curl -fL --http1.1 --retry 3 --retry-delay 2 --connect-timeout 15 \
+  curl -fL --http1.1 --retry 3 --retry-all-errors --retry-delay 2 --connect-timeout 15 \
     "$base_url/$asset" -o "$TMP_DIR/$asset"
-  curl -fL --http1.1 --retry 3 --retry-delay 2 --connect-timeout 15 \
+  curl -fL --http1.1 --retry 3 --retry-all-errors --retry-delay 2 --connect-timeout 15 \
     "$base_url/fzf_${FZF_VERSION}_checksums.txt" -o "$checksum_file"
 
   if ! grep -qE "[[:space:]]${asset}$" "$checksum_file"; then
@@ -240,7 +240,7 @@ download_verify() {
   local expected="$3"
   local actual
 
-  curl -fL --http1.1 --retry 3 --retry-delay 2 --connect-timeout 15 "$url" -o "$dest"
+  curl -fL --http1.1 --retry 3 --retry-all-errors --retry-delay 2 --connect-timeout 15 "$url" -o "$dest"
   actual="$(sha256sum "$dest" | awk '{print $1}')"
   if [[ "$actual" != "$expected" ]]; then
     die "校验失败: ${dest}（期望 ${expected}，实际 ${actual}）"
@@ -316,7 +316,7 @@ install_neovim() {
   local prefix="$LOCAL_OPT/nvim-${NVIM_VERSION}"
 
   log "下载 Neovim ${NVIM_VERSION}（${NVIM_ARCH}）..."
-  curl -fL --http1.1 --retry 3 --retry-delay 2 --connect-timeout 15 \
+  curl -fL --http1.1 --retry 3 --retry-all-errors --retry-delay 2 --connect-timeout 15 \
     "$url" -o "$TMP_DIR/$asset"
 
   if [[ -n "$NVIM_SHA256" ]]; then

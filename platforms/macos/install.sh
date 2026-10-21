@@ -132,7 +132,7 @@ download_verify() {
   local expected="$3"
   local actual
 
-  curl -fL --http1.1 --retry 3 --retry-delay 2 --connect-timeout 15 "$url" -o "$dest"
+  curl -fL --http1.1 --retry 3 --retry-all-errors --retry-delay 2 --connect-timeout 15 "$url" -o "$dest"
   actual="$(shasum -a 256 "$dest" | awk '{print $1}')"
   if [[ "$actual" != "$expected" ]]; then
     die "校验失败: ${dest}（期望 ${expected}，实际 ${actual}）"

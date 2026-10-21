@@ -200,7 +200,7 @@ download_verified() {
   local actual
 
   log "下载 $(basename "$dest") ..."
-  curl -fL --http1.1 --retry 3 --retry-delay 2 --connect-timeout 15 "$url" -o "$dest"
+  curl -fL --http1.1 --retry 3 --retry-all-errors --retry-delay 2 --connect-timeout 15 "$url" -o "$dest"
   actual="$(sha256sum "$dest" | awk '{print $1}')"
   if [[ "$actual" != "$expected" ]]; then
     die "校验失败: ${dest}（期望 ${expected}，实际 ${actual}）"
@@ -208,16 +208,16 @@ download_verified() {
 }
 
 log "下载 Neovim $NVIM_VERSION ..."
-curl -fL --http1.1 --retry 3 --retry-delay 2 --connect-timeout 15 \
+curl -fL --http1.1 --retry 3 --retry-all-errors --retry-delay 2 --connect-timeout 15 \
   "https://github.com/neovim/neovim/releases/download/v${NVIM_VERSION}/${NVIM_ASSET}" \
   -o "$OUT_DIR/$NVIM_ASSET"
 printf '%s  %s\n' "$NVIM_SHA256" "$OUT_DIR/$NVIM_ASSET" | sha256sum -c -
 
 log "下载 fzf $FZF_VERSION ..."
-curl -fL --http1.1 --retry 3 --retry-delay 2 --connect-timeout 15 \
+curl -fL --http1.1 --retry 3 --retry-all-errors --retry-delay 2 --connect-timeout 15 \
   "https://github.com/junegunn/fzf/releases/download/v${FZF_VERSION}/${FZF_ASSET}" \
   -o "$OUT_DIR/$FZF_ASSET"
-curl -fL --http1.1 --retry 3 --retry-delay 2 --connect-timeout 15 \
+curl -fL --http1.1 --retry 3 --retry-all-errors --retry-delay 2 --connect-timeout 15 \
   "https://github.com/junegunn/fzf/releases/download/v${FZF_VERSION}/fzf_${FZF_VERSION}_checksums.txt" \
   -o "$TMP_DIR/fzf-checksums.txt"
 grep -qE "[[:space:]]${FZF_ASSET}$" "$TMP_DIR/fzf-checksums.txt" || die "fzf 校验文件中找不到 $FZF_ASSET"
