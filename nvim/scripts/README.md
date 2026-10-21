@@ -9,10 +9,12 @@ bash nvim/scripts/install-plugins.sh
 bash nvim/scripts/install-plugins.sh --check
 ```
 
-- 无参数：联网安装/更新插件，并验证 `fzf-lua`、`markview.nvim`。
-- `--check`：只检查配置目录、`nvim-pack-lock.json`、插件目录和 `require`，用于离线安装和 CI。
+- 无参数：联网安装缺失的 lazy.nvim 插件，并验证 `lazy`、`fzf-lua`、`markview`。已有插件的更新使用 `:Lazy update fzf-lua markview.nvim`。
+- `--check`：只检查配置目录、`lazy-lock.json`、插件目录和 `require`，用于离线安装和 CI。
 - 可通过 `NVIM_BIN`、`XDG_CONFIG_HOME`、`XDG_DATA_HOME` 覆盖路径，适合临时环境。
-- 插件版本来自 `nvim/lua/config/plugins.lua`，实际 revision 由 `nvim/nvim-pack-lock.json` 固定。
+- lazy.nvim 自身由 `nvim/lua/config/lazy.lua` 引导，固定到该文件中的 commit。
+- 插件版本来自 `nvim/lua/config/plugins.lua`，实际 revision 由 `nvim/lazy-lock.json` 固定。
+- 插件目录位于 `$XDG_DATA_HOME/nvim/lazy/`（默认 `~/.local/share/nvim/lazy/`）。
 
 ## build-latex-parser.sh
 
@@ -34,12 +36,12 @@ ${XDG_DATA_HOME:-$HOME/.local/share}/nvim/site/parser/latex.so
 bash nvim/scripts/stage-plugins.sh --output /tmp/bundle
 ```
 
-供离线包 `download.sh` 使用：在临时 `XDG_*` 目录中安装插件、编译 latex parser，然后把以下产物放到输出目录：
+供离线包 `download.sh` 使用：在临时 `XDG_*` 目录中安装 lazy.nvim 插件、编译 latex parser，然后把以下产物放到输出目录：
 
 ```text
-nvim-plugins/       # 插件目录，含 .git
+nvim-plugins/       # lazy.nvim 根目录，含 lazy.nvim、fzf-lua、markview.nvim 和 .git
 nvim-parser/latex.so
-nvim/nvim-pack-lock.json
+nvim/lazy-lock.json
 ```
 
-注意：插件目录必须复制，不能建符号链接；`vim.pack` 会把 symlink 当作损坏目录。
+注意：插件目录必须复制，不能建符号链接；lazy.nvim 需要真实的 git 仓库目录。

@@ -4,9 +4,9 @@
 #
 # 运行环境：联网，PATH 中已有 nvim、fzf、git、tree-sitter、cc。
 # 产物：
-#   <output>/nvim-plugins/      两个插件目录（含 .git）
+#   <output>/nvim-plugins/      lazy.nvim 根目录（含 lazy.nvim、两个插件，均带 .git）
 #   <output>/nvim-parser/latex.so
-#   <output>/nvim/nvim-pack-lock.json
+#   <output>/nvim/lazy-lock.json
 #
 # 用法：
 #   bash nvim/scripts/stage-plugins.sh --output /tmp/bundle
@@ -42,14 +42,16 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ -n "$OUT_DIR" ]] || die "缺少 --output"
-mkdir -p "$OUT_DIR/nvim" "$OUT_DIR/nvim-plugins" "$OUT_DIR/nvim-parser"
+mkdir -p "$OUT_DIR/nvim" "$OUT_DIR/nvim-parser"
+rm -rf "$OUT_DIR/nvim-plugins"
+mkdir -p "$OUT_DIR/nvim-plugins"
 
 TMP_CONFIG="$TMP_ROOT/config"
 TMP_DATA="$TMP_ROOT/data"
 mkdir -p "$TMP_CONFIG"
 cp -a "$CONFIG_SRC" "$TMP_CONFIG/nvim"
 
-log "安装插件到临时目录 ..."
+log "安装 lazy.nvim 插件到临时目录 ..."
 XDG_CONFIG_HOME="$TMP_CONFIG" XDG_DATA_HOME="$TMP_DATA" \
   NVIM_BIN="$NVIM_BIN" \
   bash "$SCRIPT_DIR/install-plugins.sh"
@@ -61,10 +63,9 @@ XDG_DATA_HOME="$TMP_DATA" \
   CC="$CC" \
   bash "$SCRIPT_DIR/build-latex-parser.sh"
 
-log "复制插件与 parser ..."
-cp -a "$TMP_DATA/nvim/site/pack/core/opt/." "$OUT_DIR/nvim-plugins/"
+log "复制 lazy.nvim 插件根目录、lockfile 与 parser ..."
+cp -a "$TMP_DATA/nvim/lazy/." "$OUT_DIR/nvim-plugins/"
+cp -a "$TMP_CONFIG/nvim/lazy-lock.json" "$OUT_DIR/nvim/lazy-lock.json"
 cp -a "$TMP_DATA/nvim/site/parser/latex.so" "$OUT_DIR/nvim-parser/latex.so"
-cp -a "$TMP_CONFIG/nvim/nvim-pack-lock.json" "$OUT_DIR/nvim/nvim-pack-lock.json"
 
-# 离线包配置目录里也应包含最新的 lockfile；调用方通常已经把 nvim/ 复制过去。
-log "完成：$OUT_DIR/nvim-plugins, $OUT_DIR/nvim-parser, $OUT_DIR/nvim/nvim-pack-lock.json"
+log "完成：$OUT_DIR/nvim-plugins, $OUT_DIR/nvim-parser, $OUT_DIR/nvim/lazy-lock.json"

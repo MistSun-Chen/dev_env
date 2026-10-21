@@ -55,10 +55,16 @@ bash tests/ubuntu-24.04-offline.sh
 
 ### 2.4 实测记录
 
-2026-10-20 在 Apple Silicon Mac（Docker Desktop，arm64 容器）上：
+2026-10-20 在 Apple Silicon Mac（Docker Desktop，arm64 容器）上，使用当时的 `vim.pack` 方案：
 
 - `tests/ubuntu-24.04-online.sh` 通过；安装 Neovim 0.12.3、fzf 0.74.5、ripgrep 14.1.0、fd 9.0.0、mermaid-ascii 1.6.1、tree-sitter 0.27.1，并安装 fzf-lua/markview、编译 `latex.so`；
 - `tests/ubuntu-24.04-offline.sh` 通过；离线包约 82 MB，在 `--network none` 容器中安装成功，插件和 parser 可加载。
+
+2026-10-21 迁移到 lazy.nvim 后：
+
+- 本机 `tests/nvim-plugins-smoke.sh` 通过，包含 lazy.nvim commit 固定、`lazy-lock.json`、插件加载、latex parser 和 Mermaid extmark 检查；
+- `nvim/scripts/stage-plugins.sh` 在临时目录生成 lazy.nvim 根目录、lockfile 和 `latex.so`，并用 `--check` 在无插件安装步骤下加载成功；
+- `tests/ubuntu-24.04-offline.sh` 本次未完成：联网容器在 `apt-get update` 拉取 Ubuntu `universe` 索引时连接失败（`Connection failed`），尚未进入插件 staging 阶段，属于网络问题，待网络恢复后重跑。
 
 ## 3. macOS（本机）
 
@@ -107,7 +113,7 @@ readlink "$CONFIG_TMP/nvim"
 
 ### 3.3 实测记录
 
-2026-10-20 在 MacBook M4（macOS，arm64）上：
+2026-10-20 在 MacBook M4（macOS，arm64）上，使用当时的 `vim.pack` 方案：
 
 - 联网脚本通过；Homebrew 安装了 ripgrep 15.2.0、fd 10.5.0；fzf 0.74.5 从官方 tarball 安装；Neovim 0.12.3 已存在则跳过；
 - 联网脚本安装了 mermaid-ascii 1.6.1、tree-sitter 0.27.1，安装了 fzf-lua/markview，并编译 `latex.so`；
@@ -115,6 +121,8 @@ readlink "$CONFIG_TMP/nvim"
 - 离线包约 61 MB，生成和 `shasum -a 256 -c` 校验通过；
 - 临时 `HOME` 下离线安装成功，Neovim 0.12.3、fzf 0.74.5、ripgrep 15.2.0、fd 10.5.0、mermaid-ascii、tree-sitter 均可执行；
 - 离线安装后的 Neovim 在临时环境中成功加载 markview、Mermaid extmark 和 `latex` parser。
+
+2026-10-21 迁移到 lazy.nvim 后，本机隔离测试已在临时 `XDG_CONFIG_HOME` / `XDG_DATA_HOME` 中验证 lazy.nvim、fzf-lua、markview 和 `latex` parser 可加载；Docker 离线测试受上述 Ubuntu 源网络问题阻塞。
 
 ## 4. Neovim 插件与预览测试
 
@@ -137,7 +145,7 @@ XDG_CONFIG_HOME="$TMP_CONFIG" XDG_DATA_HOME="$TMP_DATA" \
 TMP_CONFIG="$(mktemp -d)"
 TMP_DATA="$(mktemp -d)"
 XDG_CONFIG_HOME="$TMP_CONFIG" XDG_DATA_HOME="$TMP_DATA" \
-  nvim --headless "+lua assert(pcall(require,'fzf-lua')); assert(pcall(require,'markview')); assert(vim.treesitter.language.add('latex'))" +qa
+  nvim --headless "+lua assert(pcall(require,'lazy')); assert(pcall(require,'fzf-lua')); assert(pcall(require,'markview')); assert(vim.treesitter.language.add('latex'))" +qa
 ```
 
 ### 4.3 Markdown + Mermaid 冒烟测试
@@ -159,7 +167,7 @@ XDG_CONFIG_HOME="$TMP_CONFIG" XDG_DATA_HOME="$TMP_DATA" \
 bash nvim/scripts/install-plugins.sh --check
 ```
 
-确认 `nvim-pack-lock.json`、`site/pack/core/opt/{fzf-lua,markview.nvim}`、`site/parser/latex.so` 都存在，并且启动过程不访问网络。
+确认 `lazy-lock.json`、`lazy/{lazy.nvim,fzf-lua,markview.nvim}`、`site/parser/latex.so` 都存在，并且启动过程不访问网络。
 
 ## 5. 手动验证清单
 

@@ -10,7 +10,7 @@
 - ripgrep（`rg`）
 - fd
 - fzf
-- git（`vim.pack` 需要）
+- git（`lazy.nvim` 引导和插件安装需要）
 - `mermaid-ascii`（终端 Mermaid 文本图）
 - `tree-sitter` CLI（编译公式 parser）
 - Node.js（仅构建公式 parser 时需要，不是 Neovim 运行时依赖）
@@ -94,7 +94,7 @@ macOS：
 
 ### 3.1 插件安装
 
-插件清单在 `nvim/lua/config/plugins.lua`，版本由 `nvim/nvim-pack-lock.json` 固定。单独安装/更新：
+插件清单在 `nvim/lua/config/plugins.lua`。lazy.nvim 自身由 `nvim/lua/config/lazy.lua` 引导并固定 commit；`fzf-lua` 和 `markview.nvim` 的实际 revision 由 `nvim/lazy-lock.json` 固定。单独安装：
 
 ```sh
 bash nvim/scripts/install-plugins.sh
@@ -106,12 +106,21 @@ bash nvim/scripts/install-plugins.sh
 bash nvim/scripts/install-plugins.sh --check
 ```
 
-脚本会检查 `nvim`、`git`、`fzf`，触发 `vim.pack` 安装并验证：
+脚本会检查 `nvim`、`git`、`fzf`，执行 `nvim --headless "+Lazy! install"`，并验证：
 
+- `lazy.nvim`
 - `fzf-lua`
 - `markview.nvim`
 
-`vim.pack` 使用精确 tag/commit，不使用版本范围，避免每次启动重写 lockfile。
+插件安装位置：
+
+```text
+~/.local/share/nvim/lazy/lazy.nvim
+~/.local/share/nvim/lazy/fzf-lua
+~/.local/share/nvim/lazy/markview.nvim
+```
+
+`lazy-lock.json` 位于配置目录，软链接模式下就是仓库的 `nvim/lazy-lock.json`，需要提交到 git。lazy.nvim 自身固定到 `nvim/lua/config/lazy.lua` 中的 commit，升级时修改该常量并删除旧插件目录后重新启动。
 
 ### 3.2 公式 parser
 
@@ -261,7 +270,7 @@ true true true true a true
 验证插件与公式 parser：
 
 ```sh
-nvim --headless "+lua assert(pcall(require,'fzf-lua')); assert(pcall(require,'markview')); assert(vim.treesitter.language.add('latex'))" +qa
+nvim --headless "+lua assert(pcall(require,'lazy')); assert(pcall(require,'fzf-lua')); assert(pcall(require,'markview')); assert(vim.treesitter.language.add('latex'))" +qa
 ```
 
 交互检查：
@@ -325,10 +334,9 @@ rm -rf ~/.local/opt/mermaid-ascii-1.6.1 ~/.local/opt/tree-sitter-0.27.1
 rm -f ~/.local/bin/nvim ~/.local/bin/fzf ~/.local/bin/mermaid-ascii ~/.local/bin/tree-sitter
 
 # 插件和公式 parser
-rm -rf ~/.local/share/nvim/site/pack/core/opt/fzf-lua \
-       ~/.local/share/nvim/site/pack/core/opt/markview.nvim
+rm -rf ~/.local/share/nvim/lazy
 rm -f ~/.local/share/nvim/site/parser/latex.so
-rm -f ~/.config/nvim/nvim-pack-lock.json
+rm -f ~/.config/nvim/lazy-lock.json
 ```
 
 macOS 离线包还会安装：

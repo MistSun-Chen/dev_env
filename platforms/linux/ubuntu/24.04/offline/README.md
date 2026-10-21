@@ -9,7 +9,7 @@
 - `fzf-*-linux_*.tar.gz`：fzf 官方二进制
 - `mermaid-ascii_Linux_*.tar.gz`：终端 Mermaid 文本图
 - `tree-sitter-cli-linux-*.zip`：tree-sitter CLI
-- `nvim-plugins/`：fzf-lua、markview.nvim（含 `.git`）
+- `nvim-plugins/`：lazy.nvim 根目录，含 lazy.nvim、fzf-lua、markview.nvim（均带 `.git`）
 - `nvim-parser/latex.so`：预编译公式 parser
 - `nvim/`：Neovim 配置与 lockfile
 - `install.sh`：离线安装脚本

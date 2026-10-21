@@ -2,6 +2,9 @@
 #
 # 安装/检查 dev_env 的 Neovim 插件。
 #
+# lazy.nvim 由 config/lazy.lua 引导安装；fzf-lua、markview.nvim 由 lazy.nvim
+# 根据 lua/config/plugins.lua 和 lazy-lock.json 管理。
+#
 # 用法：
 #   bash nvim/scripts/install-plugins.sh
 #   bash nvim/scripts/install-plugins.sh --check
@@ -10,8 +13,6 @@
 #   NVIM_BIN=/path/to/nvim
 #   XDG_CONFIG_HOME=/path/to/config
 #   XDG_DATA_HOME=/path/to/data
-#
-# 插件清单在 nvim/lua/config/plugins.lua；版本由 nvim-pack-lock.json 固定。
 set -euo pipefail
 
 CHECK_ONLY=0
@@ -20,7 +21,7 @@ CONFIG_SRC="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
 CONFIG_DST="$CONFIG_HOME/nvim"
-PLUGIN_DIR="$DATA_HOME/nvim/site/pack/core/opt"
+LAZY_DIR="$DATA_HOME/nvim/lazy"
 NVIM_BIN="${NVIM_BIN:-nvim}"
 
 die() { printf '\033[1;31m[plugins]\033[0m %s\n' "$*" >&2; exit 1; }
@@ -32,7 +33,7 @@ usage() {
 用法: install-plugins.sh [选项]
 
 选项:
-  --check    只检查插件目录和加载，不触发安装
+  --check    只检查 lazy.nvim、插件目录和加载，不触发安装/更新
   -h, --help 显示帮助
 
 环境变量:
@@ -60,8 +61,8 @@ done
 
 command -v "$NVIM_BIN" >/dev/null 2>&1 || die "找不到 Neovim：$NVIM_BIN"
 if [[ "$CHECK_ONLY" -eq 0 ]]; then
-  command -v git >/dev/null 2>&1 || die "找不到 git；vim.pack 需要 git"
-  command -v fzf >/dev/null 2>&1 || die "找不到 fzf；请先运行平台安装脚本"
+  command -v git >/dev/null 2>&1 || die "找不到 git；lazy.nvim 需要 git"
+  command -v fzf >/dev/null 2>&1 || die "找不到 fzf；请先安装 fzf"
 fi
 
 if [[ ! -e "$CONFIG_DST" && ! -L "$CONFIG_DST" ]]; then
@@ -73,22 +74,24 @@ elif [[ ! -f "$CONFIG_DST/init.lua" ]]; then
 fi
 
 if [[ "$CHECK_ONLY" -eq 0 ]]; then
-  log "触发 vim.pack 安装/加载插件..."
+  log "触发 lazy.nvim 安装缺失插件..."
+  # 用 install 而不是 sync：sync 会顺带更新 lazy.nvim 自身，破坏固定 commit。
   XDG_CONFIG_HOME="$CONFIG_HOME" XDG_DATA_HOME="$DATA_HOME" \
-    "$NVIM_BIN" --headless "+qa"
+    "$NVIM_BIN" --headless "+Lazy! install" +qa
 fi
 
-[[ -f "$CONFIG_DST/nvim-pack-lock.json" ]] || die "缺少 nvim-pack-lock.json：请先联网运行本脚本"
-for name in fzf-lua markview.nvim; do
-  [[ -d "$PLUGIN_DIR/$name" ]] || die "缺少插件目录：$PLUGIN_DIR/$name"
+[[ -f "$CONFIG_DST/lazy-lock.json" ]] || die "缺少 lazy-lock.json：请先联网运行本脚本"
+for name in lazy.nvim fzf-lua markview.nvim; do
+  [[ -d "$LAZY_DIR/$name" ]] || die "缺少插件目录：$LAZY_DIR/$name"
 done
-log "插件目录检查通过：$PLUGIN_DIR"
+log "插件目录检查通过：$LAZY_DIR"
 
 log "验证插件可加载..."
-# 用 -u NONE + 显式 rtp，避免验证时再次触发 vim.pack 安装。
+# 用 -u NONE + 显式 rtp，避免验证时再次触发配置加载和网络访问。
 "$NVIM_BIN" --headless -u NONE \
-  --cmd "set rtp^=$PLUGIN_DIR/fzf-lua" \
-  --cmd "set rtp^=$PLUGIN_DIR/markview.nvim" \
-  "+lua local ok1,e1=pcall(require,'fzf-lua'); local ok2,e2=pcall(require,'markview'); if not ok1 then error(e1) end; if not ok2 then error(e2) end" +qa
+  --cmd "set rtp^=$LAZY_DIR/lazy.nvim" \
+  --cmd "set rtp^=$LAZY_DIR/fzf-lua" \
+  --cmd "set rtp^=$LAZY_DIR/markview.nvim" \
+  "+lua local ok1,e1=pcall(require,'lazy'); local ok2,e2=pcall(require,'fzf-lua'); local ok3,e3=pcall(require,'markview'); if not ok1 then error(e1) end; if not ok2 then error(e2) end; if not ok3 then error(e3) end" +qa
 
 log "插件安装/检查完成。"

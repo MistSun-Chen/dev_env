@@ -47,17 +47,18 @@ for key, hint in pairs(arrow_hints) do
   })
 end
 
--- 插件与功能模块。每个模块独立 pcall，任一模块失败都不影响基础编辑配置。
-for _, module in ipairs({
-  'config.plugins',
-  'config.picker',
-  'config.markdown',
-  'config.mermaid',
-}) do
-  local ok, err = pcall(require, module)
-  if not ok then
-    vim.schedule(function()
-      vim.notify(('dev_env: %s 加载失败：%s'):format(module, tostring(err)), vim.log.levels.WARN)
-    end)
-  end
+-- 先启动 lazy.nvim；picker/markdown 的配置由 lazy 的 config 回调加载。
+local lazy_ok, lazy_err = pcall(require, 'config.lazy')
+if not lazy_ok then
+  vim.schedule(function()
+    vim.notify(('dev_env: lazy.nvim 初始化失败：%s'):format(tostring(lazy_err)), vim.log.levels.WARN)
+  end)
+end
+
+-- Mermaid 集成不依赖第三方插件，单独加载。
+local mermaid_ok, mermaid_err = pcall(require, 'config.mermaid')
+if not mermaid_ok then
+  vim.schedule(function()
+    vim.notify(('dev_env: config.mermaid 加载失败：%s'):format(tostring(mermaid_err)), vim.log.levels.WARN)
+  end)
 end

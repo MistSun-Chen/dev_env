@@ -63,7 +63,7 @@ platforms/
 - `rg`（ripgrep）
 - `fd`
 - `fzf`
-- `git`（`vim.pack` 需要）
+- `git`（`lazy.nvim` 引导和插件安装需要）
 - `mermaid-ascii`（终端 Mermaid 文本图）
 - `tree-sitter` CLI（编译 latex parser）
 - Node.js（仅编译 latex parser 时需要，不是 Neovim 运行时依赖）

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# 在临时 XDG 目录中测试插件安装、latex parser 和 Mermaid 渲染。
+# 在临时 XDG 目录中测试 lazy.nvim 插件安装、latex parser 和 Mermaid 渲染。
 # 不会修改真实 ~/.config/nvim。
 #
 # 用法：
@@ -17,6 +17,10 @@ SAMPLE="$TMP_CONFIG/sample.md"
 cleanup() { rm -rf "$TMP_CONFIG" "$TMP_DATA"; }
 trap cleanup EXIT
 
+# 复制配置而不是链接，避免测试改写仓库里的 lazy-lock.json。
+mkdir -p "$TMP_CONFIG"
+cp -a "$REPO_ROOT/nvim" "$TMP_CONFIG/nvim"
+
 cat > "$SAMPLE" <<'EOF'
 # Smoke Test
 
@@ -28,7 +32,7 @@ A --> B
 ```
 EOF
 
-echo "[test] 安装插件到临时目录"
+echo "[test] 安装 lazy.nvim 与插件到临时目录"
 XDG_CONFIG_HOME="$TMP_CONFIG" XDG_DATA_HOME="$TMP_DATA" \
   bash "$REPO_ROOT/nvim/scripts/install-plugins.sh"
 XDG_CONFIG_HOME="$TMP_CONFIG" XDG_DATA_HOME="$TMP_DATA" \
@@ -38,10 +42,20 @@ echo "[test] 编译 latex parser 到临时目录"
 XDG_DATA_HOME="$TMP_DATA" \
   bash "$REPO_ROOT/nvim/scripts/build-latex-parser.sh"
 
+echo "[test] 检查 lockfile、lazy.nvim 和插件目录"
+[[ -f "$TMP_CONFIG/nvim/lazy-lock.json" ]]
+for name in lazy.nvim fzf-lua markview.nvim; do
+  [[ -d "$TMP_DATA/nvim/lazy/$name" ]]
+done
+
+EXPECTED_LAZY_COMMIT="$(sed -n "s/^local lazy_commit = '\([0-9a-f]*\)'.*/\1/p" "$REPO_ROOT/nvim/lua/config/lazy.lua")"
+ACTUAL_LAZY_COMMIT="$(git -C "$TMP_DATA/nvim/lazy/lazy.nvim" rev-parse HEAD)"
+[[ "$ACTUAL_LAZY_COMMIT" == "$EXPECTED_LAZY_COMMIT" ]]
+
 echo "[test] 检查插件与 parser"
 XDG_CONFIG_HOME="$TMP_CONFIG" XDG_DATA_HOME="$TMP_DATA" \
   nvim --headless \
-  "+lua assert(pcall(require,'fzf-lua')); assert(pcall(require,'markview')); assert(vim.treesitter.language.add('latex'))" \
+  "+lua assert(pcall(require,'lazy')); assert(pcall(require,'fzf-lua')); assert(pcall(require,'markview')); assert(vim.treesitter.language.add('latex'))" \
   +qa
 
 echo "[test] 检查 Mermaid extmark"

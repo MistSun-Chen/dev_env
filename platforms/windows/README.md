@@ -65,7 +65,7 @@ New-Item -ItemType Junction -Path "$env:LOCALAPPDATA\nvim" -Target "C:\path\to\d
 
 ## 已知注意点
 
-- `vim.pack` 需要 `git` 在 PATH 中。
+- `lazy.nvim` 需要 `git` 在 PATH 中。
 - `fzf-lua` 在 Windows 上有单独的兼容性说明（引号、转义等）；如果不想处理这些差异，可以优先考虑 `mini.pick`、`telescope.nvim` 或 `snacks.picker`。
 - 路径中可能有空格、中文、盘符；测试时至少覆盖一个带空格的目录。
 - Windows 的换行符可能是 CRLF；当前 Neovim 配置没有强制 `fileformat`，不要随意加 `set fileformat=unix`。

@@ -6,7 +6,7 @@
 
 - `ubuntu-24.04-online.sh`：在 Docker 里跑联网安装，并验证插件与 latex parser
 - `ubuntu-24.04-offline.sh`：先在 Docker 里生成离线包，再在 `--network none` 的容器里离线安装
-- `nvim-plugins-smoke.sh`：在本机临时 XDG 目录中安装插件、检查 parser 和 Mermaid extmark
+- `nvim-plugins-smoke.sh`：在本机临时 XDG 目录中安装 lazy.nvim 插件、检查 parser 和 Mermaid extmark
 
 ## 前置条件
 

@@ -14,10 +14,22 @@
 
 插件：
 
+- **lazy.nvim**：插件管理器，由 `lua/config/lazy.lua` 引导安装
 - **fzf-lua**：找文件、全局搜索、切换 buffer、最近文件
 - **markview.nvim**：在 Neovim buffer 内渲染 Markdown
 - **mermaid-ascii**：把 `mermaid` 代码块渲染成终端文本图（独立二进制，不是 Neovim 插件）
 - **latex Tree-sitter parser**：markview 公式渲染所需，由本地脚本编译
+
+插件管理链路：
+
+```text
+init.lua
+└── config/lazy.lua          # 引导 lazy.nvim
+    └── lazy.nvim            # 安装/加载其他插件
+        ├── config/plugins.lua
+        ├── fzf-lua
+        └── markview.nvim
+```
 
 文件树、LSP、补全等仍未加入；需要时再逐步补。
 
@@ -50,10 +62,10 @@ bash platforms/macos/install.sh
 
 ### 插件安装 / 更新
 
-插件清单和版本在 `lua/config/plugins.lua`，实际版本由 `nvim-pack-lock.json` 固定。推荐使用仓库内的入口，而不是手动记 `vim.pack` 命令：
+插件清单和版本在 `lua/config/plugins.lua`。lazy.nvim 自身固定到 `lua/config/lazy.lua` 中的 commit；fzf-lua 和 markview.nvim 的实际 revision 由 `lazy-lock.json` 固定。
 
 ```sh
-# 联网安装/更新（首次安装或修改 plugins.lua 后）
+# 联网安装缺失插件（首次安装或新增插件后）
 bash nvim/scripts/install-plugins.sh
 
 # 只检查已安装插件与 lockfile，不访问网络
@@ -70,9 +82,27 @@ bash nvim/scripts/install-plugins.sh
 
 1. 检查 `nvim`、`git`、`fzf`；
 2. 必要时把 `~/.config/nvim` 链接到仓库；
-3. 执行 `nvim --headless`，由 `plugins.lua` 的 `vim.pack.add(..., { confirm = false })` 安装插件；
-4. 检查 `fzf-lua`、`markview.nvim` 目录和 `nvim-pack-lock.json`；
+3. 执行 `nvim --headless "+Lazy! install"`，由 lazy.nvim 安装缺失插件；
+4. 检查 `lazy.nvim`、`fzf-lua`、`markview.nvim` 目录和 `lazy-lock.json`；
 5. 验证插件可以被 `require`。
+
+插件安装位置：
+
+```text
+~/.local/share/nvim/lazy/lazy.nvim
+~/.local/share/nvim/lazy/fzf-lua
+~/.local/share/nvim/lazy/markview.nvim
+```
+
+`lazy-lock.json` 位于配置目录（软链接模式下就是仓库的 `nvim/lazy-lock.json`），需要提交到 git。
+
+已有插件需要升级时，在 Neovim 中执行：
+
+```vim
+:Lazy update fzf-lua markview.nvim
+```
+
+这样只更新这两个插件，不会顺带移动 lazy.nvim 自身的固定 commit。
 
 公式渲染还需要：
 
@@ -139,6 +169,7 @@ Windows 安装脚本尚未实现；当前以复制方式为准，后续会在 `p
 
 ```vim
 :set number? relativenumber? ignorecase? smartcase? mouse? shortmess?
+:Lazy
 :checkhealth markview
 ```
 
@@ -156,5 +187,6 @@ Windows 安装脚本尚未实现；当前以复制方式为准，后续会在 `p
 - 不写死 `/Users/...`、`/home/...`、`C:\...` 等平台路径。
 - 平台相关逻辑放到 `platforms/<os>/`，配置本身尽量保持跨平台。
 - 修改后提交到 `dev_env`；使用软链接的机器不需要重新安装。
-- 插件版本改动后运行 `install-plugins.sh`，把新的 `nvim-pack-lock.json` 一并提交。
+- 插件版本改动后运行 `install-plugins.sh`，把新的 `lazy-lock.json` 一并提交。
+- 升级 lazy.nvim 自身时修改 `lua/config/lazy.lua` 的 `lazy_commit`，并删除旧目录后重新启动。
 - 离线包不提交到 git；只提交生成/安装脚本和 lockfile。
