@@ -51,8 +51,9 @@ platforms/
 5. **已有配置先备份**：不能静默覆盖用户的 `~/.config/nvim` 或 `%LOCALAPPDATA%\nvim`。
 6. **验证版本和路径**：安装完成后打印 `nvim --version`、`rg --version`、`fd --version`、`fzf --version`，并检查 PATH。
 7. **离线脚本成对出现**：`offline/download.sh` 负责下载，`offline/install.sh` 负责无网络安装；离线包不提交到 git。
-8. **文档写清楚**：在平台 README 中写明安装内容、依赖、已知限制和回滚方式。
-9. **测试可重复**：Docker/本地测试脚本放在仓库根目录的 `tests/`，见 [`tests/README.md`](../tests/README.md)。
+8. **插件安装统一入口**：Neovim 插件用 `nvim/scripts/install-plugins.sh`；公式 parser 用 `nvim/scripts/build-latex-parser.sh`。平台脚本不要各自复制插件安装逻辑。
+9. **文档写清楚**：在平台 README 中写明安装内容、依赖、已知限制和回滚方式。
+10. **测试可重复**：Docker/本地测试脚本放在仓库根目录的 `tests/`，见 [`tests/README.md`](../tests/README.md)。
 
 ## 共享工具清单
 
@@ -63,6 +64,9 @@ platforms/
 - `fd`
 - `fzf`
 - `git`（`vim.pack` 需要）
+- `mermaid-ascii`（终端 Mermaid 文本图）
+- `tree-sitter` CLI（编译 latex parser）
+- Node.js（仅编译 latex parser 时需要，不是 Neovim 运行时依赖）
 
 平台差异主要体现在安装方式和可执行文件命名：
 

@@ -33,7 +33,7 @@ docker info >/dev/null 2>&1 || {
 
 echo "[test] 1/2 生成离线包（联网容器）"
 docker run --rm \
-  "${DOCKER_ENV[@]}" \
+  ${DOCKER_ENV[@]+"${DOCKER_ENV[@]}"} \
   -v "$REPO_ROOT:/work:ro" \
   -v "$BUNDLE_DIR:/bundle" \
   ubuntu:24.04 \
@@ -47,6 +47,6 @@ echo "[test] 2/2 在无网络容器中安装"
 docker run --rm --network none \
   -v "$BUNDLE_DIR:/bundle:ro" \
   ubuntu:24.04 \
-  bash /bundle/install.sh --allow-root --skip-config
+  bash -lc 'bash /bundle/install.sh --allow-root && /root/.local/bin/nvim --headless +qa'
 
 echo "[test] 通过"

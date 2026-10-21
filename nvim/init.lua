@@ -4,6 +4,10 @@
 -- 安装：由 dev_env 对应平台脚本链接或复制到 stdpath('config')
 -- 维护：修改后提交到 dev_env；使用软链接的机器下次启动 Neovim 即生效
 
+-- leader 使用空格；必须在插件键位注册前设置
+vim.g.mapleader = ' '
+vim.g.maplocalleader = ' '
+
 -- 显示绝对行号；配合 relativenumber 形成“当前行绝对、其他行相对”的混合行号
 vim.opt.number = true
 
@@ -41,4 +45,19 @@ for key, hint in pairs(arrow_hints) do
   vim.keymap.set('i', key, '<Esc>:echoe "Use ' .. hint .. '"<CR>', {
     desc = '禁用方向键：请用 ' .. hint,
   })
+end
+
+-- 插件与功能模块。每个模块独立 pcall，任一模块失败都不影响基础编辑配置。
+for _, module in ipairs({
+  'config.plugins',
+  'config.picker',
+  'config.markdown',
+  'config.mermaid',
+}) do
+  local ok, err = pcall(require, module)
+  if not ok then
+    vim.schedule(function()
+      vim.notify(('dev_env: %s 加载失败：%s'):format(module, tostring(err)), vim.log.levels.WARN)
+    end)
+  end
 end

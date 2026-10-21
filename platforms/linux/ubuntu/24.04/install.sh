@@ -7,7 +7,10 @@
 #   - ripgrep（rg）
 #   - fd（Ubuntu 包名为 fd-find，脚本会补一个 fd 命令）
 #   - fzf（官方 GitHub release，固定版本）
-#   - git / curl / ca-certificates
+#   - git / curl / ca-certificates / gcc / libc6-dev / unzip
+#   - mermaid-ascii（终端 Mermaid 文本图）
+#   - tree-sitter CLI（编译 latex parser）
+#   - Neovim 插件与 latex parser
 #   - 把 dev_env/nvim 链接到 Neovim 配置目录
 #
 # 设计原则：
@@ -127,10 +130,18 @@ case "$(uname -m)" in
   x86_64|amd64)
     FZF_ARCH="amd64"
     NVIM_ARCH="x86_64"
+    MERMAID_ASCII_ASSET="mermaid-ascii_Linux_x86_64.tar.gz"
+    TREE_SITTER_ASSET="tree-sitter-cli-linux-x64.zip"
+    MERMAID_ASCII_SHA256="$MERMAID_ASCII_SHA256_X86_64"
+    TREE_SITTER_SHA256="$TREE_SITTER_SHA256_X86_64"
     ;;
   aarch64|arm64)
     FZF_ARCH="arm64"
     NVIM_ARCH="arm64"
+    MERMAID_ASCII_ASSET="mermaid-ascii_Linux_arm64.tar.gz"
+    TREE_SITTER_ASSET="tree-sitter-cli-linux-arm64.zip"
+    MERMAID_ASCII_SHA256="$MERMAID_ASCII_SHA256_ARM64"
+    TREE_SITTER_SHA256="$TREE_SITTER_SHA256_ARM64"
     ;;
   *)
     die "不支持的 CPU 架构: $(uname -m)"
@@ -191,9 +202,9 @@ install_fzf() {
   local checksum_file="$TMP_DIR/fzf-checksums.txt"
 
   log "下载 fzf ${FZF_VERSION}（${FZF_ARCH}）..."
-  curl -fL --retry 3 --retry-delay 2 --connect-timeout 15 \
+  curl -fL --http1.1 --retry 3 --retry-delay 2 --connect-timeout 15 \
     "$base_url/$asset" -o "$TMP_DIR/$asset"
-  curl -fL --retry 3 --retry-delay 2 --connect-timeout 15 \
+  curl -fL --http1.1 --retry 3 --retry-delay 2 --connect-timeout 15 \
     "$base_url/fzf_${FZF_VERSION}_checksums.txt" -o "$checksum_file"
 
   if ! grep -qE "[[:space:]]${asset}$" "$checksum_file"; then
@@ -221,6 +232,73 @@ else
   install_fzf
 fi
 
+# ---------- mermaid-ascii / tree-sitter ----------
+
+download_verify() {
+  local url="$1"
+  local dest="$2"
+  local expected="$3"
+  local actual
+
+  curl -fL --http1.1 --retry 3 --retry-delay 2 --connect-timeout 15 "$url" -o "$dest"
+  actual="$(sha256sum "$dest" | awk '{print $1}')"
+  if [[ "$actual" != "$expected" ]]; then
+    die "校验失败: ${dest}（期望 ${expected}，实际 ${actual}）"
+  fi
+}
+
+install_mermaid_ascii() {
+  local asset="$MERMAID_ASCII_ASSET"
+  local prefix="$LOCAL_OPT/mermaid-ascii-${MERMAID_ASCII_VERSION}"
+  if [[ -z "$TMP_DIR" ]]; then
+    TMP_DIR="$(mktemp -d)"
+  fi
+  log "下载 mermaid-ascii ${MERMAID_ASCII_VERSION} ..."
+  download_verify \
+    "https://github.com/AlexanderGrooff/mermaid-ascii/releases/download/${MERMAID_ASCII_VERSION}/${asset}" \
+    "$TMP_DIR/$asset" \
+    "$MERMAID_ASCII_SHA256"
+  rm -rf "$prefix"
+  install -d "$prefix"
+  tar -xzf "$TMP_DIR/$asset" -C "$prefix"
+  chmod +x "$prefix/mermaid-ascii"
+  ln -sfn "$prefix/mermaid-ascii" "$LOCAL_BIN/mermaid-ascii"
+  log "mermaid-ascii 已安装: $LOCAL_BIN/mermaid-ascii"
+}
+
+install_tree_sitter() {
+  local asset="$TREE_SITTER_ASSET"
+  local prefix="$LOCAL_OPT/tree-sitter-${TREE_SITTER_VERSION}"
+  if [[ -z "$TMP_DIR" ]]; then
+    TMP_DIR="$(mktemp -d)"
+  fi
+  log "下载 tree-sitter ${TREE_SITTER_VERSION} ..."
+  download_verify \
+    "https://github.com/tree-sitter/tree-sitter/releases/download/v${TREE_SITTER_VERSION}/${asset}" \
+    "$TMP_DIR/$asset" \
+    "$TREE_SITTER_SHA256"
+  rm -rf "$prefix"
+  install -d "$prefix"
+  unzip -q -o "$TMP_DIR/$asset" -d "$prefix"
+  chmod +x "$prefix/tree-sitter"
+  ln -sfn "$prefix/tree-sitter" "$LOCAL_BIN/tree-sitter"
+  log "tree-sitter 已安装: $LOCAL_BIN/tree-sitter"
+}
+
+install -d "$LOCAL_BIN" "$LOCAL_OPT"
+
+if [[ -x "$LOCAL_BIN/mermaid-ascii" ]] && "$LOCAL_BIN/mermaid-ascii" --help >/dev/null 2>&1; then
+  log "mermaid-ascii 已存在，跳过。"
+else
+  install_mermaid_ascii
+fi
+
+if [[ -x "$LOCAL_BIN/tree-sitter" ]] && "$LOCAL_BIN/tree-sitter" --version 2>/dev/null | grep -q "$TREE_SITTER_VERSION"; then
+  log "tree-sitter ${TREE_SITTER_VERSION} 已存在，跳过。"
+else
+  install_tree_sitter
+fi
+
 # ---------- Neovim ----------
 
 nvim_current_version() {
@@ -238,7 +316,7 @@ install_neovim() {
   local prefix="$LOCAL_OPT/nvim-${NVIM_VERSION}"
 
   log "下载 Neovim ${NVIM_VERSION}（${NVIM_ARCH}）..."
-  curl -fL --retry 3 --retry-delay 2 --connect-timeout 15 \
+  curl -fL --http1.1 --retry 3 --retry-delay 2 --connect-timeout 15 \
     "$url" -o "$TMP_DIR/$asset"
 
   if [[ -n "$NVIM_SHA256" ]]; then
@@ -316,6 +394,21 @@ if [[ ! -x "$FZF_BIN" ]]; then
 fi
 [[ -n "$FZF_BIN" ]] || die "找不到 fzf 可执行文件。"
 
+if [[ "$SKIP_CONFIG" -eq 0 ]]; then
+  log "安装 Neovim 插件 ..."
+  PATH="$LOCAL_BIN:$PATH" \
+    NVIM_BIN="$NVIM_BIN" \
+    XDG_CONFIG_HOME="$XDG_CONFIG_HOME" \
+    XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}" \
+    bash "$NVIM_CONFIG_SRC/scripts/install-plugins.sh"
+  log "编译 latex Tree-sitter parser ..."
+  PATH="$LOCAL_BIN:$PATH" \
+    NVIM_BIN="$NVIM_BIN" \
+    CC=gcc \
+    XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}" \
+    bash "$NVIM_CONFIG_SRC/scripts/build-latex-parser.sh"
+fi
+
 log "版本检查："
 "$NVIM_BIN" --version | head -n 1
 "$FZF_BIN" --version
@@ -327,6 +420,8 @@ elif [[ -x "$LOCAL_BIN/fd" ]]; then
 else
   warn "fd 命令不可用。"
 fi
+"$LOCAL_BIN/mermaid-ascii" --help >/dev/null && echo "mermaid-ascii ${MERMAID_ASCII_VERSION}"
+"$LOCAL_BIN/tree-sitter" --version
 
 if [[ "$SKIP_CONFIG" -eq 0 ]]; then
   log "Neovim 配置冒烟测试："

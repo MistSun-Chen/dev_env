@@ -83,15 +83,23 @@ case "$(uname -m)" in
     FZF_ARCH="arm64"
     NVIM_ASSET="nvim-macos-arm64.tar.gz"
     FZF_ASSET="fzf-${FZF_VERSION}-darwin_arm64.tar.gz"
+    MERMAID_ASCII_ASSET="mermaid-ascii_Darwin_arm64.tar.gz"
+    TREE_SITTER_ASSET="tree-sitter-cli-macos-arm64.zip"
     NVIM_SHA256="$NVIM_SHA256_ARM64"
     FZF_SHA256="$FZF_SHA256_ARM64"
+    MERMAID_ASCII_SHA256="$MERMAID_ASCII_SHA256_ARM64"
+    TREE_SITTER_SHA256="$TREE_SITTER_SHA256_ARM64"
     ;;
   x86_64)
     FZF_ARCH="amd64"
     NVIM_ASSET="nvim-macos-x86_64.tar.gz"
     FZF_ASSET="fzf-${FZF_VERSION}-darwin_amd64.tar.gz"
+    MERMAID_ASCII_ASSET="mermaid-ascii_Darwin_x86_64.tar.gz"
+    TREE_SITTER_ASSET="tree-sitter-cli-macos-x64.zip"
     NVIM_SHA256="$NVIM_SHA256_X86_64"
     FZF_SHA256="$FZF_SHA256_X86_64"
+    MERMAID_ASCII_SHA256="$MERMAID_ASCII_SHA256_X86_64"
+    TREE_SITTER_SHA256="$TREE_SITTER_SHA256_X86_64"
     ;;
   *)
     die "不支持的 CPU 架构: $(uname -m)"
@@ -114,6 +122,7 @@ ensure_brew_tool() {
 ensure_brew_tool rg ripgrep
 ensure_brew_tool fd fd
 ensure_brew_tool git git
+ensure_brew_tool node node
 
 # ---------- Neovim / fzf ----------
 
@@ -123,7 +132,7 @@ download_verify() {
   local expected="$3"
   local actual
 
-  curl -fL --retry 3 --retry-delay 2 --connect-timeout 15 "$url" -o "$dest"
+  curl -fL --http1.1 --retry 3 --retry-delay 2 --connect-timeout 15 "$url" -o "$dest"
   actual="$(shasum -a 256 "$dest" | awk '{print $1}')"
   if [[ "$actual" != "$expected" ]]; then
     die "校验失败: ${dest}（期望 ${expected}，实际 ${actual}）"
@@ -190,6 +199,60 @@ else
   log "fzf 已安装: $LOCAL_BIN/fzf"
 fi
 
+# ---------- mermaid-ascii / tree-sitter ----------
+
+install_mermaid_ascii() {
+  local asset="$MERMAID_ASCII_ASSET"
+  local prefix="$LOCAL_OPT/mermaid-ascii-${MERMAID_ASCII_VERSION}"
+  if [[ -z "$TMP_DIR" ]]; then
+    TMP_DIR="$(mktemp -d)"
+  fi
+  log "下载 mermaid-ascii ${MERMAID_ASCII_VERSION} ..."
+  download_verify \
+    "https://github.com/AlexanderGrooff/mermaid-ascii/releases/download/${MERMAID_ASCII_VERSION}/${asset}" \
+    "$TMP_DIR/$asset" \
+    "$MERMAID_ASCII_SHA256"
+  rm -rf "$prefix"
+  install -d "$prefix"
+  tar -xzf "$TMP_DIR/$asset" -C "$prefix"
+  chmod +x "$prefix/mermaid-ascii"
+  ln -sfn "$prefix/mermaid-ascii" "$LOCAL_BIN/mermaid-ascii"
+  log "mermaid-ascii 已安装: $LOCAL_BIN/mermaid-ascii"
+}
+
+install_tree_sitter() {
+  local asset="$TREE_SITTER_ASSET"
+  local prefix="$LOCAL_OPT/tree-sitter-${TREE_SITTER_VERSION}"
+  if [[ -z "$TMP_DIR" ]]; then
+    TMP_DIR="$(mktemp -d)"
+  fi
+  log "下载 tree-sitter ${TREE_SITTER_VERSION} ..."
+  download_verify \
+    "https://github.com/tree-sitter/tree-sitter/releases/download/v${TREE_SITTER_VERSION}/${asset}" \
+    "$TMP_DIR/$asset" \
+    "$TREE_SITTER_SHA256"
+  rm -rf "$prefix"
+  install -d "$prefix"
+  unzip -q -o "$TMP_DIR/$asset" -d "$prefix"
+  chmod +x "$prefix/tree-sitter"
+  ln -sfn "$prefix/tree-sitter" "$LOCAL_BIN/tree-sitter"
+  log "tree-sitter 已安装: $LOCAL_BIN/tree-sitter"
+}
+
+install -d "$LOCAL_BIN" "$LOCAL_OPT"
+
+if [[ -x "$LOCAL_BIN/mermaid-ascii" ]] && "$LOCAL_BIN/mermaid-ascii" --help >/dev/null 2>&1; then
+  log "mermaid-ascii 已存在，跳过。"
+else
+  install_mermaid_ascii
+fi
+
+if [[ -x "$LOCAL_BIN/tree-sitter" ]] && "$LOCAL_BIN/tree-sitter" --version 2>/dev/null | grep -q "$TREE_SITTER_VERSION"; then
+  log "tree-sitter ${TREE_SITTER_VERSION} 已存在，跳过。"
+else
+  install_tree_sitter
+fi
+
 # ---------- Neovim 配置 ----------
 
 deploy_nvim_config() {
@@ -239,12 +302,28 @@ if [[ ! -x "$FZF_BIN" ]]; then
 fi
 [[ -n "$FZF_BIN" ]] || die "找不到 fzf 可执行文件。"
 
+if [[ "$SKIP_CONFIG" -eq 0 ]]; then
+  log "安装 Neovim 插件 ..."
+  PATH="$LOCAL_BIN:$PATH" \
+    NVIM_BIN="$NVIM_BIN" \
+    XDG_CONFIG_HOME="$XDG_CONFIG_HOME" \
+    XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}" \
+    bash "$NVIM_CONFIG_SRC/scripts/install-plugins.sh"
+  log "编译 latex Tree-sitter parser ..."
+  PATH="$LOCAL_BIN:$PATH" \
+    NVIM_BIN="$NVIM_BIN" \
+    XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}" \
+    bash "$NVIM_CONFIG_SRC/scripts/build-latex-parser.sh"
+fi
+
 log "版本检查："
 "$NVIM_BIN" --version | head -n 1
 "$FZF_BIN" --version
 rg --version | head -n 1
 fd --version
 git --version
+"$LOCAL_BIN/mermaid-ascii" --help >/dev/null && echo "mermaid-ascii ${MERMAID_ASCII_VERSION}"
+"$LOCAL_BIN/tree-sitter" --version
 
 if [[ "$SKIP_CONFIG" -eq 0 ]]; then
   log "Neovim 配置冒烟测试："

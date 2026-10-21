@@ -8,7 +8,11 @@
 - `fzf-*-darwin_*.tar.gz`：fzf 0.74.5
 - `ripgrep-*-apple-darwin.tar.gz`：ripgrep 15.2.0
 - `fd-v*-apple-darwin.tar.gz`：fd 10.5.0
-- `nvim/`：Neovim 配置
+- `mermaid-ascii_Darwin_*.tar.gz`：mermaid-ascii 1.6.1
+- `tree-sitter-cli-macos-*.zip`：tree-sitter CLI 0.27.1
+- `nvim-plugins/`：fzf-lua、markview.nvim（含 `.git`）
+- `nvim-parser/latex.so`：预编译公式 parser
+- `nvim/`：Neovim 配置与 lockfile
 - `install.sh`：离线安装脚本
 - `versions.env`、`manifest.txt`、`SHA256SUMS`
 
@@ -21,6 +25,7 @@
 - macOS
 - 架构与目标机器一致（Apple Silicon `arm64` 或 Intel `x86_64`）
 - 能访问 GitHub
+- 构建机需要 Node.js 和 Xcode Command Line Tools（`cc`），仅用于编译 latex parser
 
 ```sh
 cd platforms/macos/offline

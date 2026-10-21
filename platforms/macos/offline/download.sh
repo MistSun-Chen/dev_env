@@ -68,10 +68,14 @@ case "$(uname -m)" in
     FZF_ASSET="fzf-${FZF_VERSION}-darwin_arm64.tar.gz"
     RG_ASSET="ripgrep-${RG_VERSION}-aarch64-apple-darwin.tar.gz"
     FD_ASSET="fd-v${FD_VERSION}-aarch64-apple-darwin.tar.gz"
+    MERMAID_ASCII_ASSET="mermaid-ascii_Darwin_arm64.tar.gz"
+    TREE_SITTER_ASSET="tree-sitter-cli-macos-arm64.zip"
     NVIM_SHA="$NVIM_SHA256_ARM64"
     FZF_SHA="$FZF_SHA256_ARM64"
     RG_SHA="$RG_SHA256_ARM64"
     FD_SHA="$FD_SHA256_ARM64"
+    MERMAID_ASCII_SHA="$MERMAID_ASCII_SHA256_ARM64"
+    TREE_SITTER_SHA="$TREE_SITTER_SHA256_ARM64"
     ;;
   x86_64)
     ARCH="x86_64"
@@ -79,10 +83,14 @@ case "$(uname -m)" in
     FZF_ASSET="fzf-${FZF_VERSION}-darwin_amd64.tar.gz"
     RG_ASSET="ripgrep-${RG_VERSION}-x86_64-apple-darwin.tar.gz"
     FD_ASSET="fd-v${FD_VERSION}-x86_64-apple-darwin.tar.gz"
+    MERMAID_ASCII_ASSET="mermaid-ascii_Darwin_x86_64.tar.gz"
+    TREE_SITTER_ASSET="tree-sitter-cli-macos-x64.zip"
     NVIM_SHA="$NVIM_SHA256_X86_64"
     FZF_SHA="$FZF_SHA256_X86_64"
     RG_SHA="$RG_SHA256_X86_64"
     FD_SHA="$FD_SHA256_X86_64"
+    MERMAID_ASCII_SHA="$MERMAID_ASCII_SHA256_X86_64"
+    TREE_SITTER_SHA="$TREE_SITTER_SHA256_X86_64"
     ;;
   *)
     die "不支持的 CPU 架构: $(uname -m)"
@@ -103,7 +111,7 @@ download_verify() {
   local actual
 
   log "下载 $(basename "$dest") ..."
-  curl -fL --retry 3 --retry-delay 2 --connect-timeout 15 "$url" -o "$dest"
+  curl -fL --http1.1 --retry 3 --retry-delay 2 --connect-timeout 15 "$url" -o "$dest"
   actual="$(shasum -a 256 "$dest" | awk '{print $1}')"
   if [[ "$actual" != "$expected" ]]; then
     die "校验失败: ${dest}（期望 ${expected}，实际 ${actual}）"
@@ -133,12 +141,36 @@ download_verify \
   "$OUT_DIR/$FD_ASSET" \
   "$FD_SHA"
 
+download_verify \
+  "https://github.com/AlexanderGrooff/mermaid-ascii/releases/download/${MERMAID_ASCII_VERSION}/${MERMAID_ASCII_ASSET}" \
+  "$OUT_DIR/$MERMAID_ASCII_ASSET" \
+  "$MERMAID_ASCII_SHA"
+
+download_verify \
+  "https://github.com/tree-sitter/tree-sitter/releases/download/v${TREE_SITTER_VERSION}/${TREE_SITTER_ASSET}" \
+  "$OUT_DIR/$TREE_SITTER_ASSET" \
+  "$TREE_SITTER_SHA"
+
 log "复制 Neovim 配置和离线安装脚本..."
 rm -rf "$OUT_DIR/nvim"
 cp -a "$REPO_ROOT/nvim" "$OUT_DIR/nvim"
 cp -a "$SCRIPT_DIR/install.sh" "$OUT_DIR/install.sh"
 cp -a "$PLATFORM_DIR/versions.env" "$OUT_DIR/versions.env"
 chmod +x "$OUT_DIR/install.sh"
+
+command -v node >/dev/null 2>&1 || die "需要 Node.js 来运行 tree-sitter generate；请先安装 Node（仅构建 parser 时需要）"
+
+log "在临时环境安装 Neovim 插件并编译 latex parser ..."
+TOOLS_DIR="$TMP_DIR/tools"
+mkdir -p "$TOOLS_DIR/nvim" "$TOOLS_DIR/fzf" "$TOOLS_DIR/tree-sitter"
+tar -xzf "$OUT_DIR/$NVIM_ASSET" -C "$TOOLS_DIR/nvim" --strip-components=1
+tar -xzf "$OUT_DIR/$FZF_ASSET" -C "$TOOLS_DIR/fzf"
+unzip -q -o "$OUT_DIR/$TREE_SITTER_ASSET" -d "$TOOLS_DIR/tree-sitter"
+PATH="$TOOLS_DIR/nvim/bin:$TOOLS_DIR/fzf:$TOOLS_DIR/tree-sitter:$PATH" \
+  NVIM_BIN="$TOOLS_DIR/nvim/bin/nvim" \
+  TREE_SITTER_BIN="$TOOLS_DIR/tree-sitter/tree-sitter" \
+  CC=cc \
+  bash "$REPO_ROOT/nvim/scripts/stage-plugins.sh" --output "$OUT_DIR"
 
 cat > "$OUT_DIR/manifest.txt" <<EOF
 bundle=dev_env-macos-${ARCH}
@@ -149,14 +181,14 @@ neovim=${NVIM_VERSION}
 fzf=${FZF_VERSION}
 ripgrep=${RG_VERSION}
 fd=${FD_VERSION}
+mermaid_ascii=${MERMAID_ASCII_VERSION}
+tree_sitter=${TREE_SITTER_VERSION}
 EOF
 
 log "生成 SHA256SUMS ..."
 (
   cd "$OUT_DIR"
-  find . -type f ! -name SHA256SUMS -print \
-    | sort \
-    | xargs shasum -a 256 > SHA256SUMS
+  find . -type f ! -name SHA256SUMS -exec shasum -a 256 {} + | sort > SHA256SUMS
 )
 
 BUNDLE_NAME="dev_env-macos-${ARCH}.tar.gz"

@@ -7,7 +7,11 @@
 - `debs/`：`ca-certificates`、`curl`、`git`、`ripgrep`、`fd-find` 及其依赖
 - `nvim-linux-*.tar.gz`：Neovim 官方二进制
 - `fzf-*-linux_*.tar.gz`：fzf 官方二进制
-- `nvim/`：Neovim 配置
+- `mermaid-ascii_Linux_*.tar.gz`：终端 Mermaid 文本图
+- `tree-sitter-cli-linux-*.zip`：tree-sitter CLI
+- `nvim-plugins/`：fzf-lua、markview.nvim（含 `.git`）
+- `nvim-parser/latex.so`：预编译公式 parser
+- `nvim/`：Neovim 配置与 lockfile
 - `install.sh`：离线安装脚本
 - `versions.env`、`manifest.txt`、`SHA256SUMS`
 
@@ -18,6 +22,7 @@
 - Ubuntu 24.04
 - 架构与目标机器一致（`x86_64` 或 `arm64`）
 - 能访问 Ubuntu 软件源和 GitHub
+- 构建机需要 `nodejs`、`gcc`、`libc6-dev`、`tree-sitter`（`download.sh` 会处理构建工具；目标端不需要）
 
 ```sh
 cd platforms/linux/ubuntu/24.04/offline
@@ -70,6 +75,8 @@ rg --version | head -1
 fd --version
 fzf --version
 git --version
+mermaid-ascii --help >/dev/null && echo mermaid-ok
+tree-sitter --version
 ```
 
 预期与联网安装一致：Neovim 0.12.3、fzf 0.74.5。

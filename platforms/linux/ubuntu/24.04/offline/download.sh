@@ -101,10 +101,18 @@ case "$(uname -m)" in
   x86_64|amd64)
     FZF_ARCH="amd64"
     NVIM_ARCH="x86_64"
+    MERMAID_ASCII_ASSET="mermaid-ascii_Linux_x86_64.tar.gz"
+    TREE_SITTER_ASSET="tree-sitter-cli-linux-x64.zip"
+    MERMAID_ASCII_SHA256="$MERMAID_ASCII_SHA256_X86_64"
+    TREE_SITTER_SHA256="$TREE_SITTER_SHA256_X86_64"
     ;;
   aarch64|arm64)
     FZF_ARCH="arm64"
     NVIM_ARCH="arm64"
+    MERMAID_ASCII_ASSET="mermaid-ascii_Linux_arm64.tar.gz"
+    TREE_SITTER_ASSET="tree-sitter-cli-linux-arm64.zip"
+    MERMAID_ASCII_SHA256="$MERMAID_ASCII_SHA256_ARM64"
+    TREE_SITTER_SHA256="$TREE_SITTER_SHA256_ARM64"
     ;;
   *)
     die "不支持的 CPU 架构: $(uname -m)"
@@ -150,7 +158,7 @@ run_sudo apt-get "${APT_OPTS[@]}" update
 log "下载 apt 包及依赖到 $DEBS_DIR ..."
 rm -rf "$DEBS_DIR"
 mkdir -p "$DEBS_DIR"
-read -r -a APT_PACKAGE_ARRAY <<< "$APT_PACKAGES"
+read -r -a APT_PACKAGE_ARRAY <<< "$APT_PACKAGES_OFFLINE"
 
 # 递归收集依赖，并排除当前系统已安装的包。
 # 目标机器按干净的 Ubuntu 24.04 处理；这样下载集合不会因为构建机
@@ -179,27 +187,51 @@ mapfile -t DOWNLOAD_PKGS < <(
 
 # curl/ca-certificates 用于下载 GitHub release；放在 apt 包下载之后，
 # 避免构建机上的 curl 依赖影响离线包内容。
-log "确认下载工具..."
+log "确认下载与构建工具..."
 run_sudo env DEBIAN_FRONTEND=noninteractive apt-get "${APT_OPTS[@]}" install -y --no-install-recommends \
-  ca-certificates curl
+  ca-certificates curl git gcc libc6-dev unzip nodejs
 
 # ---------- Neovim / fzf ----------
 
+download_verified() {
+  local url="$1"
+  local dest="$2"
+  local expected="$3"
+  local actual
+
+  log "下载 $(basename "$dest") ..."
+  curl -fL --http1.1 --retry 3 --retry-delay 2 --connect-timeout 15 "$url" -o "$dest"
+  actual="$(sha256sum "$dest" | awk '{print $1}')"
+  if [[ "$actual" != "$expected" ]]; then
+    die "校验失败: ${dest}（期望 ${expected}，实际 ${actual}）"
+  fi
+}
+
 log "下载 Neovim $NVIM_VERSION ..."
-curl -fL --retry 3 --retry-delay 2 --connect-timeout 15 \
+curl -fL --http1.1 --retry 3 --retry-delay 2 --connect-timeout 15 \
   "https://github.com/neovim/neovim/releases/download/v${NVIM_VERSION}/${NVIM_ASSET}" \
   -o "$OUT_DIR/$NVIM_ASSET"
 printf '%s  %s\n' "$NVIM_SHA256" "$OUT_DIR/$NVIM_ASSET" | sha256sum -c -
 
 log "下载 fzf $FZF_VERSION ..."
-curl -fL --retry 3 --retry-delay 2 --connect-timeout 15 \
+curl -fL --http1.1 --retry 3 --retry-delay 2 --connect-timeout 15 \
   "https://github.com/junegunn/fzf/releases/download/v${FZF_VERSION}/${FZF_ASSET}" \
   -o "$OUT_DIR/$FZF_ASSET"
-curl -fL --retry 3 --retry-delay 2 --connect-timeout 15 \
+curl -fL --http1.1 --retry 3 --retry-delay 2 --connect-timeout 15 \
   "https://github.com/junegunn/fzf/releases/download/v${FZF_VERSION}/fzf_${FZF_VERSION}_checksums.txt" \
   -o "$TMP_DIR/fzf-checksums.txt"
 grep -qE "[[:space:]]${FZF_ASSET}$" "$TMP_DIR/fzf-checksums.txt" || die "fzf 校验文件中找不到 $FZF_ASSET"
 grep -E "[[:space:]]${FZF_ASSET}$" "$TMP_DIR/fzf-checksums.txt" | (cd "$OUT_DIR" && sha256sum -c -)
+
+download_verified \
+  "https://github.com/AlexanderGrooff/mermaid-ascii/releases/download/${MERMAID_ASCII_VERSION}/${MERMAID_ASCII_ASSET}" \
+  "$OUT_DIR/$MERMAID_ASCII_ASSET" \
+  "$MERMAID_ASCII_SHA256"
+
+download_verified \
+  "https://github.com/tree-sitter/tree-sitter/releases/download/v${TREE_SITTER_VERSION}/${TREE_SITTER_ASSET}" \
+  "$OUT_DIR/$TREE_SITTER_ASSET" \
+  "$TREE_SITTER_SHA256"
 
 # ---------- 配置与离线安装脚本 ----------
 
@@ -210,6 +242,18 @@ cp -a "$SCRIPT_DIR/install.sh" "$OUT_DIR/install.sh"
 cp -a "$PLATFORM_DIR/versions.env" "$OUT_DIR/versions.env"
 chmod +x "$OUT_DIR/install.sh"
 
+log "在临时环境安装 Neovim 插件并编译 latex parser ..."
+TOOLS_DIR="$TMP_DIR/tools"
+mkdir -p "$TOOLS_DIR/nvim" "$TOOLS_DIR/fzf" "$TOOLS_DIR/tree-sitter"
+tar -xzf "$OUT_DIR/$NVIM_ASSET" -C "$TOOLS_DIR/nvim" --strip-components=1
+tar -xzf "$OUT_DIR/$FZF_ASSET" -C "$TOOLS_DIR/fzf"
+unzip -q -o "$OUT_DIR/$TREE_SITTER_ASSET" -d "$TOOLS_DIR/tree-sitter"
+PATH="$TOOLS_DIR/nvim/bin:$TOOLS_DIR/fzf:$TOOLS_DIR/tree-sitter:$PATH" \
+  NVIM_BIN="$TOOLS_DIR/nvim/bin/nvim" \
+  TREE_SITTER_BIN="$TOOLS_DIR/tree-sitter/tree-sitter" \
+  CC=gcc \
+  bash "$REPO_ROOT/nvim/scripts/stage-plugins.sh" --output "$OUT_DIR"
+
 cat > "$OUT_DIR/manifest.txt" <<EOF
 bundle=dev_env-ubuntu-24.04-${NVIM_ARCH}
 created=$(date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -217,7 +261,9 @@ ubuntu=24.04
 arch=${NVIM_ARCH}
 neovim=${NVIM_VERSION}
 fzf=${FZF_VERSION}
-apt_packages=${APT_PACKAGES}
+mermaid_ascii=${MERMAID_ASCII_VERSION}
+tree_sitter=${TREE_SITTER_VERSION}
+apt_packages=${APT_PACKAGES_OFFLINE}
 EOF
 
 # ---------- 校验和与压缩包 ----------

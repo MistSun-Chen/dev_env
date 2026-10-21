@@ -23,9 +23,9 @@ docker info >/dev/null 2>&1 || {
 
 echo "[test] Ubuntu 24.04 联网安装"
 docker run --rm \
-  "${DOCKER_ENV[@]}" \
+  ${DOCKER_ENV[@]+"${DOCKER_ENV[@]}"} \
   -v "$REPO_ROOT:/work:ro" \
   ubuntu:24.04 \
-  bash /work/platforms/linux/ubuntu/24.04/install.sh --allow-root --skip-config
+  bash -lc 'cp -a /work /tmp/work && bash /tmp/work/platforms/linux/ubuntu/24.04/install.sh --allow-root && /root/.local/bin/nvim --headless +qa'
 
 echo "[test] 通过"
