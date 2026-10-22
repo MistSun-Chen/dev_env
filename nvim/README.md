@@ -15,10 +15,10 @@
 插件：
 
 - **lazy.nvim**：插件管理器，由 `lua/config/lazy.lua` 引导安装
-- **fzf-lua**：找文件、全局搜索、切换 buffer、最近文件
+- **fzf-lua**：找文件、全局/当前 buffer/选区/路径搜索、切换 buffer、最近文件
+- **grug-far.nvim**：搜索并替换，支持项目、当前文件、选区范围和 glob/路径过滤
 - **markview.nvim**：在 Neovim buffer 内渲染 Markdown
-- **Catppuccin**：默认配色，提供 Mocha、Macchiato、Frappe、Latte 四种变体；运行时用 `<leader>uc` 切换
-- **mermaid-ascii**：把 `mermaid` 代码块渲染成终端文本图（独立二进制，不是 Neovim 插件）
+- **Catppuccin**：默认配色，提供 Mocha、Macchiato、Frappe、Latte 四种变体；运行时用 `<leader>tc` 切换
 - **latex Tree-sitter parser**：markview 公式渲染所需，由本地脚本编译
 
 插件管理链路：
@@ -29,13 +29,14 @@ init.lua
     └── lazy.nvim            # 安装/加载其他插件
         ├── config/plugins.lua
         ├── fzf-lua
+        ├── grug-far.nvim
         ├── markview.nvim
         └── catppuccin
 ```
 
-默认配色是 `catppuccin-mocha`；`<leader>uc` 会打开 Catppuccin 变体选择器，支持实时预览。
+默认配色是 `catppuccin-mocha`；`<leader>tc` 会打开 Catppuccin 变体选择器，支持实时预览。
 
-文件树、LSP、补全等仍未加入；需要时再逐步补。
+顶部 tabline 由内置 `tabline` 实现，显示所有已打开文件；文件树、LSP、补全等仍未加入，需要时再逐步补。
 
 ## 安装方式
 
@@ -66,7 +67,7 @@ bash platforms/macos/install.sh
 
 ### 插件安装 / 更新
 
-插件清单和版本在 `lua/config/plugins.lua`。lazy.nvim 自身固定到 `lua/config/lazy.lua` 中的 commit；fzf-lua、markview.nvim 和配色插件的实际 revision 由 `lazy-lock.json` 固定。
+插件清单和版本在 `lua/config/plugins.lua`。lazy.nvim 自身固定到 `lua/config/lazy.lua` 中的 commit；fzf-lua、markview.nvim、grug-far.nvim 和配色插件的实际 revision 由 `lazy-lock.json` 固定。
 
 ```sh
 # 联网安装缺失插件（首次安装或新增插件后）
@@ -87,7 +88,7 @@ bash nvim/scripts/install-plugins.sh
 1. 检查 `nvim`、`git`、`fzf`；
 2. 必要时把 `~/.config/nvim` 链接到仓库；
 3. 执行 `nvim --headless "+Lazy! install"`，由 lazy.nvim 安装缺失插件；
-4. 检查 `lazy.nvim`、`fzf-lua`、`markview.nvim`、配色插件目录和 `lazy-lock.json`；
+4. 检查 `lazy.nvim`、`fzf-lua`、`markview.nvim`、`grug-far.nvim`、配色插件目录和 `lazy-lock.json`；
 5. 验证插件可以被 `require`。
 
 插件安装位置：
@@ -96,6 +97,7 @@ bash nvim/scripts/install-plugins.sh
 ~/.local/share/nvim/lazy/lazy.nvim
 ~/.local/share/nvim/lazy/fzf-lua
 ~/.local/share/nvim/lazy/markview.nvim
+~/.local/share/nvim/lazy/grug-far.nvim
 ```
 
 `lazy-lock.json` 位于配置目录（软链接模式下就是仓库的 `nvim/lazy-lock.json`），需要提交到 git。
@@ -103,10 +105,10 @@ bash nvim/scripts/install-plugins.sh
 已有插件需要升级时，在 Neovim 中执行：
 
 ```vim
-:Lazy update fzf-lua markview.nvim
+:Lazy update fzf-lua markview.nvim grug-far.nvim
 ```
 
-这样只更新这两个插件，不会顺带移动 lazy.nvim 自身的固定 commit。
+这样只更新这些插件，不会顺带移动 lazy.nvim 自身的固定 commit。
 
 公式渲染还需要：
 
@@ -139,29 +141,46 @@ Windows 安装脚本尚未实现；当前以复制方式为准，后续会在 `p
 | 键位 | 功能 |
 |---|---|
 | `<leader>ff` | 查找文件 |
-| `<leader>fg` | 全局搜索（rg） |
-| `<leader>fb` | 切换 buffer |
+| `<leader>fg` | 全局搜索（rg）；可输入 `query -- glob` 限定文件 |
+| `<leader>fc` | 当前 buffer 搜索 |
+| `<leader>fw` | 搜索光标下单词 |
+| `<leader>fs` | 按路径 + glob 搜索，`!` 开头排除 |
+| `<leader>fv` | visual 模式搜索选中文本 |
+| `<leader>bs` | 打开 buffer 列表并切换 |
 | `<leader>fr` | 最近文件 |
+| `<leader>bn` | 下一个 buffer |
+| `<leader>bp` | 上一个 buffer |
+| `<leader>bd` | 关闭当前 buffer |
+| `<leader>sr` | 搜索并替换（grug-far）；visual 模式限制在选区内 |
+| `<leader>sR` | 当前文件搜索并替换 |
 | `<leader>mt` | Markdown 目录（按标题跳转） |
 | `<leader>mp` | Markdown 预览开关 |
 | `<leader>ms` | Markdown 分屏预览 |
-| `<leader>mm` | 重新渲染 Mermaid 代码块 |
-| `<leader>uc` | 选择配色方案 |
+| `<leader>tc` | 选择配色方案（theme change） |
+
+说明：
+
+- grug-far 内部用 `<localleader>`（这里也是空格）：`<Tab>` 切换输入框，`<Space>r` 执行 Replace，`<Space>c` 关闭，`<Space>i` 预览；`Paths` 是搜索路径，`Files Filter` 是文件 glob，`Flags` 是额外 rg 参数，正常替换不需要 `Sync`。`<Esc>` 只退出插入模式，不关闭 grug-far。
+- grug-far 结果区用 `j` / `k` 移动；`<Up>` / `<Down>` 打开的是匹配所在的**原文件预览**，不是 diff。替换前后的差异在结果区显示（默认 `showReplaceDiff`）。
+- 顶部 tabline 显示已打开文件；左键点击切换，`<leader>bn` / `<leader>bp` 上一个/下一个，`<leader>bd` 关闭。`<leader>bs` 按 buffer 名称/路径过滤，不搜内容。
+- fzf 列表里用 `<C-j>` / `<C-k>`（或方向键）移动，`<Enter>` 打开，`<Esc>` 取消；buffer picker 顶部也会显示这行提示。
 
 命令：
 
-- `:Markview` / `:Markview Toggle`：markview 预览开关
+- `:Markview` / `:Markview Toggle`：markview 预览开关（所有已附加 buffer）
+- `:Markview toggle` / `:Markview disable` / `:Markview enable`：只控制当前 buffer
 - `:Markview splitToggle`：分屏预览
-- `:MermaidRender`：重新渲染当前 Markdown 的 Mermaid 块
-- `:MermaidClear`：清除 Mermaid 文本图
 
 ## Markdown 预览与目录
 
 - Markdown 标题、表格、代码块、引用、链接在 buffer 内渲染。
 - 行内公式 `$...$` 和块公式 `$$...$$` 通过 markview 转成 Unicode 近似显示。
-- `mermaid` 代码块通过 `mermaid-ascii` 渲染成 Unicode/ASCII 文本图，显示在代码块下方。
-- 支持常见的 Mermaid `graph` / `flowchart`、`sequenceDiagram`、`erDiagram`。
-- `stateDiagram`、`classDiagram`、`gantt`、`pie`、`timeline` 等暂不支持，会保留源码并显示提示。
+- `mermaid` 代码块按普通代码块显示，不做渲染；需要查看图表时使用外部工具。
+
+如果只想看原始 Markdown：
+
+- `<leader>mp` / `:Markview Toggle`：开关 markview 渲染（所有已附加 buffer）；
+- `:Markview toggle`：只开关当前 buffer 的 markview 渲染。
 
 ### 目录跳转
 
@@ -192,13 +211,11 @@ catppuccin-mocha
 :FzfLua colorschemes
 ```
 
-或按 `<leader>uc`。选择器只列出 Catppuccin 的四个变体，并支持实时预览；当前选择只在本次会话生效，重启后回到 `catppuccin-mocha`。
+或按 `<leader>tc`。选择器只列出 Catppuccin 的四个变体，并支持实时预览；当前选择只在本次会话生效，重启后回到 `catppuccin-mocha`。
 
 限制：
 
 - 公式是 Unicode 近似，不是 TeX 排版；矩阵、复杂积分等可能不理想。
-- Mermaid 是文本图，窄终端会自动压缩或提示。
-- 需要高保真 KaTeX/Mermaid 时，可以以后增加可选的浏览器预览；当前配置优先保证 SSH/无 GUI 终端可用。
 
 ## 验证
 
@@ -216,8 +233,8 @@ catppuccin-mocha
 - normal / insert 模式按方向键，应出现 `Use h/l/k/j` 提示
 - 按 `Q` 不应当被禁用；它保留 Neovim 默认行为
 - 打开一个 Markdown 文件，按 `<leader>mt` 应弹出标题选择器
-- 按 `<leader>uc` 应打开配色选择器，并可以实时预览
-- 在 `mermaid` 代码块上按 `<leader>mm`，代码块下方应出现文本图
+- 按 `<leader>tc` 应打开配色选择器，并可以实时预览
+- `mermaid` 代码块按普通代码块显示，不出现图表或额外提示
 
 ## 修改约定
 

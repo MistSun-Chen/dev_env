@@ -83,22 +83,18 @@ case "$(uname -m)" in
     FZF_ARCH="arm64"
     NVIM_ASSET="nvim-macos-arm64.tar.gz"
     FZF_ASSET="fzf-${FZF_VERSION}-darwin_arm64.tar.gz"
-    MERMAID_ASCII_ASSET="mermaid-ascii_Darwin_arm64.tar.gz"
     TREE_SITTER_ASSET="tree-sitter-cli-macos-arm64.zip"
     NVIM_SHA256="$NVIM_SHA256_ARM64"
     FZF_SHA256="$FZF_SHA256_ARM64"
-    MERMAID_ASCII_SHA256="$MERMAID_ASCII_SHA256_ARM64"
     TREE_SITTER_SHA256="$TREE_SITTER_SHA256_ARM64"
     ;;
   x86_64)
     FZF_ARCH="amd64"
     NVIM_ASSET="nvim-macos-x86_64.tar.gz"
     FZF_ASSET="fzf-${FZF_VERSION}-darwin_amd64.tar.gz"
-    MERMAID_ASCII_ASSET="mermaid-ascii_Darwin_x86_64.tar.gz"
     TREE_SITTER_ASSET="tree-sitter-cli-macos-x64.zip"
     NVIM_SHA256="$NVIM_SHA256_X86_64"
     FZF_SHA256="$FZF_SHA256_X86_64"
-    MERMAID_ASCII_SHA256="$MERMAID_ASCII_SHA256_X86_64"
     TREE_SITTER_SHA256="$TREE_SITTER_SHA256_X86_64"
     ;;
   *)
@@ -199,26 +195,7 @@ else
   log "fzf 已安装: $LOCAL_BIN/fzf"
 fi
 
-# ---------- mermaid-ascii / tree-sitter ----------
-
-install_mermaid_ascii() {
-  local asset="$MERMAID_ASCII_ASSET"
-  local prefix="$LOCAL_OPT/mermaid-ascii-${MERMAID_ASCII_VERSION}"
-  if [[ -z "$TMP_DIR" ]]; then
-    TMP_DIR="$(mktemp -d)"
-  fi
-  log "下载 mermaid-ascii ${MERMAID_ASCII_VERSION} ..."
-  download_verify \
-    "https://github.com/AlexanderGrooff/mermaid-ascii/releases/download/${MERMAID_ASCII_VERSION}/${asset}" \
-    "$TMP_DIR/$asset" \
-    "$MERMAID_ASCII_SHA256"
-  rm -rf "$prefix"
-  install -d "$prefix"
-  tar -xzf "$TMP_DIR/$asset" -C "$prefix"
-  chmod +x "$prefix/mermaid-ascii"
-  ln -sfn "$prefix/mermaid-ascii" "$LOCAL_BIN/mermaid-ascii"
-  log "mermaid-ascii 已安装: $LOCAL_BIN/mermaid-ascii"
-}
+# ---------- tree-sitter ----------
 
 install_tree_sitter() {
   local asset="$TREE_SITTER_ASSET"
@@ -240,12 +217,6 @@ install_tree_sitter() {
 }
 
 install -d "$LOCAL_BIN" "$LOCAL_OPT"
-
-if [[ -x "$LOCAL_BIN/mermaid-ascii" ]] && "$LOCAL_BIN/mermaid-ascii" --help >/dev/null 2>&1; then
-  log "mermaid-ascii 已存在，跳过。"
-else
-  install_mermaid_ascii
-fi
 
 if [[ -x "$LOCAL_BIN/tree-sitter" ]] && "$LOCAL_BIN/tree-sitter" --version 2>/dev/null | grep -q "$TREE_SITTER_VERSION"; then
   log "tree-sitter ${TREE_SITTER_VERSION} 已存在，跳过。"
@@ -322,7 +293,6 @@ log "版本检查："
 rg --version | head -n 1
 fd --version
 git --version
-"$LOCAL_BIN/mermaid-ascii" --help >/dev/null && echo "mermaid-ascii ${MERMAID_ASCII_VERSION}"
 "$LOCAL_BIN/tree-sitter" --version
 
 if [[ "$SKIP_CONFIG" -eq 0 ]]; then

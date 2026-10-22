@@ -23,11 +23,10 @@ bash platforms/macos/install.sh
 | ripgrep | Homebrew（缺失时） | `brew install ripgrep` |
 | fd | Homebrew（缺失时） | `brew install fd` |
 | git | Homebrew（缺失时） | `brew install git` |
-| mermaid-ascii 1.6.1 | 官方 macOS tarball | `~/.local/opt/mermaid-ascii-1.6.1` |
 | tree-sitter CLI 0.27.1 | 官方 macOS zip | `~/.local/opt/tree-sitter-0.27.1` |
 | Node.js | Homebrew（缺失时） | 仅用于构建 latex parser |
 
-脚本会安装 lazy.nvim 及其管理的插件（fzf-lua、markview、配色），并编译 `latex` parser。然后把：
+脚本会安装 lazy.nvim 及其管理的插件（fzf-lua、markview、grug-far、配色），并编译 `latex` parser。然后把：
 
 ```text
 ~/.config/nvim  ->  <repo>/nvim
@@ -63,7 +62,7 @@ offline/dev_env-macos-<arch>.tar.gz
 bash install.sh
 ```
 
-离线包包含 Neovim、fzf、ripgrep、fd、mermaid-ascii、tree-sitter、Neovim 插件、预编译 `latex.so` 和 Neovim 配置；不包含 Homebrew 和 git。详见 [`offline/README.md`](./offline/README.md)。
+离线包包含 Neovim、fzf、ripgrep、fd、tree-sitter、Neovim 插件、预编译 `latex.so` 和 Neovim 配置；不包含 Homebrew 和 git。详见 [`offline/README.md`](./offline/README.md)。
 
 ## 验证
 
@@ -73,7 +72,6 @@ rg --version | head -1
 fd --version
 fzf --version
 git --version
-mermaid-ascii --help >/dev/null && echo mermaid-ok
 tree-sitter --version
 ```
 

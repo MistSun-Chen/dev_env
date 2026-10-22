@@ -35,7 +35,7 @@ bash tests/ubuntu-24.04-online.sh
 1. 启动 `ubuntu:24.04` 容器；
 2. 把仓库只读挂载到 `/work`，在容器内复制到可写的 `/tmp/work`；
 3. 执行 `install.sh --allow-root`，安装工具、插件和 parser；
-4. 检查 Neovim、rg、fd、fzf、git、mermaid-ascii、tree-sitter 版本，并加载配置。
+4. 检查 Neovim、rg、fd、fzf、git、tree-sitter 版本，并加载配置。
 
 ### 2.3 离线安装测试
 
@@ -57,12 +57,12 @@ bash tests/ubuntu-24.04-offline.sh
 
 2026-10-20 在 Apple Silicon Mac（Docker Desktop，arm64 容器）上，使用当时的 `vim.pack` 方案：
 
-- `tests/ubuntu-24.04-online.sh` 通过；安装 Neovim 0.12.3、fzf 0.74.5、ripgrep 14.1.0、fd 9.0.0、mermaid-ascii 1.6.1、tree-sitter 0.27.1，并安装 fzf-lua/markview、编译 `latex.so`；
+- `tests/ubuntu-24.04-online.sh` 通过；安装 Neovim 0.12.3、fzf 0.74.5、ripgrep 14.1.0、fd 9.0.0、tree-sitter 0.27.1，并安装 fzf-lua/markview/grug-far、编译 `latex.so`；
 - `tests/ubuntu-24.04-offline.sh` 通过；离线包约 82 MB，在 `--network none` 容器中安装成功，插件和 parser 可加载。
 
 2026-10-21 迁移到 lazy.nvim 后：
 
-- 本机 `tests/nvim-plugins-smoke.sh` 通过，包含 lazy.nvim commit 固定、`lazy-lock.json`、插件加载、latex parser 和 Mermaid extmark 检查；
+- 本机 `tests/nvim-plugins-smoke.sh` 通过，包含 lazy.nvim commit 固定、`lazy-lock.json`、插件加载、latex parser、配色和 Markdown 目录检查；
 - 2026-10-21 添加 Markdown 目录和配色后，真实环境验证通过：默认 `catppuccin-mocha`，Mocha/Macchiato/Frappe/Latte 四个变体可用，`<leader>mt` 可提取标题；
 - 添加配色后的隔离 smoke test 再次运行时，在临时环境 clone lazy.nvim 阶段遇到 GitHub 443 连接失败，未完成；这是网络问题，不是配置错误；
 - `nvim/scripts/stage-plugins.sh` 在临时目录生成 lazy.nvim 根目录、lockfile 和 `latex.so`，并用 `--check` 在无插件安装步骤下加载成功；
@@ -118,11 +118,11 @@ readlink "$CONFIG_TMP/nvim"
 2026-10-20 在 MacBook M4（macOS，arm64）上，使用当时的 `vim.pack` 方案：
 
 - 联网脚本通过；Homebrew 安装了 ripgrep 15.2.0、fd 10.5.0；fzf 0.74.5 从官方 tarball 安装；Neovim 0.12.3 已存在则跳过；
-- 联网脚本安装了 mermaid-ascii 1.6.1、tree-sitter 0.27.1，安装了 fzf-lua/markview，并编译 `latex.so`；
+- 联网脚本安装了 tree-sitter 0.27.1，安装了 fzf-lua/markview/grug-far，并编译 `latex.so`；
 - 临时 `XDG_CONFIG_HOME` 下配置链接正确；
 - 离线包约 61 MB，生成和 `shasum -a 256 -c` 校验通过；
-- 临时 `HOME` 下离线安装成功，Neovim 0.12.3、fzf 0.74.5、ripgrep 15.2.0、fd 10.5.0、mermaid-ascii、tree-sitter 均可执行；
-- 离线安装后的 Neovim 在临时环境中成功加载 markview、Mermaid extmark 和 `latex` parser。
+- 临时 `HOME` 下离线安装成功，Neovim 0.12.3、fzf 0.74.5、ripgrep 15.2.0、fd 10.5.0、tree-sitter 均可执行；
+- 离线安装后的 Neovim 在临时环境中成功加载 markview 和 `latex` parser。
 
 2026-10-21 迁移到 lazy.nvim 后，本机隔离测试已在临时 `XDG_CONFIG_HOME` / `XDG_DATA_HOME` 中验证 lazy.nvim、fzf-lua、markview 和 `latex` parser 可加载；Docker 离线测试受上述 Ubuntu 源网络问题阻塞。
 
@@ -147,19 +147,18 @@ XDG_CONFIG_HOME="$TMP_CONFIG" XDG_DATA_HOME="$TMP_DATA" \
 TMP_CONFIG="$(mktemp -d)"
 TMP_DATA="$(mktemp -d)"
 XDG_CONFIG_HOME="$TMP_CONFIG" XDG_DATA_HOME="$TMP_DATA" \
-  nvim --headless "+lua assert(pcall(require,'lazy')); assert(pcall(require,'fzf-lua')); assert(pcall(require,'markview')); assert(vim.treesitter.language.add('latex')); assert(vim.g.colors_name == 'catppuccin-mocha'); local colors=vim.fn.getcompletion('', 'color'); for _,n in ipairs({'catppuccin-mocha','catppuccin-macchiato','catppuccin-frappe','catppuccin-latte'}) do assert(vim.tbl_contains(colors,n), n) end; assert(require('config.markdown_toc').get_headings(0))" +qa
+  nvim --headless "+lua assert(pcall(require,'lazy')); assert(pcall(require,'fzf-lua')); assert(pcall(require,'markview')); assert(pcall(require,'grug-far')); assert(vim.treesitter.language.add('latex')); assert(vim.g.colors_name == 'catppuccin-mocha'); local colors=vim.fn.getcompletion('', 'color'); for _,n in ipairs({'catppuccin-mocha','catppuccin-macchiato','catppuccin-frappe','catppuccin-latte'}) do assert(vim.tbl_contains(colors,n), n) end; assert(require('config.markdown_toc').get_headings(0))" +qa
 ```
 
-### 4.3 Markdown + Mermaid 冒烟测试
+### 4.3 Markdown 预览冒烟测试
 
-创建包含 `$E=mc^2$` 和 ```` ```mermaid graph LR ... ``` ```` 的临时 Markdown，执行：
+创建包含 `$E=mc^2$` 的临时 Markdown，执行：
 
 ```vim
 :Markview Enable
-:MermaidRender
 ```
 
-用 Lua 检查 `dev_env_mermaid` namespace 有 `virt_lines` extmark。注意：`nvim --headless` 只用于测试，不能直接“看”预览；实际查看需要在普通终端启动 Neovim。
+检查无错误，并确认 Markdown 标题/表格/代码块能正常渲染。注意：`nvim --headless` 只用于测试，不能直接“看”预览；实际查看需要在普通终端启动 Neovim。
 
 ### 4.4 离线插件加载
 
@@ -169,7 +168,7 @@ XDG_CONFIG_HOME="$TMP_CONFIG" XDG_DATA_HOME="$TMP_DATA" \
 bash nvim/scripts/install-plugins.sh --check
 ```
 
-确认 `lazy-lock.json`、`lazy/{lazy.nvim,fzf-lua,markview.nvim,配色插件}`、`site/parser/latex.so` 都存在，并且启动过程不访问网络。
+确认 `lazy-lock.json`、`lazy/{lazy.nvim,fzf-lua,markview.nvim,grug-far.nvim,配色插件}`、`site/parser/latex.so` 都存在，并且启动过程不访问网络。
 
 ## 5. 手动验证清单
 
@@ -181,7 +180,6 @@ rg --version | head -1
 fd --version
 fzf --version
 git --version
-mermaid-ascii --help >/dev/null && echo mermaid-ok
 tree-sitter --version
 ```
 

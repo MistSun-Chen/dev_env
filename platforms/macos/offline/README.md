@@ -8,9 +8,8 @@
 - `fzf-*-darwin_*.tar.gz`：fzf 0.74.5
 - `ripgrep-*-apple-darwin.tar.gz`：ripgrep 15.2.0
 - `fd-v*-apple-darwin.tar.gz`：fd 10.5.0
-- `mermaid-ascii_Darwin_*.tar.gz`：mermaid-ascii 1.6.1
 - `tree-sitter-cli-macos-*.zip`：tree-sitter CLI 0.27.1
-- `nvim-plugins/`：lazy.nvim 根目录，含 lazy.nvim、fzf-lua、markview.nvim、配色插件（均带 `.git`）
+- `nvim-plugins/`：lazy.nvim 根目录，含 lazy.nvim、fzf-lua、markview.nvim、grug-far.nvim、配色插件（均带 `.git`）
 - `nvim-parser/latex.so`：预编译公式 parser
 - `nvim/`：Neovim 配置与 lockfile
 - `install.sh`：离线安装脚本

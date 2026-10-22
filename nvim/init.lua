@@ -66,10 +66,10 @@ if not colors_ok then
   end)
 end
 
--- Mermaid 集成不依赖第三方插件，单独加载。
-local mermaid_ok, mermaid_err = pcall(require, 'config.mermaid')
-if not mermaid_ok then
+-- 顶部 tabline：显示已打开的文件。
+local tabline_ok, tabline_err = pcall(require, 'config.tabline')
+if not tabline_ok then
   vim.schedule(function()
-    vim.notify(('dev_env: config.mermaid 加载失败：%s'):format(tostring(mermaid_err)), vim.log.levels.WARN)
+    vim.notify(('dev_env: config.tabline 加载失败：%s'):format(tostring(tabline_err)), vim.log.levels.WARN)
   end)
 end

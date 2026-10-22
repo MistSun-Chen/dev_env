@@ -84,13 +84,11 @@ case "$(uname -m)" in
   x86_64|amd64)
     FZF_ARCH="amd64"
     NVIM_ARCH="x86_64"
-    MERMAID_ASCII_ASSET="mermaid-ascii_Linux_x86_64.tar.gz"
     TREE_SITTER_ASSET="tree-sitter-cli-linux-x64.zip"
     ;;
   aarch64|arm64)
     FZF_ARCH="arm64"
     NVIM_ARCH="arm64"
-    MERMAID_ASCII_ASSET="mermaid-ascii_Linux_arm64.tar.gz"
     TREE_SITTER_ASSET="tree-sitter-cli-linux-arm64.zip"
     ;;
   *)
@@ -107,7 +105,6 @@ FZF_ASSET="fzf-${FZF_VERSION}-linux_${FZF_ARCH}.tar.gz"
 NVIM_ASSET="nvim-linux-${NVIM_ARCH}.tar.gz"
 [[ -f "$BUNDLE_DIR/$FZF_ASSET" ]] || die "缺少 $FZF_ASSET"
 [[ -f "$BUNDLE_DIR/$NVIM_ASSET" ]] || die "缺少 $NVIM_ASSET"
-[[ -f "$BUNDLE_DIR/$MERMAID_ASCII_ASSET" ]] || die "缺少 $MERMAID_ASCII_ASSET"
 [[ -f "$BUNDLE_DIR/$TREE_SITTER_ASSET" ]] || die "缺少 $TREE_SITTER_ASSET"
 [[ -d "$BUNDLE_DIR/debs" ]] || die "缺少 debs/ 目录"
 [[ -d "$BUNDLE_DIR/nvim" ]] || die "缺少 nvim/ 配置目录"
@@ -158,14 +155,6 @@ install -d "$NVIM_PREFIX"
 tar -xzf "$BUNDLE_DIR/$NVIM_ASSET" -C "$NVIM_PREFIX" --strip-components=1
 [[ -x "$NVIM_PREFIX/bin/nvim" ]] || die "Neovim 压缩包结构不符合预期。"
 ln -sfn "$NVIM_PREFIX/bin/nvim" "$LOCAL_BIN/nvim"
-
-log "安装 mermaid-ascii $MERMAID_ASCII_VERSION ..."
-MERMAID_PREFIX="$LOCAL_OPT/mermaid-ascii-${MERMAID_ASCII_VERSION}"
-rm -rf "$MERMAID_PREFIX"
-install -d "$MERMAID_PREFIX"
-tar -xzf "$BUNDLE_DIR/$MERMAID_ASCII_ASSET" -C "$MERMAID_PREFIX"
-chmod +x "$MERMAID_PREFIX/mermaid-ascii"
-ln -sfn "$MERMAID_PREFIX/mermaid-ascii" "$LOCAL_BIN/mermaid-ascii"
 
 log "安装 tree-sitter $TREE_SITTER_VERSION ..."
 TS_PREFIX="$LOCAL_OPT/tree-sitter-${TREE_SITTER_VERSION}"
@@ -219,7 +208,7 @@ PARSER_DST="$DATA_HOME/nvim/site/parser"
 install -d "$PLUGIN_DST" "$PARSER_DST"
 
 log "安装离线 Neovim 插件 ..."
-for name in lazy.nvim fzf-lua markview.nvim catppuccin; do
+for name in lazy.nvim fzf-lua markview.nvim grug-far.nvim catppuccin; do
   [[ -d "$BUNDLE_DIR/nvim-plugins/$name" ]] || die "离线包缺少插件目录: $name"
   rm -rf "$PLUGIN_DST/$name"
   cp -a "$BUNDLE_DIR/nvim-plugins/$name" "$PLUGIN_DST/$name"
@@ -254,7 +243,6 @@ elif [[ -x "$LOCAL_BIN/fd" ]]; then
   "$LOCAL_BIN/fd" --version
 fi
 git --version
-"$LOCAL_BIN/mermaid-ascii" --help >/dev/null && echo "mermaid-ascii ${MERMAID_ASCII_VERSION}"
 "$LOCAL_BIN/tree-sitter" --version
 
 if [[ "$SKIP_CONFIG" -eq 0 ]]; then

@@ -6,7 +6,7 @@
 
 - `ubuntu-24.04-online.sh`：在 Docker 里跑联网安装，并验证插件与 latex parser
 - `ubuntu-24.04-offline.sh`：先在 Docker 里生成离线包，再在 `--network none` 的容器里离线安装
-- `nvim-plugins-smoke.sh`：在本机临时 XDG 目录中安装 lazy.nvim 插件、检查配色、Markdown 目录、parser 和 Mermaid extmark
+- `nvim-plugins-smoke.sh`：在本机临时 XDG 目录中安装 lazy.nvim 插件、检查配色、Markdown 目录和 latex parser
 
 ## 前置条件
 
@@ -34,7 +34,7 @@ bash tests/ubuntu-24.04-online.sh
 2. 挂载仓库到 `/work`（只读）；
 3. 在容器内把 `/work` 复制到可写的 `/tmp/work`；
 4. 执行 `install.sh --allow-root`，安装工具、插件和 parser；
-5. 检查 Neovim、rg、fd、fzf、git、mermaid-ascii、tree-sitter 版本并加载配置。
+5. 检查 Neovim、rg、fd、fzf、git、tree-sitter 版本并加载配置。
 
 容器内的安装只写入容器自己的 `/root/.local`，测试结束后随容器删除。
 

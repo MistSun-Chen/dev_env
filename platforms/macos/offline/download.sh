@@ -68,13 +68,11 @@ case "$(uname -m)" in
     FZF_ASSET="fzf-${FZF_VERSION}-darwin_arm64.tar.gz"
     RG_ASSET="ripgrep-${RG_VERSION}-aarch64-apple-darwin.tar.gz"
     FD_ASSET="fd-v${FD_VERSION}-aarch64-apple-darwin.tar.gz"
-    MERMAID_ASCII_ASSET="mermaid-ascii_Darwin_arm64.tar.gz"
     TREE_SITTER_ASSET="tree-sitter-cli-macos-arm64.zip"
     NVIM_SHA="$NVIM_SHA256_ARM64"
     FZF_SHA="$FZF_SHA256_ARM64"
     RG_SHA="$RG_SHA256_ARM64"
     FD_SHA="$FD_SHA256_ARM64"
-    MERMAID_ASCII_SHA="$MERMAID_ASCII_SHA256_ARM64"
     TREE_SITTER_SHA="$TREE_SITTER_SHA256_ARM64"
     ;;
   x86_64)
@@ -83,13 +81,11 @@ case "$(uname -m)" in
     FZF_ASSET="fzf-${FZF_VERSION}-darwin_amd64.tar.gz"
     RG_ASSET="ripgrep-${RG_VERSION}-x86_64-apple-darwin.tar.gz"
     FD_ASSET="fd-v${FD_VERSION}-x86_64-apple-darwin.tar.gz"
-    MERMAID_ASCII_ASSET="mermaid-ascii_Darwin_x86_64.tar.gz"
     TREE_SITTER_ASSET="tree-sitter-cli-macos-x64.zip"
     NVIM_SHA="$NVIM_SHA256_X86_64"
     FZF_SHA="$FZF_SHA256_X86_64"
     RG_SHA="$RG_SHA256_X86_64"
     FD_SHA="$FD_SHA256_X86_64"
-    MERMAID_ASCII_SHA="$MERMAID_ASCII_SHA256_X86_64"
     TREE_SITTER_SHA="$TREE_SITTER_SHA256_X86_64"
     ;;
   *)
@@ -142,11 +138,6 @@ download_verify \
   "$FD_SHA"
 
 download_verify \
-  "https://github.com/AlexanderGrooff/mermaid-ascii/releases/download/${MERMAID_ASCII_VERSION}/${MERMAID_ASCII_ASSET}" \
-  "$OUT_DIR/$MERMAID_ASCII_ASSET" \
-  "$MERMAID_ASCII_SHA"
-
-download_verify \
   "https://github.com/tree-sitter/tree-sitter/releases/download/v${TREE_SITTER_VERSION}/${TREE_SITTER_ASSET}" \
   "$OUT_DIR/$TREE_SITTER_ASSET" \
   "$TREE_SITTER_SHA"
@@ -181,7 +172,6 @@ neovim=${NVIM_VERSION}
 fzf=${FZF_VERSION}
 ripgrep=${RG_VERSION}
 fd=${FD_VERSION}
-mermaid_ascii=${MERMAID_ASCII_VERSION}
 tree_sitter=${TREE_SITTER_VERSION}
 EOF
 

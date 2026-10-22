@@ -101,17 +101,13 @@ case "$(uname -m)" in
   x86_64|amd64)
     FZF_ARCH="amd64"
     NVIM_ARCH="x86_64"
-    MERMAID_ASCII_ASSET="mermaid-ascii_Linux_x86_64.tar.gz"
     TREE_SITTER_ASSET="tree-sitter-cli-linux-x64.zip"
-    MERMAID_ASCII_SHA256="$MERMAID_ASCII_SHA256_X86_64"
     TREE_SITTER_SHA256="$TREE_SITTER_SHA256_X86_64"
     ;;
   aarch64|arm64)
     FZF_ARCH="arm64"
     NVIM_ARCH="arm64"
-    MERMAID_ASCII_ASSET="mermaid-ascii_Linux_arm64.tar.gz"
     TREE_SITTER_ASSET="tree-sitter-cli-linux-arm64.zip"
-    MERMAID_ASCII_SHA256="$MERMAID_ASCII_SHA256_ARM64"
     TREE_SITTER_SHA256="$TREE_SITTER_SHA256_ARM64"
     ;;
   *)
@@ -224,11 +220,6 @@ grep -qE "[[:space:]]${FZF_ASSET}$" "$TMP_DIR/fzf-checksums.txt" || die "fzf 校
 grep -E "[[:space:]]${FZF_ASSET}$" "$TMP_DIR/fzf-checksums.txt" | (cd "$OUT_DIR" && sha256sum -c -)
 
 download_verified \
-  "https://github.com/AlexanderGrooff/mermaid-ascii/releases/download/${MERMAID_ASCII_VERSION}/${MERMAID_ASCII_ASSET}" \
-  "$OUT_DIR/$MERMAID_ASCII_ASSET" \
-  "$MERMAID_ASCII_SHA256"
-
-download_verified \
   "https://github.com/tree-sitter/tree-sitter/releases/download/v${TREE_SITTER_VERSION}/${TREE_SITTER_ASSET}" \
   "$OUT_DIR/$TREE_SITTER_ASSET" \
   "$TREE_SITTER_SHA256"
@@ -261,7 +252,6 @@ ubuntu=24.04
 arch=${NVIM_ARCH}
 neovim=${NVIM_VERSION}
 fzf=${FZF_VERSION}
-mermaid_ascii=${MERMAID_ASCII_VERSION}
 tree_sitter=${TREE_SITTER_VERSION}
 apt_packages=${APT_PACKAGES_OFFLINE}
 EOF

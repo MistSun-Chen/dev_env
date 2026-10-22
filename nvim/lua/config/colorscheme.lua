@@ -1,6 +1,6 @@
 -- 配色方案与运行时切换。
 --
--- 默认使用 Catppuccin Mocha；<leader>uc 可以切换 Catppuccin 的四种变体。
+-- 默认使用 Catppuccin Mocha；<leader>tc 可以切换 Catppuccin 的四种变体。
 -- 选择只在当前 Neovim 会话生效，重启后回到下面的 default。
 local M = {}
 
@@ -59,7 +59,7 @@ end
 
 function M.setup()
   M.apply(M.default)
-  vim.keymap.set('n', '<leader>uc', M.pick, { desc = '切换 Catppuccin 配色' })
+  vim.keymap.set('n', '<leader>tc', M.pick, { desc = '切换 Catppuccin 配色' })
 end
 
 M.setup()

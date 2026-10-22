@@ -1,7 +1,7 @@
 -- lazy.nvim 插件清单。
 --
 -- 版本策略：
---   - 使用 commit 固定 fzf-lua 和 markview.nvim；
+--   - 使用 commit 固定 fzf-lua、markview.nvim 和 grug-far.nvim；
 --   - 实际安装 revision 记录在 nvim/lazy-lock.json；
 --   - lazy.nvim 自身由 config/lazy.lua 引导安装并固定 commit。
 return {
@@ -19,6 +19,14 @@ return {
     lazy = false,
     config = function()
       require('config.markdown')
+    end,
+  },
+  {
+    'MagicDuck/grug-far.nvim',
+    commit = '91b7e58b6ffc6ddad5acb7a7c1df21257724449e',
+    lazy = false,
+    config = function()
+      require('config.search_replace')
     end,
   },
   {

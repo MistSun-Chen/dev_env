@@ -4,7 +4,7 @@
 #
 # 运行环境：联网，PATH 中已有 nvim、fzf、git、tree-sitter、cc。
 # 产物：
-#   <output>/nvim-plugins/      lazy.nvim 根目录（含 lazy.nvim、两个插件，均带 .git）
+#   <output>/nvim-plugins/      lazy.nvim 根目录（含 lazy.nvim 和已固定版本的插件，均带 .git）
 #   <output>/nvim-parser/latex.so
 #   <output>/nvim/lazy-lock.json
 #

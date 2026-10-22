@@ -1,6 +1,6 @@
 # dev_env
 
-个人开发环境仓库：按平台安装 Neovim、ripgrep、fd、fzf、git、mermaid-ascii、tree-sitter，并部署统一的 Neovim 配置与插件。
+个人开发环境仓库：按平台安装 Neovim、ripgrep、fd、fzf、git、tree-sitter，并部署统一的 Neovim 配置与插件。
 
 当前支持 Ubuntu 24.04 和 macOS（Apple Silicon / Intel），均提供联网安装与离线安装；Windows 待实现。
 

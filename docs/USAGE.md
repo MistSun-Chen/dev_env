@@ -11,7 +11,6 @@
 - fd
 - fzf
 - git（`lazy.nvim` 引导和插件安装需要）
-- `mermaid-ascii`（终端 Mermaid 文本图）
 - `tree-sitter` CLI（编译公式 parser）
 - Node.js（仅构建公式 parser 时需要，不是 Neovim 运行时依赖）
 
@@ -73,14 +72,14 @@ Ubuntu：
 
 - apt 安装 `ca-certificates`、`curl`、`git`、`ripgrep`、`fd-find`、`gcc`、`libc6-dev`、`unzip`、`nodejs`；
 - 补 `~/.local/bin/fd -> fdfind`；
-- 从官方 release 安装 Neovim 0.12.3、fzf 0.74.5、mermaid-ascii 1.6.1、tree-sitter 0.27.1，并校验 SHA256；
+- 从官方 release 安装 Neovim 0.12.3、fzf 0.74.5、tree-sitter 0.27.1，并校验 SHA256；
 - 备份并链接 `~/.config/nvim -> <repo>/nvim`；
 - 调用 `nvim/scripts/install-plugins.sh` 安装插件，调用 `build-latex-parser.sh` 编译公式 parser。
 
 macOS：
 
 - 缺失时用 Homebrew 安装 `ripgrep`、`fd`、`git`、`node`；
-- 从官方 release 安装 Neovim 0.12.3、fzf 0.74.5、mermaid-ascii 1.6.1、tree-sitter 0.27.1，并校验 SHA256；
+- 从官方 release 安装 Neovim 0.12.3、fzf 0.74.5、tree-sitter 0.27.1，并校验 SHA256；
 - 备份并链接 `~/.config/nvim -> <repo>/nvim`；
 - 调用 `nvim/scripts/install-plugins.sh` 安装插件，调用 `build-latex-parser.sh` 编译公式 parser。
 
@@ -111,6 +110,7 @@ bash nvim/scripts/install-plugins.sh --check
 - `lazy.nvim`
 - `fzf-lua`
 - `markview.nvim`
+- `grug-far.nvim`
 - `catppuccin` 配色插件
 
 插件安装位置：
@@ -119,6 +119,7 @@ bash nvim/scripts/install-plugins.sh --check
 ~/.local/share/nvim/lazy/lazy.nvim
 ~/.local/share/nvim/lazy/fzf-lua
 ~/.local/share/nvim/lazy/markview.nvim
+~/.local/share/nvim/lazy/grug-far.nvim
 ~/.local/share/nvim/lazy/catppuccin
 ```
 
@@ -144,32 +145,51 @@ parser 安装到：
 ${XDG_DATA_HOME:-$HOME/.local/share}/nvim/site/parser/latex.so
 ```
 
-### 3.3 Markdown 预览
+### 3.3 搜索与替换
+
+| 键位/命令 | 功能 |
+|---|---|
+| `<leader>fg` | 全局搜索；可输入 `query -- *.lua '!vendor/*'` 限定/排除文件 |
+| `<leader>fc` | 当前 buffer 搜索 |
+| `<leader>fw` | 搜索光标下单词 |
+| `<leader>fv` | visual 模式搜索选中文本 |
+| `<leader>fs` | 按路径 + glob 搜索，`!` 开头排除 |
+| `<leader>sr` | 搜索并替换（grug-far）；visual 模式限制在选区内 |
+| `<leader>sR` | 当前文件搜索并替换 |
+
+grug-far 内部：`<Tab>` 切换输入框，`<Space>r` 执行 Replace，`<Space>c` 关闭，`<Space>i` 预览；Paths 是搜索路径，Files Filter 是文件 glob，Flags 是额外 rg 参数。`<Esc>` 只退出插入模式，不关闭 grug-far。
+
+### 3.4 Buffer 与 tabline
+
+| 键位/命令 | 功能 |
+|---|---|
+| `<leader>bs` | 按 buffer 名称/路径过滤并切换（不搜内容） |
+| `<leader>bn` / `<leader>bp` | 下一个 / 上一个 buffer |
+| `<leader>bd` | 关闭当前 buffer |
+
+顶部 tabline 显示已打开文件，当前 buffer 高亮，修改过的文件显示 `+`；左键点击标签可切换。
+
+### 3.5 Markdown 预览
 
 打开 Markdown 文件后：
 
 | 键位/命令 | 功能 |
 |---|---|
 | `<leader>mt` | Markdown 标题目录选择器 |
-| `<leader>mp` / `:Markview Toggle` | 当前 buffer 预览开关 |
+| `<leader>mp` / `:Markview Toggle` | Markdown 预览开关（所有已附加 buffer） |
+| `:Markview toggle` | 只开关当前 buffer 的预览 |
 | `<leader>ms` / `:Markview splitToggle` | 分屏预览 |
-| `<leader>mm` / `:MermaidRender` | 重新渲染 Mermaid 块 |
-| `<leader>uc` / `:FzfLua colorschemes` | 切换 Catppuccin 变体 |
+| `<leader>tc` / `:FzfLua colorschemes` | 切换 Catppuccin 变体 |
 
 默认配色是 `catppuccin-mocha`；配色切换只在当前 Neovim 会话生效。
-| `:MermaidClear` | 清除 Mermaid 文本图 |
 
 能力与限制：
 
 - 标题、表格、代码块、引用、链接在 buffer 内渲染；
 - `$...$` / `$$...$$` 由 markview 转成 Unicode 近似公式；
-- `graph` / `flowchart`、`sequenceDiagram`、`erDiagram` 渲染为终端文本图；
-- 其他 Mermaid 类型保留源码并提示；
-- 不依赖浏览器，SSH/无 GUI 终端可用；
-- 公式不是 TeX 排版，复杂公式可能不理想；
-- Mermaid 是文本图，窄终端会压缩或提示。
-
-需要高保真 KaTeX/Mermaid 时，后续可增加可选浏览器预览；它不是当前默认方案。
+- `mermaid` 代码块按普通代码块显示，不做渲染；
+- Markdown 本地图片按链接文本显示，不显示图片像素；
+- 公式不是 TeX 排版，复杂公式可能不理想。
 
 ## 4. 离线安装
 
@@ -201,7 +221,7 @@ bash install.sh
 
 说明：
 
-- 离线包包含 apt deb、Neovim、fzf、mermaid-ascii、tree-sitter、Neovim 插件、预编译 `latex.so`、Neovim 配置和 `SHA256SUMS`；
+- 离线包包含 apt deb、Neovim、fzf、tree-sitter、Neovim 插件、预编译 `latex.so`、Neovim 配置和 `SHA256SUMS`；
 - 安装使用 `dpkg -i` + `dpkg --configure -a`，不访问网络；
 - 下载端和目标端必须同为 Ubuntu 24.04、同一架构（`x86_64` / `arm64`）；
 - `download.sh` 会递归收集依赖，并排除构建机已安装的包；目标按干净的 Ubuntu 24.04 处理。
@@ -238,7 +258,7 @@ bash install.sh
 
 说明：
 
-- 离线包包含 Neovim、fzf、ripgrep、fd、mermaid-ascii、tree-sitter、Neovim 插件、预编译 `latex.so`、Neovim 配置和 `SHA256SUMS`；
+- 离线包包含 Neovim、fzf、ripgrep、fd、tree-sitter、Neovim 插件、预编译 `latex.so`、Neovim 配置和 `SHA256SUMS`；
 - 不包含 Homebrew 和 git；macOS 通常已有 Xcode Command Line Tools 提供的 `git`；
 - Apple Silicon 和 Intel 的包不能混用；
 - 安装到 `~/.local/opt/`，命令链接到 `~/.local/bin/`。
@@ -276,7 +296,7 @@ true true true true a true
 验证插件与公式 parser：
 
 ```sh
-nvim --headless "+lua assert(pcall(require,'lazy')); assert(pcall(require,'fzf-lua')); assert(pcall(require,'markview')); assert(vim.treesitter.language.add('latex'))" +qa
+nvim --headless "+lua assert(pcall(require,'lazy')); assert(pcall(require,'fzf-lua')); assert(pcall(require,'markview')); assert(pcall(require,'grug-far')); assert(vim.treesitter.language.add('latex'))" +qa
 ```
 
 交互检查：
@@ -314,7 +334,7 @@ macOS 如果已有 `/usr/local/bin/nvim`，它可能优先于 `~/.local/bin` 被
 - macOS：`platforms/macos/versions.env`
 - 公式 parser：`nvim/scripts/versions.env`
 
-修改 `NVIM_VERSION` / `FZF_VERSION` / `RG_VERSION` / `FD_VERSION` / `MERMAID_ASCII_VERSION` / `TREE_SITTER_VERSION` 时，必须同步更新对应的 SHA256，否则下载会校验失败。修改 tree-sitter-latex 版本时，同步更新 `nvim/scripts/versions.env` 中的 URL/commit/SHA256，并重新生成离线包。
+修改 `NVIM_VERSION` / `FZF_VERSION` / `RG_VERSION` / `FD_VERSION` / `TREE_SITTER_VERSION` 时，必须同步更新对应的 SHA256，否则下载会校验失败。修改 tree-sitter-latex 版本时，同步更新 `nvim/scripts/versions.env` 中的 URL/commit/SHA256，并重新生成离线包。
 
 也可以在运行时覆盖：
 
@@ -336,8 +356,8 @@ mv ~/.config/nvim.bak.YYYYMMDD-HHMMSS ~/.config/nvim
 
 ```sh
 rm -rf ~/.local/opt/nvim-0.12.3 ~/.local/opt/fzf-0.74.5
-rm -rf ~/.local/opt/mermaid-ascii-1.6.1 ~/.local/opt/tree-sitter-0.27.1
-rm -f ~/.local/bin/nvim ~/.local/bin/fzf ~/.local/bin/mermaid-ascii ~/.local/bin/tree-sitter
+rm -rf ~/.local/opt/tree-sitter-0.27.1
+rm -f ~/.local/bin/nvim ~/.local/bin/fzf ~/.local/bin/tree-sitter
 
 # 插件和公式 parser
 rm -rf ~/.local/share/nvim/lazy
