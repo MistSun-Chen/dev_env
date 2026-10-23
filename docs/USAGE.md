@@ -111,6 +111,7 @@ bash nvim/scripts/install-plugins.sh --check
 - `fzf-lua`
 - `markview.nvim`
 - `grug-far.nvim`
+- `neo-tree.nvim` 及其依赖 `nui.nvim`、`plenary.nvim`
 - `catppuccin` 配色插件
 
 插件安装位置：
@@ -120,6 +121,9 @@ bash nvim/scripts/install-plugins.sh --check
 ~/.local/share/nvim/lazy/fzf-lua
 ~/.local/share/nvim/lazy/markview.nvim
 ~/.local/share/nvim/lazy/grug-far.nvim
+~/.local/share/nvim/lazy/neo-tree.nvim
+~/.local/share/nvim/lazy/nui.nvim
+~/.local/share/nvim/lazy/plenary.nvim
 ~/.local/share/nvim/lazy/catppuccin
 ```
 
@@ -159,7 +163,19 @@ ${XDG_DATA_HOME:-$HOME/.local/share}/nvim/site/parser/latex.so
 
 grug-far 内部：`<Tab>` 切换输入框，`<Space>r` 执行 Replace，`<Space>c` 关闭，`<Space>i` 预览；Paths 是搜索路径，Files Filter 是文件 glob，Flags 是额外 rg 参数。`<Esc>` 只退出插入模式，不关闭 grug-far。
 
-### 3.4 Buffer 与 tabline
+### 3.4 文件树
+
+| 键位/命令 | 功能 |
+|---|---|
+| `<leader>et` | 打开/关闭文件树（explorer toggle），打开时定位当前文件 |
+
+文件树使用 neo-tree.nvim，默认在左侧显示文件系统；支持 Git 状态、诊断，外部改动会通过 libuv 自动刷新。切换 buffer 时文件树会跟随当前文件。
+
+- `/`：neo-tree 的递归模糊过滤（不是 fzf）；`<C-j>` / `<C-k>`（或 `<C-n>` / `<C-p>` / 方向键）移动，`<Enter>` 打开。大项目里慢的话可以用 `f`，输入完按 Enter 才过滤。
+- 宽度默认 32；路径层级变深时会自动加宽，只增不减，不会自动缩回。
+- 文件树窗口内用 `?` 查看完整键位，`q` 关闭。
+
+### 3.5 Buffer 与 tabline
 
 | 键位/命令 | 功能 |
 |---|---|
@@ -169,7 +185,7 @@ grug-far 内部：`<Tab>` 切换输入框，`<Space>r` 执行 Replace，`<Space>
 
 顶部 tabline 显示已打开文件，当前 buffer 高亮，修改过的文件显示 `+`；左键点击标签可切换。
 
-### 3.5 Markdown 预览
+### 3.6 Markdown 预览
 
 打开 Markdown 文件后：
 
@@ -296,7 +312,7 @@ true true true true a true
 验证插件与公式 parser：
 
 ```sh
-nvim --headless "+lua assert(pcall(require,'lazy')); assert(pcall(require,'fzf-lua')); assert(pcall(require,'markview')); assert(pcall(require,'grug-far')); assert(vim.treesitter.language.add('latex'))" +qa
+nvim --headless "+lua assert(pcall(require,'lazy')); assert(pcall(require,'fzf-lua')); assert(pcall(require,'markview')); assert(pcall(require,'grug-far')); assert(pcall(require,'neo-tree')); assert(vim.treesitter.language.add('latex')); assert(vim.fn.maparg('<leader>et','n') ~= ''); assert(vim.fn.maparg('<leader>er','n') == '')" +qa
 ```
 
 交互检查：

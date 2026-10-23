@@ -17,6 +17,7 @@
 - **lazy.nvim**：插件管理器，由 `lua/config/lazy.lua` 引导安装
 - **fzf-lua**：找文件、全局/当前 buffer/选区/路径搜索、切换 buffer、最近文件
 - **grug-far.nvim**：搜索并替换，支持项目、当前文件、选区范围和 glob/路径过滤
+- **neo-tree.nvim**：侧边栏文件树，支持文件操作、Git 状态和诊断
 - **markview.nvim**：在 Neovim buffer 内渲染 Markdown
 - **Catppuccin**：默认配色，提供 Mocha、Macchiato、Frappe、Latte 四种变体；运行时用 `<leader>tc` 切换
 - **latex Tree-sitter parser**：markview 公式渲染所需，由本地脚本编译
@@ -30,13 +31,16 @@ init.lua
         ├── config/plugins.lua
         ├── fzf-lua
         ├── grug-far.nvim
+        ├── neo-tree.nvim
+        │   ├── nui.nvim
+        │   └── plenary.nvim
         ├── markview.nvim
         └── catppuccin
 ```
 
 默认配色是 `catppuccin-mocha`；`<leader>tc` 会打开 Catppuccin 变体选择器，支持实时预览。
 
-顶部 tabline 由内置 `tabline` 实现，显示所有已打开文件；文件树、LSP、补全等仍未加入，需要时再逐步补。
+顶部 tabline 由内置 `tabline` 实现，显示所有已打开文件；文件树由 neo-tree 提供，LSP、补全等仍未加入，需要时再逐步补。
 
 ## 安装方式
 
@@ -67,7 +71,7 @@ bash platforms/macos/install.sh
 
 ### 插件安装 / 更新
 
-插件清单和版本在 `lua/config/plugins.lua`。lazy.nvim 自身固定到 `lua/config/lazy.lua` 中的 commit；fzf-lua、markview.nvim、grug-far.nvim 和配色插件的实际 revision 由 `lazy-lock.json` 固定。
+插件清单和版本在 `lua/config/plugins.lua`。lazy.nvim 自身固定到 `lua/config/lazy.lua` 中的 commit；fzf-lua、markview.nvim、grug-far.nvim、neo-tree.nvim 及其依赖和配色插件的实际 revision 由 `lazy-lock.json` 固定。
 
 ```sh
 # 联网安装缺失插件（首次安装或新增插件后）
@@ -88,7 +92,7 @@ bash nvim/scripts/install-plugins.sh
 1. 检查 `nvim`、`git`、`fzf`；
 2. 必要时把 `~/.config/nvim` 链接到仓库；
 3. 执行 `nvim --headless "+Lazy! install"`，由 lazy.nvim 安装缺失插件；
-4. 检查 `lazy.nvim`、`fzf-lua`、`markview.nvim`、`grug-far.nvim`、配色插件目录和 `lazy-lock.json`；
+4. 检查 `lazy.nvim`、`fzf-lua`、`markview.nvim`、`grug-far.nvim`、`neo-tree.nvim`、`nui.nvim`、`plenary.nvim`、配色插件目录和 `lazy-lock.json`；
 5. 验证插件可以被 `require`。
 
 插件安装位置：
@@ -98,6 +102,9 @@ bash nvim/scripts/install-plugins.sh
 ~/.local/share/nvim/lazy/fzf-lua
 ~/.local/share/nvim/lazy/markview.nvim
 ~/.local/share/nvim/lazy/grug-far.nvim
+~/.local/share/nvim/lazy/neo-tree.nvim
+~/.local/share/nvim/lazy/nui.nvim
+~/.local/share/nvim/lazy/plenary.nvim
 ```
 
 `lazy-lock.json` 位于配置目录（软链接模式下就是仓库的 `nvim/lazy-lock.json`），需要提交到 git。
@@ -105,7 +112,7 @@ bash nvim/scripts/install-plugins.sh
 已有插件需要升级时，在 Neovim 中执行：
 
 ```vim
-:Lazy update fzf-lua markview.nvim grug-far.nvim
+:Lazy update fzf-lua markview.nvim grug-far.nvim neo-tree.nvim nui.nvim plenary.nvim
 ```
 
 这样只更新这些插件，不会顺带移动 lazy.nvim 自身的固定 commit。
@@ -151,6 +158,7 @@ Windows 安装脚本尚未实现；当前以复制方式为准，后续会在 `p
 | `<leader>bn` | 下一个 buffer |
 | `<leader>bp` | 上一个 buffer |
 | `<leader>bd` | 关闭当前 buffer |
+| `<leader>et` | 文件树开关（explorer toggle），打开时定位当前文件 |
 | `<leader>sr` | 搜索并替换（grug-far）；visual 模式限制在选区内 |
 | `<leader>sR` | 当前文件搜索并替换 |
 | `<leader>mt` | Markdown 目录（按标题跳转） |
@@ -163,6 +171,9 @@ Windows 安装脚本尚未实现；当前以复制方式为准，后续会在 `p
 - grug-far 内部用 `<localleader>`（这里也是空格）：`<Tab>` 切换输入框，`<Space>r` 执行 Replace，`<Space>c` 关闭，`<Space>i` 预览；`Paths` 是搜索路径，`Files Filter` 是文件 glob，`Flags` 是额外 rg 参数，正常替换不需要 `Sync`。`<Esc>` 只退出插入模式，不关闭 grug-far。
 - grug-far 结果区用 `j` / `k` 移动；`<Up>` / `<Down>` 打开的是匹配所在的**原文件预览**，不是 diff。替换前后的差异在结果区显示（默认 `showReplaceDiff`）。
 - 顶部 tabline 显示已打开文件；左键点击切换，`<leader>bn` / `<leader>bp` 上一个/下一个，`<leader>bd` 关闭。`<leader>bs` 按 buffer 名称/路径过滤，不搜内容。
+- 文件树用 `<leader>et` 开关；打开时会跟随并定位当前文件。文件树内的展开/折叠、新建、重命名等使用 neo-tree 默认键位，可用 `?` 查看。
+- 文件树里的 `/` 是 neo-tree 的递归模糊过滤，不是 fzf：用 `<C-j>` / `<C-k>`（或 `<C-n>` / `<C-p>` / 方向键）移动，`<Enter>` 打开。要按文件名快速全局跳转仍用 `<leader>ff`；大项目里 `/` 慢的话可以用 `f`（输入完按 Enter 才过滤）。
+- 文件树宽度默认 32；路径层级变深时会自动加宽（`auto_expand_width`），只增不减，不会自动缩回。
 - fzf 列表里用 `<C-j>` / `<C-k>`（或方向键）移动，`<Enter>` 打开，`<Esc>` 取消；buffer picker 顶部也会显示这行提示。
 
 命令：
@@ -232,6 +243,7 @@ catppuccin-mocha
 - `shortmess` 应包含 `I`
 - normal / insert 模式按方向键，应出现 `Use h/l/k/j` 提示
 - 按 `Q` 不应当被禁用；它保留 Neovim 默认行为
+- 按 `<leader>et` 应打开/关闭左侧文件树，并定位当前文件
 - 打开一个 Markdown 文件，按 `<leader>mt` 应弹出标题选择器
 - 按 `<leader>tc` 应打开配色选择器，并可以实时预览
 - `mermaid` 代码块按普通代码块显示，不出现图表或额外提示

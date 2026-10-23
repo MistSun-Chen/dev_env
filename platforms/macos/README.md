@@ -26,7 +26,7 @@ bash platforms/macos/install.sh
 | tree-sitter CLI 0.27.1 | 官方 macOS zip | `~/.local/opt/tree-sitter-0.27.1` |
 | Node.js | Homebrew（缺失时） | 仅用于构建 latex parser |
 
-脚本会安装 lazy.nvim 及其管理的插件（fzf-lua、markview、grug-far、配色），并编译 `latex` parser。然后把：
+脚本会安装 lazy.nvim 及其管理的插件（fzf-lua、markview、grug-far、neo-tree、配色），并编译 `latex` parser。然后把：
 
 ```text
 ~/.config/nvim  ->  <repo>/nvim
