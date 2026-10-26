@@ -112,6 +112,7 @@ bash nvim/scripts/install-plugins.sh --check
 - `markview.nvim`
 - `grug-far.nvim`
 - `neo-tree.nvim` 及其依赖 `nui.nvim`、`plenary.nvim`
+- `nvim-lspconfig`、`lazydev.nvim`
 - `catppuccin` 配色插件
 
 插件安装位置：
@@ -124,6 +125,8 @@ bash nvim/scripts/install-plugins.sh --check
 ~/.local/share/nvim/lazy/neo-tree.nvim
 ~/.local/share/nvim/lazy/nui.nvim
 ~/.local/share/nvim/lazy/plenary.nvim
+~/.local/share/nvim/lazy/nvim-lspconfig
+~/.local/share/nvim/lazy/lazydev.nvim
 ~/.local/share/nvim/lazy/catppuccin
 ```
 
@@ -163,6 +166,8 @@ ${XDG_DATA_HOME:-$HOME/.local/share}/nvim/site/parser/latex.so
 
 grug-far 内部：`<Tab>` 切换输入框，`<Space>r` 执行 Replace，`<Space>c` 关闭，`<Space>i` 预览；Paths 是搜索路径，Files Filter 是文件 glob，Flags 是额外 rg 参数。`<Esc>` 只退出插入模式，不关闭 grug-far。
 
+完整键位速查见 [`nvim/keymaps.md`](../nvim/keymaps.md)。
+
 ### 3.4 文件树
 
 | 键位/命令 | 功能 |
@@ -185,7 +190,49 @@ grug-far 内部：`<Tab>` 切换输入框，`<Space>r` 执行 Replace，`<Space>
 
 顶部 tabline 显示已打开文件，当前 buffer 高亮，修改过的文件显示 `+`；左键点击标签可切换。
 
-### 3.6 Markdown 预览
+### 3.6 LSP
+
+当前只启用 Lua（`lua_ls`）。插件由 lazy.nvim 安装，language server 需要手动安装；平台脚本和离线包暂不包含 server。
+
+手动安装 `lua-language-server`（Apple Silicon macOS 示例）：
+
+```sh
+mkdir -p ~/.local/opt/lua-language-server-3.19.2 ~/.local/bin
+curl -L -o /tmp/lua-language-server.tar.gz \
+  https://github.com/LuaLS/lua-language-server/releases/download/3.19.2/lua-language-server-3.19.2-darwin-arm64.tar.gz
+tar -xzf /tmp/lua-language-server.tar.gz -C ~/.local/opt/lua-language-server-3.19.2
+rm -f ~/.local/bin/lua-language-server
+cat > ~/.local/bin/lua-language-server <<'EOF'
+#!/bin/sh
+exec "$HOME/.local/opt/lua-language-server-3.19.2/bin/lua-language-server" "$@"
+EOF
+chmod +x ~/.local/bin/lua-language-server
+lua-language-server --version
+```
+
+Linux / Intel Mac 换成对应平台的压缩包；确保 `~/.local/bin` 在 `PATH` 中。
+
+> 不要直接建符号链接：LuaLS 的 bootstrap 二进制按自身路径查找 `main.lua`，符号链接会去 `~/.local/bin/main.lua` 找而失败；用上面的绝对路径 wrapper。
+
+| 键位 | 功能 |
+|---|---|
+| `gd` | 跳转定义 |
+| `K` | 悬停文档 |
+| `grn` | 重命名 |
+| `grr` | 查看引用 |
+| `gri` | 查看实现 |
+| `gra` | code action |
+| `[d` / `]d` | 上一个/下一个诊断 |
+| `<leader>ld` | 当前文件诊断列表 |
+| `<leader>ls` | 当前文件符号列表 |
+
+补全由 Neovim 原生 `vim.lsp.completion` 提供：`<C-n>` / `<C-p>` 选择，`<C-y>` 接受，`<C-x><C-o>` 手动触发。诊断默认行内显示。
+
+LuaLS 首次打开项目需要索引，索引完成前 `K` 可能暂时没有结果；`grn` 只对可重命名的符号生效，`gra` 只在当前位置有 code action 时才有内容，这两类提示不一定是配置错误。`grn` 对局部变量只改当前作用域，对模块字段/导出函数可能跨文件修改 LSP 引用；建议先用 `grr` 看引用范围。
+
+`gra` 示例：写 `local x = missing_name`，等出现未定义全局诊断后，把光标放到 `missing_name` 上按 `gra`，会出现 `Mark missing_name as defined global`、`Disable diagnostics on this line` 等选项。
+
+### 3.7 Markdown 预览
 
 打开 Markdown 文件后：
 
@@ -312,7 +359,7 @@ true true true true a true
 验证插件与公式 parser：
 
 ```sh
-nvim --headless "+lua assert(pcall(require,'lazy')); assert(pcall(require,'fzf-lua')); assert(pcall(require,'markview')); assert(pcall(require,'grug-far')); assert(pcall(require,'neo-tree')); assert(vim.treesitter.language.add('latex')); assert(vim.fn.maparg('<leader>et','n') ~= ''); assert(vim.fn.maparg('<leader>er','n') == '')" +qa
+nvim --headless "+lua assert(pcall(require,'lazy')); assert(pcall(require,'fzf-lua')); assert(pcall(require,'markview')); assert(pcall(require,'grug-far')); assert(pcall(require,'neo-tree')); assert(vim.treesitter.language.add('latex')); assert(vim.fn.maparg('<leader>et','n') ~= ''); assert(vim.fn.maparg('<leader>er','n') == ''); assert(vim.lsp.config ~= nil); assert(vim.fn.maparg('<leader>ld','n') ~= ''); assert(vim.fn.maparg('<leader>ls','n') ~= '')" +qa
 ```
 
 交互检查：

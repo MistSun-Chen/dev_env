@@ -18,6 +18,8 @@
 - **fzf-lua**：找文件、全局/当前 buffer/选区/路径搜索、切换 buffer、最近文件
 - **grug-far.nvim**：搜索并替换，支持项目、当前文件、选区范围和 glob/路径过滤
 - **neo-tree.nvim**：侧边栏文件树，支持文件操作、Git 状态和诊断
+- **nvim-lspconfig**：各语言 LSP server 的基础配置
+- **lazydev.nvim**：让 LuaLS 识别 Neovim/Lua 插件 API
 - **markview.nvim**：在 Neovim buffer 内渲染 Markdown
 - **Catppuccin**：默认配色，提供 Mocha、Macchiato、Frappe、Latte 四种变体；运行时用 `<leader>tc` 切换
 - **latex Tree-sitter parser**：markview 公式渲染所需，由本地脚本编译
@@ -34,13 +36,15 @@ init.lua
         ├── neo-tree.nvim
         │   ├── nui.nvim
         │   └── plenary.nvim
+        ├── nvim-lspconfig
+        ├── lazydev.nvim
         ├── markview.nvim
         └── catppuccin
 ```
 
 默认配色是 `catppuccin-mocha`；`<leader>tc` 会打开 Catppuccin 变体选择器，支持实时预览。
 
-顶部 tabline 由内置 `tabline` 实现，显示所有已打开文件；文件树由 neo-tree 提供，LSP、补全等仍未加入，需要时再逐步补。
+顶部 tabline 由内置 `tabline` 实现，显示所有已打开文件；文件树由 neo-tree 提供，Lua LSP 与原生补全已接入，Python/Bash 等 server 需要时再逐步补。
 
 ## 安装方式
 
@@ -71,7 +75,7 @@ bash platforms/macos/install.sh
 
 ### 插件安装 / 更新
 
-插件清单和版本在 `lua/config/plugins.lua`。lazy.nvim 自身固定到 `lua/config/lazy.lua` 中的 commit；fzf-lua、markview.nvim、grug-far.nvim、neo-tree.nvim 及其依赖和配色插件的实际 revision 由 `lazy-lock.json` 固定。
+插件清单和版本在 `lua/config/plugins.lua`。lazy.nvim 自身固定到 `lua/config/lazy.lua` 中的 commit；fzf-lua、markview.nvim、grug-far.nvim、neo-tree.nvim、nvim-lspconfig、lazydev.nvim 及其依赖和配色插件的实际 revision 由 `lazy-lock.json` 固定。
 
 ```sh
 # 联网安装缺失插件（首次安装或新增插件后）
@@ -92,7 +96,7 @@ bash nvim/scripts/install-plugins.sh
 1. 检查 `nvim`、`git`、`fzf`；
 2. 必要时把 `~/.config/nvim` 链接到仓库；
 3. 执行 `nvim --headless "+Lazy! install"`，由 lazy.nvim 安装缺失插件；
-4. 检查 `lazy.nvim`、`fzf-lua`、`markview.nvim`、`grug-far.nvim`、`neo-tree.nvim`、`nui.nvim`、`plenary.nvim`、配色插件目录和 `lazy-lock.json`；
+4. 检查 `lazy.nvim`、`fzf-lua`、`markview.nvim`、`grug-far.nvim`、`neo-tree.nvim`、`nui.nvim`、`plenary.nvim`、`nvim-lspconfig`、`lazydev.nvim`、配色插件目录和 `lazy-lock.json`；
 5. 验证插件可以被 `require`。
 
 插件安装位置：
@@ -105,6 +109,8 @@ bash nvim/scripts/install-plugins.sh
 ~/.local/share/nvim/lazy/neo-tree.nvim
 ~/.local/share/nvim/lazy/nui.nvim
 ~/.local/share/nvim/lazy/plenary.nvim
+~/.local/share/nvim/lazy/nvim-lspconfig
+~/.local/share/nvim/lazy/lazydev.nvim
 ```
 
 `lazy-lock.json` 位于配置目录（软链接模式下就是仓库的 `nvim/lazy-lock.json`），需要提交到 git。
@@ -112,7 +118,7 @@ bash nvim/scripts/install-plugins.sh
 已有插件需要升级时，在 Neovim 中执行：
 
 ```vim
-:Lazy update fzf-lua markview.nvim grug-far.nvim neo-tree.nvim nui.nvim plenary.nvim
+:Lazy update fzf-lua markview.nvim grug-far.nvim neo-tree.nvim nui.nvim plenary.nvim nvim-lspconfig lazydev.nvim
 ```
 
 这样只更新这些插件，不会顺带移动 lazy.nvim 自身的固定 commit。
@@ -145,6 +151,8 @@ Windows 安装脚本尚未实现；当前以复制方式为准，后续会在 `p
 
 ## 键位
 
+完整键位（含 LSP 默认键位、grug-far/neo-tree/fzf 内部键位）见 [`keymaps.md`](./keymaps.md)。
+
 | 键位 | 功能 |
 |---|---|
 | `<leader>ff` | 查找文件 |
@@ -175,6 +183,59 @@ Windows 安装脚本尚未实现；当前以复制方式为准，后续会在 `p
 - 文件树里的 `/` 是 neo-tree 的递归模糊过滤，不是 fzf：用 `<C-j>` / `<C-k>`（或 `<C-n>` / `<C-p>` / 方向键）移动，`<Enter>` 打开。要按文件名快速全局跳转仍用 `<leader>ff`；大项目里 `/` 慢的话可以用 `f`（输入完按 Enter 才过滤）。
 - 文件树宽度默认 32；路径层级变深时会自动加宽（`auto_expand_width`），只增不减，不会自动缩回。
 - fzf 列表里用 `<C-j>` / `<C-k>`（或方向键）移动，`<Enter>` 打开，`<Esc>` 取消；buffer picker 顶部也会显示这行提示。
+
+## LSP
+
+当前只启用 Lua（`lua_ls`）。插件由 lazy.nvim 安装，但 **language server 需要手动安装**，平台安装脚本和离线包暂不包含它。
+
+手动安装 `lua-language-server`（以 Apple Silicon macOS 为例）：
+
+```sh
+mkdir -p ~/.local/opt/lua-language-server-3.19.2 ~/.local/bin
+curl -L -o /tmp/lua-language-server.tar.gz \
+  https://github.com/LuaLS/lua-language-server/releases/download/3.19.2/lua-language-server-3.19.2-darwin-arm64.tar.gz
+tar -xzf /tmp/lua-language-server.tar.gz -C ~/.local/opt/lua-language-server-3.19.2
+rm -f ~/.local/bin/lua-language-server
+cat > ~/.local/bin/lua-language-server <<'EOF'
+#!/bin/sh
+exec "$HOME/.local/opt/lua-language-server-3.19.2/bin/lua-language-server" "$@"
+EOF
+chmod +x ~/.local/bin/lua-language-server
+lua-language-server --version
+```
+
+Linux 或 Intel Mac 把压缩包名换成对应平台即可；确保 `~/.local/bin` 在 `PATH` 中。
+
+> 不要直接给 `~/.local/bin/lua-language-server` 建符号链接：LuaLS 的 bootstrap 二进制会按自身路径查找 `main.lua`，经符号链接启动时会去 `~/.local/bin/main.lua` 找而失败，所以这里用绝对路径的 wrapper。
+
+LSP 键位：
+
+| 键位 | 功能 |
+|---|---|
+| `gd` | 跳转定义 |
+| `K` | 悬停文档 |
+| `grn` | 重命名 |
+| `grr` | 查看引用 |
+| `gri` | 查看实现 |
+| `gra` | code action |
+| `[d` / `]d` | 上一个/下一个诊断 |
+| `<leader>ld` | 当前文件诊断列表（fzf-lua） |
+| `<leader>ls` | 当前文件符号列表（fzf-lua） |
+
+补全使用 Neovim 原生 `vim.lsp.completion`：`<C-n>` / `<C-p>` 选择，`<C-y>` 接受，`<C-x><C-o>` 手动触发。诊断默认显示在行内，`<leader>ld` 可打开列表。
+
+说明：
+
+- LuaLS 首次打开项目时需要索引；索引完成前 `K` 可能显示 `Workspace loading` 或暂时没有结果，稍等几秒再试。
+- `grn` 只对 LuaLS 判断为可重命名的符号生效；在 `vim` 这类全局符号上会提示无法重命名。局部变量只改当前作用域；模块字段/导出函数可能跨文件，改的是 LSP 引用而不是文本匹配，建议先用 `grr` 看引用范围。
+- `gra` 只在当前位置确实有 code action 时才有内容；LuaLS 提供的 action 较少，提示 `No code actions available` 属于正常现象。例如 `local x = missing_name` 出现未定义全局诊断后，光标放到 `missing_name` 上按 `gra`，会出现 `Mark missing_name as defined global`、`Disable diagnostics on this line` 等选项。
+
+验证：
+
+```vim
+:checkhealth vim.lsp
+:LspInfo
+```
 
 命令：
 
@@ -244,6 +305,7 @@ catppuccin-mocha
 - normal / insert 模式按方向键，应出现 `Use h/l/k/j` 提示
 - 按 `Q` 不应当被禁用；它保留 Neovim 默认行为
 - 按 `<leader>et` 应打开/关闭左侧文件树，并定位当前文件
+- 打开一个 Lua 文件，`:LspInfo` 应显示 `lua_ls`；`K` / `gd` / `grr` 应可用
 - 打开一个 Markdown 文件，按 `<leader>mt` 应弹出标题选择器
 - 按 `<leader>tc` 应打开配色选择器，并可以实时预览
 - `mermaid` 代码块按普通代码块显示，不出现图表或额外提示

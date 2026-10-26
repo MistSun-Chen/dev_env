@@ -1,8 +1,8 @@
 -- lazy.nvim 插件清单。
 --
 -- 版本策略：
---   - 使用 commit 固定 fzf-lua、markview.nvim、grug-far.nvim、neo-tree.nvim
---     及其依赖；
+--   - 使用 commit 固定 fzf-lua、markview.nvim、grug-far.nvim、neo-tree.nvim、
+--     lazydev.nvim、nvim-lspconfig 及其依赖；
 --   - 实际安装 revision 记录在 nvim/lazy-lock.json；
 --   - lazy.nvim 自身由 config/lazy.lua 引导安装并固定 commit。
 return {
@@ -41,6 +41,25 @@ return {
     lazy = false,
     config = function()
       require('config.explorer')
+    end,
+  },
+  {
+    'folke/lazydev.nvim',
+    commit = 'ff2cbcba459b637ec3fd165a2be59b7bbaeedf0d',
+    lazy = false,
+    opts = {
+      library = {
+        -- 只有在文件里出现 vim.uv 时才加载 luv 类型。
+        { path = '${3rd}/luv/library', words = { 'vim%.uv' } },
+      },
+    },
+  },
+  {
+    'neovim/nvim-lspconfig',
+    commit = '77b7432d4770d23b277d37923e5a08a442d8bb07',
+    lazy = false,
+    config = function()
+      require('config.lsp')
     end,
   },
   {
