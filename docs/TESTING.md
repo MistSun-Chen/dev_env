@@ -152,6 +152,8 @@ XDG_CONFIG_HOME="$TMP_CONFIG" XDG_DATA_HOME="$TMP_DATA" \
 
 gitsigns 的验收需要在 Git 仓库中打开一个已跟踪文件，修改一行后确认左侧出现标记；用 `]c` / `[c` 跳转，`<leader>gp` 预览，`<leader>gs` 暂存后执行 `git diff --cached` 检查。`<leader>gr` 会丢弃工作区改动，测试时不要放在真实项目上。
 
+终端验收：在普通终端启动 Neovim，按 `<leader>tt` 应出现底部终端并进入插入模式；按 `<C-\><C-n>` 回到 normal 后按 `<leader>tt` 隐藏，再按一次应恢复到同一个 shell。`nvim --headless` 只能验证 buffer 和窗口状态，不能验证真实终端的交互显示。
+
 ### 4.3 Markdown 预览冒烟测试
 
 创建包含 `$E=mc^2$` 的临时 Markdown，执行：

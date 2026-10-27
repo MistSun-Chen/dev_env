@@ -9,7 +9,7 @@
 
 ## 自定义映射
 
-命名规则：`f` = find、`b` = buffer、`e` = explorer、`l` = lsp、`s` = search/replace、`m` = markdown、`t` = theme；第二个字母表示对象或动作。
+命名规则：`f` = find、`b` = buffer、`e` = explorer、`g` = git、`l` = lsp、`s` = search/replace、`m` = markdown、`t` = terminal/theme；第二个字母表示对象或动作。
 
 | 分类 | 模式 | 键位 | 缩写详写 | 功能 |
 |---|---|---|---|---|
@@ -21,6 +21,7 @@
 | 文本搜索 | v | `<leader>fv` | find visual | 搜索选中文本 |
 | 文本搜索 | n | `<leader>fs` | find scope | 按路径 + glob 搜索，`!` 开头排除 |
 | 文件树 | n | `<leader>et` | explorer toggle | 打开/关闭文件树（定位当前文件） |
+| 终端 | n | `<leader>tt` | terminal toggle | 打开/隐藏底部终端 |
 | Git | n | `]c` / `[c` | next/prev hunk | 下一个 / 上一个 Git hunk |
 | Git | n / v | `<leader>gs` | git stage | 暂存当前 hunk 或选中范围 |
 | Git | n / v | `<leader>gr` | git reset | 丢弃当前 hunk 或选中范围 |
@@ -43,6 +44,20 @@
 | Markdown | n | `<leader>mt` | markdown toc | Markdown 目录 |
 | 界面 | n | `<leader>tc` | theme change | 切换 Catppuccin 配色 |
 | 编辑习惯 | n / i | `←` `↓` `↑` `→` | 无 | 禁用方向键，提示改用 hjkl |
+
+## 终端
+
+`<leader>tt` 打开/隐藏底部 12 行终端；第一次打开会进入插入模式。
+
+| 场景 | 操作 |
+|---|---|
+| 从普通文件打开终端 | `<leader>tt` |
+| 终端插入模式回到 normal | `<C-\><C-n>` |
+| 终端 normal 模式隐藏 | `<leader>tt` 或 `q` |
+| 隐藏后重新打开 | `<leader>tt`，复用同一个 shell 进程 |
+| 终端已显示但不当前 | `<leader>tt` 切到终端 |
+
+隐藏不是结束进程；需要结束 shell 时在终端里输入 `exit`。终端 buffer 不进入 tabline。
 
 ## Git hunk（gitsigns）
 

@@ -10,6 +10,7 @@
 - 启动时关闭 intro 信息
 - 鼠标在所有模式可用
 - normal / insert 模式禁用方向键，提示改用 `hjkl`
+- 底部终端开关：`<leader>tt`，使用 Neovim 原生 `:terminal`，不引入额外插件
 - `Q` 保留 Neovim 默认行为（重复上一次录制的寄存器），没有禁用
 
 插件：
@@ -175,6 +176,7 @@ Windows 安装脚本尚未实现；当前以复制方式为准，后续会在 `p
 | `<leader>bp` | 上一个 buffer |
 | `<leader>bd` | 关闭当前 buffer |
 | `<leader>et` | 文件树开关（explorer toggle），打开时定位当前文件 |
+| `<leader>tt` | 终端开关（terminal toggle），打开时进入插入模式 |
 | `]c` / `[c` | 下一个 / 上一个 Git hunk |
 | `<leader>gs` | 暂存当前 hunk；visual 模式暂存选中范围 |
 | `<leader>gr` | 丢弃当前 hunk；visual 模式丢弃选中范围 |
@@ -211,6 +213,14 @@ Windows 安装脚本尚未实现；当前以复制方式为准，后续会在 `p
 6. `<leader>gd` 打开当前文件与索引的 diff，`:q` 退出。
 
 `<leader>gS` / `<leader>gR` 作用于整个 buffer，`<leader>gq` 把当前文件的 hunk 放进 quickfix。`]c` / `[c` 在非 Git buffer 中仍然保持 Vim 默认行为。
+
+### 终端（原生）
+
+`<leader>tt` 打开底部 12 行终端并进入插入模式；再次按 `<leader>tt` 隐藏终端。隐藏后 shell 进程继续运行，重新打开会回到同一个终端。
+
+- 终端插入模式下按 `<C-\><C-n>` 回到 normal 模式，再按 `<leader>tt` 或 `q` 隐藏；
+- 不引入 `toggleterm.nvim`，配置在 `lua/config/terminal.lua`；
+- 终端 buffer 不进入 tabline，也不会覆盖当前编辑文件。
 
 ## LSP
 

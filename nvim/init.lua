@@ -73,3 +73,11 @@ if not tabline_ok then
     vim.notify(('dev_env: config.tabline 加载失败：%s'):format(tostring(tabline_err)), vim.log.levels.WARN)
   end)
 end
+
+-- 底部终端开关（原生 :terminal）。
+local terminal_ok, terminal_err = pcall(require, 'config.terminal')
+if not terminal_ok then
+  vim.schedule(function()
+    vim.notify(('dev_env: config.terminal 加载失败：%s'):format(tostring(terminal_err)), vim.log.levels.WARN)
+  end)
+end

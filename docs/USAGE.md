@@ -297,7 +297,19 @@ LuaLS 首次打开项目需要索引，索引完成前 `K` 可能暂时没有结
 
 `gra` 示例：写 `local x = missing_name`，等出现未定义全局诊断后，把光标放到 `missing_name` 上按 `gra`，会出现 `Mark missing_name as defined global`、`Disable diagnostics on this line` 等选项。
 
-### 3.7 Markdown 预览
+### 3.7 终端
+
+`<leader>tt` 打开/隐藏底部 12 行终端，使用 Neovim 原生 `:terminal`，不需要额外插件。
+
+- 第一次打开：在底部创建终端并进入插入模式；
+- 终端插入模式：按 `<C-\><C-n>` 回到 normal；
+- 终端 normal 模式：按 `<leader>tt` 或 `q` 隐藏；
+- 隐藏后 shell 进程继续运行，再按 `<leader>tt` 回到同一个终端；
+- 要结束 shell，在终端里输入 `exit`。
+
+终端 buffer 不会出现在 tabline，也不会替换当前编辑文件。配置在 `nvim/lua/config/terminal.lua`。
+
+### 3.8 Markdown 预览
 
 打开 Markdown 文件后：
 

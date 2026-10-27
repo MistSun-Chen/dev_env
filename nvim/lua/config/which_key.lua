@@ -28,7 +28,7 @@ wk.add({
   { '<leader>l', group = 'LSP' },
   { '<leader>s', group = '搜索替换', mode = { 'n', 'v' } },
   { '<leader>m', group = 'Markdown' },
-  { '<leader>t', group = '主题' },
+  { '<leader>t', group = '终端/主题' },
 })
 
 return M
