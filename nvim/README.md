@@ -162,6 +162,8 @@ Windows 安装脚本尚未实现；当前以复制方式为准，后续会在 `p
 
 按 `<leader>` 后停顿约 250ms，which-key 会显示当前可用的分组；再按 `f`、`b`、`g`、`l` 等前缀可以继续查看下一级。例如 `<leader>` → `f` 显示查找类键位，`<leader>` → `g` 显示 Git 键位。
 
+不以 `<leader>` 开头的键位：按 `g`、`]`、`[` 后停顿可以查看对应前缀；按 `<leader>?` 查看当前 buffer 的全部键位（包括 LSP 的 `gd`、`grr`、`K` 和 gitsigns 的 `]c` 等）。
+
 | 键位 | 功能 |
 |---|---|
 | `<leader>ff` | 查找文件 |
@@ -190,6 +192,7 @@ Windows 安装脚本尚未实现；当前以复制方式为准，后续会在 `p
 | `<leader>mp` | Markdown 预览开关 |
 | `<leader>ms` | Markdown 分屏预览 |
 | `<leader>tc` | 选择配色方案（theme change） |
+| `<leader>?` | 查看当前 buffer 的全部键位（含 LSP/gitsigns 键位） |
 
 说明：
 

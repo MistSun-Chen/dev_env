@@ -138,6 +138,8 @@ bash nvim/scripts/install-plugins.sh --check
 
 按 `<leader>` 后停顿约 250ms，which-key 会弹出当前可用的分组和键位说明；继续按 `f`、`b`、`g`、`l`、`s` 等前缀可以逐级查看。忘记某个快捷键时，先按 `<leader>` 比翻文档更快。
 
+不以 `<leader>` 开头的键位：按 `g`、`]`、`[` 后停顿查看前缀下的按键；按 `<leader>?` 查看当前 buffer 的全部键位，包括 LSP 和 gitsigns 的 buffer-local 键位。
+
 打开 Git 仓库中的文件后，gitsigns 会在行号左侧标记新增、修改和删除。常用操作：`]c` / `[c` 跳 hunk，`<leader>gp` 预览，`<leader>gs` 暂存当前 hunk，`<leader>gr` 丢弃，`<leader>gb` 查看 blame，`<leader>gd` 打开 diff。visual 选中多行后按 `<leader>gs` / `<leader>gr` 可只处理选区。
 
 ### 3.2 公式 parser

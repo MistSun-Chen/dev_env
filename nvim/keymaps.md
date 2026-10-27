@@ -7,6 +7,12 @@
 
 按 `<leader>` 后停顿约 250ms，会弹出当前可用的分组；继续按 `f`、`b`、`e`、`g`、`l`、`s`、`m`、`t` 等前缀查看下一级。键位说明来自各映射的 `desc`，不需要先把整张表背下来。
 
+非 `<leader>` 开头的键位也可以查看：
+
+- 按 `g`、`]`、`[` 后停顿，which-key 会显示这些前缀下的按键；
+- 按 `<leader>?` 显示当前 buffer 的全部键位，包括 LSP 的 `gd`、`grr`、`K` 和 gitsigns 的 `]c`、`<leader>gs` 等；
+- `:WhichKey` 命令可以手动打开键位列表，`:WhichKey g` 查看 `g` 前缀。
+
 ## 自定义映射
 
 命名规则：`f` = find、`b` = buffer、`e` = explorer、`g` = git、`l` = lsp、`s` = search/replace、`m` = markdown、`t` = terminal/theme；第二个字母表示对象或动作。
@@ -43,6 +49,7 @@
 | Markdown | n | `<leader>ms` | markdown split | Markdown 分屏预览 |
 | Markdown | n | `<leader>mt` | markdown toc | Markdown 目录 |
 | 界面 | n | `<leader>tc` | theme change | 切换 Catppuccin 配色 |
+| 界面 | n | `<leader>?` | which-key buffer | 查看当前 buffer 的全部键位 |
 | 编辑习惯 | n / i | `←` `↓` `↑` `→` | 无 | 禁用方向键，提示改用 hjkl |
 
 ## 终端

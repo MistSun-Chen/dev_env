@@ -29,6 +29,17 @@ wk.add({
   { '<leader>s', group = '搜索替换', mode = { 'n', 'v' } },
   { '<leader>m', group = 'Markdown' },
   { '<leader>t', group = '终端/主题' },
+
+  -- 不以 <leader> 开头的常用前缀；按 g / ] / [ 后显示下一层。
+  { 'g', group = '跳转' },
+  { ']', group = '下一个' },
+  { '[', group = '上一个' },
 })
+
+-- 当前 buffer 的全部键位（包括 LSP/gitsigns 的 buffer-local 键位）。
+-- 例如打开 Lua 文件后按 <leader>?，可以看到 gd、grr、K 等非 <leader> 键位。
+vim.keymap.set('n', '<leader>?', function()
+  require('which-key').show({ global = false })
+end, { desc = '当前 buffer 键位' })
 
 return M
