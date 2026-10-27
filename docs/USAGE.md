@@ -109,6 +109,7 @@ bash nvim/scripts/install-plugins.sh --check
 
 - `lazy.nvim`
 - `which-key.nvim`
+- `gitsigns.nvim`
 - `fzf-lua`
 - `markview.nvim`
 - `grug-far.nvim`
@@ -121,6 +122,7 @@ bash nvim/scripts/install-plugins.sh --check
 ```text
 ~/.local/share/nvim/lazy/lazy.nvim
 ~/.local/share/nvim/lazy/which-key.nvim
+~/.local/share/nvim/lazy/gitsigns.nvim
 ~/.local/share/nvim/lazy/fzf-lua
 ~/.local/share/nvim/lazy/markview.nvim
 ~/.local/share/nvim/lazy/grug-far.nvim
@@ -134,7 +136,9 @@ bash nvim/scripts/install-plugins.sh --check
 
 `lazy-lock.json` 位于配置目录，软链接模式下就是仓库的 `nvim/lazy-lock.json`，需要提交到 git。lazy.nvim 自身固定到 `nvim/lua/config/lazy.lua` 中的 commit，升级时修改该常量并删除旧插件目录后重新启动。
 
-按 `<leader>` 后停顿约 250ms，which-key 会弹出当前可用的分组和键位说明；继续按 `f`、`b`、`l`、`s` 等前缀可以逐级查看。忘记某个快捷键时，先按 `<leader>` 比翻文档更快。
+按 `<leader>` 后停顿约 250ms，which-key 会弹出当前可用的分组和键位说明；继续按 `f`、`b`、`g`、`l`、`s` 等前缀可以逐级查看。忘记某个快捷键时，先按 `<leader>` 比翻文档更快。
+
+打开 Git 仓库中的文件后，gitsigns 会在行号左侧标记新增、修改和删除。常用操作：`]c` / `[c` 跳 hunk，`<leader>gp` 预览，`<leader>gs` 暂存当前 hunk，`<leader>gr` 丢弃，`<leader>gb` 查看 blame，`<leader>gd` 打开 diff。visual 选中多行后按 `<leader>gs` / `<leader>gr` 可只处理选区。
 
 ### 3.2 公式 parser
 

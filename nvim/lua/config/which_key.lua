@@ -24,6 +24,7 @@ wk.add({
   { '<leader>f', group = '查找', mode = { 'n', 'v' } },
   { '<leader>b', group = 'Buffer' },
   { '<leader>e', group = '文件树' },
+  { '<leader>g', group = 'Git' },
   { '<leader>l', group = 'LSP' },
   { '<leader>s', group = '搜索替换', mode = { 'n', 'v' } },
   { '<leader>m', group = 'Markdown' },

@@ -5,7 +5,7 @@
 
 ## which-key 提示
 
-按 `<leader>` 后停顿约 250ms，会弹出当前可用的分组；继续按 `f`、`b`、`e`、`l`、`s`、`m`、`t` 等前缀查看下一级。键位说明来自各映射的 `desc`，不需要先把整张表背下来。
+按 `<leader>` 后停顿约 250ms，会弹出当前可用的分组；继续按 `f`、`b`、`e`、`g`、`l`、`s`、`m`、`t` 等前缀查看下一级。键位说明来自各映射的 `desc`，不需要先把整张表背下来。
 
 ## 自定义映射
 
@@ -21,6 +21,13 @@
 | 文本搜索 | v | `<leader>fv` | find visual | 搜索选中文本 |
 | 文本搜索 | n | `<leader>fs` | find scope | 按路径 + glob 搜索，`!` 开头排除 |
 | 文件树 | n | `<leader>et` | explorer toggle | 打开/关闭文件树（定位当前文件） |
+| Git | n | `]c` / `[c` | next/prev hunk | 下一个 / 上一个 Git hunk |
+| Git | n / v | `<leader>gs` | git stage | 暂存当前 hunk 或选中范围 |
+| Git | n / v | `<leader>gr` | git reset | 丢弃当前 hunk 或选中范围 |
+| Git | n | `<leader>gp` | git preview | 预览当前 hunk |
+| Git | n | `<leader>gb` | git blame | 查看当前行 blame |
+| Git | n | `<leader>gd` | git diff | 对比当前文件与索引 |
+| Git | n | `<leader>gq` | git quickfix | 当前文件 hunk 放入 quickfix |
 | buffer | n | `<leader>bs` | buffer switch | 按 buffer 名称/路径过滤并切换（不搜内容） |
 | buffer | n | `<leader>bn` | buffer next | 下一个 buffer |
 | buffer | n | `<leader>bp` | buffer previous | 上一个 buffer |
@@ -36,6 +43,24 @@
 | Markdown | n | `<leader>mt` | markdown toc | Markdown 目录 |
 | 界面 | n | `<leader>tc` | theme change | 切换 Catppuccin 配色 |
 | 编辑习惯 | n / i | `←` `↓` `↑` `→` | 无 | 禁用方向键，提示改用 hjkl |
+
+## Git hunk（gitsigns）
+
+`gitsigns.nvim` 在 Git 仓库的 buffer 中提供行内标记和 hunk 操作；`g` = git。
+
+| 键位 | 作用 |
+|---|---|
+| `]c` / `[c` | 下一个 / 上一个 hunk |
+| `<leader>gs` | 暂存当前 hunk；visual 模式暂存选中行 |
+| `<leader>gr` | 丢弃当前 hunk；visual 模式丢弃选中行 |
+| `<leader>gS` / `<leader>gR` | 暂存 / 丢弃整个 buffer |
+| `<leader>gp` / `<leader>gP` | 弹窗 / 行内预览当前 hunk |
+| `<leader>gb` / `<leader>gB` | 当前行 blame / 整个文件 blame |
+| `<leader>gd` / `<leader>gD` | 与索引 / 与 HEAD 对比 |
+| `<leader>gt` / `<leader>gw` | 开关当前行 blame / word diff |
+| `<leader>gq` / `<leader>gQ` | 当前 buffer / 已打开 buffer 的 hunk 放入 quickfix |
+
+`<leader>gr` 和 `<leader>gR` 会丢弃工作区改动，执行前先看清范围；暂存后的改动仍可从索引恢复。`ih` 是 gitsigns 提供的 hunk 文本对象，可以在 operator 后使用，例如 `dih`。
 
 ## LSP 默认键位
 

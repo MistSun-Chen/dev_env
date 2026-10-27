@@ -1,8 +1,8 @@
 -- lazy.nvim 引导与插件管理入口。
 --
--- 这里只负责安装 lazy.nvim 自身；which-key.nvim、fzf-lua、markview.nvim、
--- grug-far.nvim、neo-tree.nvim 等插件由 lazy.nvim 根据 lua/config/plugins.lua
--- 和 lazy-lock.json 管理。
+-- 这里只负责安装 lazy.nvim 自身；which-key.nvim、gitsigns.nvim、fzf-lua、
+-- markview.nvim、grug-far.nvim、neo-tree.nvim 等插件由 lazy.nvim 根据
+-- lua/config/plugins.lua 和 lazy-lock.json 管理。
 --
 -- lazy.nvim 固定在 stable 分支的 commit，避免每次启动拉取最新代码。
 -- 升级时同时修改下面的 lazy_commit 和 nvim/README.md 中的版本说明。

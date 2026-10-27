@@ -2,9 +2,9 @@
 #
 # 安装/检查 dev_env 的 Neovim 插件。
 #
-# lazy.nvim 由 config/lazy.lua 引导安装；which-key.nvim、fzf-lua、markview.nvim、
-# grug-far.nvim、neo-tree.nvim、lazydev.nvim、nvim-lspconfig 及其依赖由 lazy.nvim
-# 根据 lua/config/plugins.lua 和 lazy-lock.json 管理。
+# lazy.nvim 由 config/lazy.lua 引导安装；which-key.nvim、gitsigns.nvim、fzf-lua、
+# markview.nvim、grug-far.nvim、neo-tree.nvim、lazydev.nvim、nvim-lspconfig
+# 及其依赖由 lazy.nvim 根据 lua/config/plugins.lua 和 lazy-lock.json 管理。
 #
 # 用法：
 #   bash nvim/scripts/install-plugins.sh
@@ -82,7 +82,7 @@ if [[ "$CHECK_ONLY" -eq 0 ]]; then
 fi
 
 [[ -f "$CONFIG_DST/lazy-lock.json" ]] || die "缺少 lazy-lock.json：请先联网运行本脚本"
-for name in lazy.nvim which-key.nvim fzf-lua markview.nvim grug-far.nvim neo-tree.nvim nui.nvim plenary.nvim lazydev.nvim nvim-lspconfig catppuccin; do
+for name in lazy.nvim which-key.nvim gitsigns.nvim fzf-lua markview.nvim grug-far.nvim neo-tree.nvim nui.nvim plenary.nvim lazydev.nvim nvim-lspconfig catppuccin; do
   [[ -d "$LAZY_DIR/$name" ]] || die "缺少插件目录：$LAZY_DIR/$name"
 done
 log "插件目录检查通过：$LAZY_DIR"
@@ -90,16 +90,7 @@ log "插件目录检查通过：$LAZY_DIR"
 log "验证插件可加载..."
 # 用 -u NONE + 显式 rtp，避免验证时再次触发配置加载和网络访问。
 "$NVIM_BIN" --headless -u NONE \
-  --cmd "set rtp^=$LAZY_DIR/lazy.nvim" \
-  --cmd "set rtp^=$LAZY_DIR/which-key.nvim" \
-  --cmd "set rtp^=$LAZY_DIR/fzf-lua" \
-  --cmd "set rtp^=$LAZY_DIR/markview.nvim" \
-  --cmd "set rtp^=$LAZY_DIR/grug-far.nvim" \
-  --cmd "set rtp^=$LAZY_DIR/neo-tree.nvim" \
-  --cmd "set rtp^=$LAZY_DIR/nui.nvim" \
-  --cmd "set rtp^=$LAZY_DIR/plenary.nvim" \
-  --cmd "set rtp^=$LAZY_DIR/lazydev.nvim" \
-  --cmd "set rtp^=$LAZY_DIR/nvim-lspconfig" \
-  "+lua local ok1,e1=pcall(require,'lazy'); local ok2,e2=pcall(require,'which-key'); local ok3,e3=pcall(require,'fzf-lua'); local ok4,e4=pcall(require,'markview'); local ok5,e5=pcall(require,'grug-far'); local ok6,e6=pcall(require,'neo-tree'); local ok7,e7=pcall(require,'lazydev'); local lsp_ok=#vim.api.nvim_get_runtime_file('lsp/lua_ls.lua',false)>0; if not ok1 then error(e1) end; if not ok2 then error(e2) end; if not ok3 then error(e3) end; if not ok4 then error(e4) end; if not ok5 then error(e5) end; if not ok6 then error(e6) end; if not ok7 then error(e7) end; if not lsp_ok then error('nvim-lspconfig: lsp/lua_ls.lua missing') end" +qa
+  --cmd "set rtp^=$LAZY_DIR/lazy.nvim | set rtp^=$LAZY_DIR/which-key.nvim | set rtp^=$LAZY_DIR/gitsigns.nvim | set rtp^=$LAZY_DIR/fzf-lua | set rtp^=$LAZY_DIR/markview.nvim | set rtp^=$LAZY_DIR/grug-far.nvim | set rtp^=$LAZY_DIR/neo-tree.nvim | set rtp^=$LAZY_DIR/nui.nvim | set rtp^=$LAZY_DIR/plenary.nvim | set rtp^=$LAZY_DIR/lazydev.nvim | set rtp^=$LAZY_DIR/nvim-lspconfig" \
+  "+lua local ok1,e1=pcall(require,'lazy'); local ok2,e2=pcall(require,'which-key'); local ok3,e3=pcall(require,'fzf-lua'); local ok4,e4=pcall(require,'markview'); local ok5,e5=pcall(require,'grug-far'); local ok6,e6=pcall(require,'neo-tree'); local ok7,e7=pcall(require,'lazydev'); local ok8,e8=pcall(require,'gitsigns'); local lsp_ok=#vim.api.nvim_get_runtime_file('lsp/lua_ls.lua',false)>0; if not ok1 then error(e1) end; if not ok2 then error(e2) end; if not ok3 then error(e3) end; if not ok4 then error(e4) end; if not ok5 then error(e5) end; if not ok6 then error(e6) end; if not ok7 then error(e7) end; if not ok8 then error(e8) end; if not lsp_ok then error('nvim-lspconfig: lsp/lua_ls.lua missing') end" +qa
 
 log "插件安装/检查完成。"

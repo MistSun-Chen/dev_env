@@ -1,8 +1,8 @@
 -- lazy.nvim 插件清单。
 --
 -- 版本策略：
---   - 使用 commit 固定 which-key.nvim、fzf-lua、markview.nvim、grug-far.nvim、
---     neo-tree.nvim、lazydev.nvim、nvim-lspconfig 及其依赖；
+--   - 使用 commit 固定 which-key.nvim、gitsigns.nvim、fzf-lua、markview.nvim、
+--     grug-far.nvim、neo-tree.nvim、lazydev.nvim、nvim-lspconfig 及其依赖；
 --   - 实际安装 revision 记录在 nvim/lazy-lock.json；
 --   - lazy.nvim 自身由 config/lazy.lua 引导安装并固定 commit。
 return {
@@ -12,6 +12,14 @@ return {
     lazy = false,
     config = function()
       require('config.which_key')
+    end,
+  },
+  {
+    'lewis6991/gitsigns.nvim',
+    commit = 'a462f416e2ce4744531c6256252dee99a7d34a83', -- v2.1.0
+    lazy = false,
+    config = function()
+      require('config.gitsigns')
     end,
   },
   {

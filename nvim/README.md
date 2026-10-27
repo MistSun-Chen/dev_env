@@ -16,6 +16,7 @@
 
 - **lazy.nvim**：插件管理器，由 `lua/config/lazy.lua` 引导安装
 - **which-key.nvim**：按 `<leader>` 后显示分组和键位提示
+- **gitsigns.nvim**：行内 Git 状态、hunk 跳转/暂存/丢弃/预览、blame
 - **fzf-lua**：找文件、全局/当前 buffer/选区/路径搜索、切换 buffer、最近文件
 - **grug-far.nvim**：搜索并替换，支持项目、当前文件、选区范围和 glob/路径过滤
 - **neo-tree.nvim**：侧边栏文件树，支持文件操作、Git 状态和诊断
@@ -33,6 +34,7 @@ init.lua
     └── lazy.nvim            # 安装/加载其他插件
         ├── config/plugins.lua
         ├── which-key.nvim
+        ├── gitsigns.nvim
         ├── fzf-lua
         ├── grug-far.nvim
         ├── neo-tree.nvim
@@ -77,7 +79,7 @@ bash platforms/macos/install.sh
 
 ### 插件安装 / 更新
 
-插件清单和版本在 `lua/config/plugins.lua`。lazy.nvim 自身固定到 `lua/config/lazy.lua` 中的 commit；which-key.nvim、fzf-lua、markview.nvim、grug-far.nvim、neo-tree.nvim、nvim-lspconfig、lazydev.nvim 及其依赖和配色插件的实际 revision 由 `lazy-lock.json` 固定。
+插件清单和版本在 `lua/config/plugins.lua`。lazy.nvim 自身固定到 `lua/config/lazy.lua` 中的 commit；which-key.nvim、gitsigns.nvim、fzf-lua、markview.nvim、grug-far.nvim、neo-tree.nvim、nvim-lspconfig、lazydev.nvim 及其依赖和配色插件的实际 revision 由 `lazy-lock.json` 固定。
 
 ```sh
 # 联网安装缺失插件（首次安装或新增插件后）
@@ -98,7 +100,7 @@ bash nvim/scripts/install-plugins.sh
 1. 检查 `nvim`、`git`、`fzf`；
 2. 必要时把 `~/.config/nvim` 链接到仓库；
 3. 执行 `nvim --headless "+Lazy! install"`，由 lazy.nvim 安装缺失插件；
-4. 检查 `lazy.nvim`、`which-key.nvim`、`fzf-lua`、`markview.nvim`、`grug-far.nvim`、`neo-tree.nvim`、`nui.nvim`、`plenary.nvim`、`nvim-lspconfig`、`lazydev.nvim`、配色插件目录和 `lazy-lock.json`；
+4. 检查 `lazy.nvim`、`which-key.nvim`、`gitsigns.nvim`、`fzf-lua`、`markview.nvim`、`grug-far.nvim`、`neo-tree.nvim`、`nui.nvim`、`plenary.nvim`、`nvim-lspconfig`、`lazydev.nvim`、配色插件目录和 `lazy-lock.json`；
 5. 验证插件可以被 `require`。
 
 插件安装位置：
@@ -106,6 +108,7 @@ bash nvim/scripts/install-plugins.sh
 ```text
 ~/.local/share/nvim/lazy/lazy.nvim
 ~/.local/share/nvim/lazy/which-key.nvim
+~/.local/share/nvim/lazy/gitsigns.nvim
 ~/.local/share/nvim/lazy/fzf-lua
 ~/.local/share/nvim/lazy/markview.nvim
 ~/.local/share/nvim/lazy/grug-far.nvim
@@ -121,7 +124,7 @@ bash nvim/scripts/install-plugins.sh
 已有插件需要升级时，在 Neovim 中执行：
 
 ```vim
-:Lazy update which-key.nvim fzf-lua markview.nvim grug-far.nvim neo-tree.nvim nui.nvim plenary.nvim nvim-lspconfig lazydev.nvim
+:Lazy update which-key.nvim gitsigns.nvim fzf-lua markview.nvim grug-far.nvim neo-tree.nvim nui.nvim plenary.nvim nvim-lspconfig lazydev.nvim
 ```
 
 这样只更新这些插件，不会顺带移动 lazy.nvim 自身的固定 commit。
@@ -156,7 +159,7 @@ Windows 安装脚本尚未实现；当前以复制方式为准，后续会在 `p
 
 完整键位（含 LSP 默认键位、grug-far/neo-tree/fzf 内部键位）见 [`keymaps.md`](./keymaps.md)。
 
-按 `<leader>` 后停顿约 250ms，which-key 会显示当前可用的分组；再按 `f`、`b`、`l` 等前缀可以继续查看下一级。例如 `<leader>` → `f` 显示查找类键位，`<leader>` → `l` 显示 LSP 键位。
+按 `<leader>` 后停顿约 250ms，which-key 会显示当前可用的分组；再按 `f`、`b`、`g`、`l` 等前缀可以继续查看下一级。例如 `<leader>` → `f` 显示查找类键位，`<leader>` → `g` 显示 Git 键位。
 
 | 键位 | 功能 |
 |---|---|
@@ -172,6 +175,13 @@ Windows 安装脚本尚未实现；当前以复制方式为准，后续会在 `p
 | `<leader>bp` | 上一个 buffer |
 | `<leader>bd` | 关闭当前 buffer |
 | `<leader>et` | 文件树开关（explorer toggle），打开时定位当前文件 |
+| `]c` / `[c` | 下一个 / 上一个 Git hunk |
+| `<leader>gs` | 暂存当前 hunk；visual 模式暂存选中范围 |
+| `<leader>gr` | 丢弃当前 hunk；visual 模式丢弃选中范围 |
+| `<leader>gp` | 预览当前 hunk |
+| `<leader>gb` | 查看当前行 blame |
+| `<leader>gd` | 对比当前文件与索引 |
+| `<leader>gq` | 当前文件 hunk 放入 quickfix |
 | `<leader>sr` | 搜索并替换（grug-far）；visual 模式限制在选区内 |
 | `<leader>sR` | 当前文件搜索并替换 |
 | `<leader>mt` | Markdown 目录（按标题跳转） |
@@ -188,6 +198,19 @@ Windows 安装脚本尚未实现；当前以复制方式为准，后续会在 `p
 - 文件树里的 `/` 是 neo-tree 的递归模糊过滤，不是 fzf：用 `<C-j>` / `<C-k>`（或 `<C-n>` / `<C-p>` / 方向键）移动，`<Enter>` 打开。要按文件名快速全局跳转仍用 `<leader>ff`；大项目里 `/` 慢的话可以用 `f`（输入完按 Enter 才过滤）。
 - 文件树宽度默认 32；路径层级变深时会自动加宽（`auto_expand_width`），只增不减，不会自动缩回。
 - fzf 列表里用 `<C-j>` / `<C-k>`（或方向键）移动，`<Enter>` 打开，`<Esc>` 取消；buffer picker 顶部也会显示这行提示。
+
+### Git hunk（gitsigns）
+
+打开 Git 仓库中的文件后，行号左侧会显示新增、修改、删除标记。常用流程：
+
+1. `]c` / `[c` 在 hunk 之间跳转；
+2. `<leader>gp` 预览当前 hunk；
+3. `<leader>gs` 暂存当前 hunk，或 visual 选中多行后按 `<leader>gs`；
+4. `<leader>gr` 丢弃当前 hunk，操作前确认；
+5. `<leader>gb` 查看当前行是谁在哪个提交改的；
+6. `<leader>gd` 打开当前文件与索引的 diff，`:q` 退出。
+
+`<leader>gS` / `<leader>gR` 作用于整个 buffer，`<leader>gq` 把当前文件的 hunk 放进 quickfix。`]c` / `[c` 在非 Git buffer 中仍然保持 Vim 默认行为。
 
 ## LSP
 
