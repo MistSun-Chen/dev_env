@@ -35,24 +35,126 @@
 
 ## LSP 默认键位
 
-这些是 Neovim 0.12 自带的 LSP 映射，不是本配置新增的；列在这里是为了查起来方便。
+这些是 Neovim 0.12 自带的 LSP 映射，不是本配置新增的；Lua、Python、Bash、C/C++ 共用同一套键位，列在这里是为了查起来方便。
 
-| 键位 | 功能 |
-|---|---|
-| `grn` | 重命名（rename） |
-| `grr` | 查看引用（references） |
-| `gri` | 查看实现（implementation） |
-| `gra` | code action |
-| `[d` / `]d` | 上一个 / 下一个诊断 |
-| `<C-n>` / `<C-p>` | 原生补全中下一个 / 上一个候选 |
-| `<C-y>` | 接受原生补全候选 |
-| `<C-x><C-o>` | 手动触发 LSP 补全 |
+助记规则：
+
+- `g` = go（跳转/前往）
+- `r` = Neovim 为 LSP 默认映射保留的固定前缀
+- 第三个字母 = 动作的首字母
+
+所以 `grr` = `g` + `r` + **r**eferences；`grn` 的 `n` 是 rename，`gri` 的 `i` 是 implementation，`gra` 的 `a` 是 action。
+
+| 键位 | 模式 | 助记 | 功能 |
+|---|---|---|---|
+| `gra` | n / v | **a**ction | code action；Visual 模式作用于选区 |
+| `gri` | n | **i**mplementation | 查看实现 |
+| `grn` | n | **n**ame / rename | 重命名 |
+| `grr` | n | **r**eferences | 查看引用 |
+| `grt` | n | **t**ype | 查看类型定义 |
+| `grx` | n | e**x**ecute | 执行 code lens（server 支持时） |
+| `gO` | n | **O**utline | 当前文件符号（quickfix） |
+| `i_CTRL-S` | i | **S**ignature | 插入模式签名帮助 |
+| `K` | n | 无 | 悬停文档 |
+| `[d` / `]d` | n | 无 | 上一个 / 下一个诊断 |
+| `<C-x><C-o>` | i | 无 | 手动触发 LSP 补全 |
+| `<C-n>` / `<C-p>` | i | 无 | 下一个 / 上一个补全候选 |
+| `<C-y>` | i | 无 | 接受补全候选 |
 
 说明：
 
-- `grn` 只对 LuaLS 判断为可重命名的符号生效；局部变量只改当前作用域，模块字段/导出函数可能跨文件修改引用，建议先用 `grr` 看范围。
-- `gra` 只在当前位置确实有 code action 时才有内容；LuaLS 提供的 action 较少，提示 `No code actions available` 属于正常现象。
+- `grn` 只对 server 判断为可重命名的符号生效；局部变量只改当前作用域，模块字段/导出函数可能跨文件修改引用，建议先用 `grr` 看范围。
+- `gra` 只在当前位置确实有 code action 时才有内容；不同 server 提供的 action 数量不同，提示 `No code actions available` 属于正常现象。
+- `gO` 和 `<leader>ls` 都能看当前文件符号；`gO` 用 quickfix，`<leader>ls` 用 fzf-lua。
 - LuaLS 首次索引项目时，`K` 可能暂时没有结果，稍等几秒再试。
+
+### grr 打开的引用列表
+
+`grr` 默认打开的是 **quickfix** 窗口，不是普通可编辑 buffer。可以用：
+
+```vim
+:set buftype? filetype?
+" buftype=quickfix
+" filetype=qf
+```
+
+| 操作 | 作用 |
+|---|---|
+| `j` / `k` | 在引用列表中移动，不打开文件 |
+| `<Enter>` | 跳到当前引用所在位置 |
+| `CTRL-W <Enter>` | 在新窗口打开当前引用 |
+| `]q` / `[q` | 下一条 / 上一条引用 |
+| `]Q` / `[Q` | 最后一条 / 第一条 |
+| `:cc` | 跳到当前条目 |
+| `:cclose` | 关闭 quickfix 窗口 |
+| `:copen` | 重新打开 quickfix 窗口 |
+| `:cwindow` | 有结果时打开，没有结果时关闭 |
+| `:colder` / `:cnewer` | 切换 quickfix 历史列表 |
+| `:cdo {cmd}` | 对每个条目执行 Ex 命令，高级用法，慎用 |
+
+注意：
+
+- quickfix buffer 是只读的；直接编辑它不会修改源码，按 `<Enter>` 跳到真实文件后再改。
+- 这里按 `q` 不是关闭窗口（`q` 在普通模式开始录制宏）；用 `:cclose` 或 `:q` 关闭。
+- 想用 fzf 过滤引用，可以用 `:FzfLua lsp_references`。
+
+### LSP 补全
+
+- 自动触发：配置中启用了 `autotrigger = true`，由 server 的 `triggerCharacters` 决定（常见是 `.`、`(`、`:` 等）。
+- 主动触发：插入模式按 `<C-x><C-o>`，调用 LSP 的 omnifunc。
+- 选择：`<C-n>` / `<C-p>`；接受：`<C-y>`；取消补全菜单：`<C-e>`。
+- 当前 `completeopt` 是 `menuone,noselect,popup`，所以不会自动选中第一项。
+
+补全排序来自 server 返回的 `sortText` / `label`；Neovim 原生 `vim.lsp.completion` **不会记录你选择过哪些候选并按频率学习排序**。server 自己可能按上下文调整顺序，但不是 Neovim 的历史频率。想要更强排序可以改用 nvim-cmp/blink.cmp 等插件，或自己实现 `cmp` 比较器。
+
+### LSP 诊断与自动修复
+
+当前**没有**“保存时自动修复全部错误”或全局自动修复机制。修复依赖 server 提供的 code action：
+
+```vim
+" 光标在诊断上，查看可用修复
+gra
+
+" Visual 模式选中范围后
+gra
+```
+
+如果 server 支持 `source.fixAll`，可以手动请求修复全部：
+
+```vim
+:lua vim.lsp.buf.code_action({ context = { only = { 'source.fixAll' } } })
+```
+
+server 支持且只返回一个 action 时，可以直接应用：
+
+```vim
+:lua vim.lsp.buf.code_action({ apply = true, context = { only = { 'source.fixAll' } } })
+```
+
+但这不是所有 server 都支持；语法错误、缺少依赖、未定义符号通常没有可靠的自动修复。Python 还可以单独整理 import：
+
+```vim
+:LspPyrightOrganizeImports
+```
+
+### 常用 LSP 命令
+
+| 命令 | 作用 |
+|---|---|
+| `:LspPyrightOrganizeImports` | 整理 Python import |
+| `:LspPyrightSetPythonPath /path/to/venv/bin/python` | 指定 Python 虚拟环境 |
+| `:LspClangdSwitchSourceHeader` | C/C++ 源文件/头文件切换 |
+| `:LspClangdShowSymbolInfo` | 查看 C/C++ 符号信息 |
+| `:FzfLua lsp_workspace_symbols` | 全项目符号搜索 |
+| `:FzfLua lsp_references` | 用 fzf 查看引用，替代 quickfix |
+| `:lua vim.lsp.buf.format({ async = true })` | 用 LSP formatter 格式化 |
+| `:checkhealth vim.lsp` | 查看 LSP 环境和当前 attach 状态 |
+| `:lsp restart` | 重启 LSP server |
+| `:lsp stop` / `:lsp enable` | 停止 / 启用 LSP server |
+| `:lua vim.lsp.buf.incoming_calls()` | 查看谁调用当前符号（server 支持时） |
+| `:lua vim.lsp.buf.outgoing_calls()` | 查看当前符号调用了谁（server 支持时） |
+
+`gq` 也会使用 LSP 的 `formatexpr` 格式化，但只有 server 支持 formatting 时有效（例如 clangd；Pyright 不提供 formatter）。
 
 ## grug-far 内部键位
 

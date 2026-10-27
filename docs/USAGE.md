@@ -70,7 +70,7 @@ bash platforms/macos/install.sh --skip-config
 
 Ubuntu：
 
-- apt 安装 `ca-certificates`、`curl`、`git`、`ripgrep`、`fd-find`、`gcc`、`libc6-dev`、`unzip`、`nodejs`；
+- apt 安装 `ca-certificates`、`curl`、`git`、`ripgrep`、`fd-find`、`gcc`、`libc6-dev`、`unzip`、`nodejs`；不安装 `npm`、`g++`、`clangd` 或 language server；
 - 补 `~/.local/bin/fd -> fdfind`；
 - 从官方 release 安装 Neovim 0.12.3、fzf 0.74.5、tree-sitter 0.27.1，并校验 SHA256；
 - 备份并链接 `~/.config/nvim -> <repo>/nvim`；
@@ -192,7 +192,20 @@ grug-far 内部：`<Tab>` 切换输入框，`<Space>r` 执行 Replace，`<Space>
 
 ### 3.6 LSP
 
-当前只启用 Lua（`lua_ls`）。插件由 lazy.nvim 安装，language server 需要手动安装；平台脚本和离线包暂不包含 server。
+当前启用 Lua（`lua_ls`）、Python（`pyright`）、Bash（`bashls`）、C/C++（`clangd`）。插件由 lazy.nvim 安装，language server 需要手动安装；平台脚本和离线包暂不包含 server（macOS 的 `clangd` 通常由 Xcode Command Line Tools 提供）。
+
+| 语言 | server | 可执行文件 |
+|---|---|---|
+| Lua | `lua_ls` | `lua-language-server` |
+| Python | `pyright` | `pyright-langserver` |
+| Bash | `bashls` | `bash-language-server` |
+| C / C++ | `clangd` | `clangd` |
+
+检查本机 server 和 C/C++ 工具链：
+
+```sh
+bash nvim/scripts/check-lsp.sh
+```
 
 手动安装 `lua-language-server`（Apple Silicon macOS 示例）：
 
@@ -214,6 +227,44 @@ Linux / Intel Mac 换成对应平台的压缩包；确保 `~/.local/bin` 在 `PA
 
 > 不要直接建符号链接：LuaLS 的 bootstrap 二进制按自身路径查找 `main.lua`，符号链接会去 `~/.local/bin/main.lua` 找而失败；用上面的绝对路径 wrapper。
 
+Python 和 Bash 的 server 需要 Node.js（>= 18）和 npm；安装到 `~/.local/opt`，不使用 `npm -g`。Ubuntu 在线安装脚本只装 `nodejs`，如果 `npm` 不存在，先执行 `sudo apt install npm`：
+
+```sh
+mkdir -p ~/.local/opt/pyright-1.1.414 ~/.local/opt/bash-language-server-5.8.1 ~/.local/bin
+npm install --prefix ~/.local/opt/pyright-1.1.414 --no-fund --no-audit pyright@1.1.414
+npm install --prefix ~/.local/opt/bash-language-server-5.8.1 --no-fund --no-audit bash-language-server@5.8.1
+
+cat > ~/.local/bin/pyright-langserver <<'EOF'
+#!/bin/sh
+exec "$HOME/.local/opt/pyright-1.1.414/node_modules/.bin/pyright-langserver" "$@"
+EOF
+cat > ~/.local/bin/bash-language-server <<'EOF'
+#!/bin/sh
+exec "$HOME/.local/opt/bash-language-server-5.8.1/node_modules/.bin/bash-language-server" "$@"
+EOF
+chmod +x ~/.local/bin/pyright-langserver ~/.local/bin/bash-language-server
+```
+
+Pyright 会按 `pyrightconfig.json`、`pyproject.toml` 等识别项目；虚拟环境可用 `:LspPyrightSetPythonPath /path/to/venv/bin/python` 指定。Bash 的 shellcheck 诊断需要本机安装 `shellcheck`（macOS `brew install shellcheck`，Ubuntu `sudo apt install shellcheck`）；没有它时补全和悬停仍然可用。
+
+C/C++ 使用 `clangd`。macOS 安装 Xcode Command Line Tools 后通常已有 `/usr/bin/clangd`；Linux 可用 `sudo apt install clangd`，或安装 LLVM。
+
+Ubuntu 24.04 的注意点：
+
+- 在线安装脚本会装 `gcc`、`libc6-dev`，但不装 `clangd`、`g++` 和 C++ 标准库头文件。C 语言补 `sudo apt install clangd`；C++ 再补 `sudo apt install g++`，或直接 `sudo apt install build-essential`。
+- 最小系统/离线安装可能连 C 编译器都没有。此时 clangd 可能能启动，但找不到 `<stdio.h>` 等头文件；补装 `sudo apt install clangd gcc g++ libc6-dev` 或 `build-essential`。
+- 纯离线机器无法 `apt install`：要么在离线包里预装 clangd 和编译器，要么暂时不用 C/C++ LSP。
+- 运行 `bash nvim/scripts/check-lsp.sh` 查看缺少的 server、编译器和头文件。
+
+为了让 clangd 正确解析项目，建议在项目根目录提供 `compile_flags.txt`，或用 CMake 生成 `compile_commands.json`：
+
+```sh
+cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+ln -sf build/compile_commands.json compile_commands.json
+```
+
+没有编译数据库时仍可用基础补全和跳转，但系统头文件、宏和第三方库的解析可能不完整。clangd 额外提供 `:LspClangdSwitchSourceHeader`（源文件/头文件切换）和 `:LspClangdShowSymbolInfo`（查看符号信息）。
+
 | 键位 | 功能 |
 |---|---|
 | `gd` | 跳转定义 |
@@ -222,11 +273,17 @@ Linux / Intel Mac 换成对应平台的压缩包；确保 `~/.local/bin` 在 `PA
 | `grr` | 查看引用 |
 | `gri` | 查看实现 |
 | `gra` | code action |
+| `grt` | 类型定义 |
+| `grx` | 执行 code lens（server 支持时） |
+| `gO` | 当前文件符号（quickfix） |
+| `<C-s>` | 插入模式签名帮助 |
 | `[d` / `]d` | 上一个/下一个诊断 |
 | `<leader>ld` | 当前文件诊断列表 |
 | `<leader>ls` | 当前文件符号列表 |
 
-补全由 Neovim 原生 `vim.lsp.completion` 提供：`<C-n>` / `<C-p>` 选择，`<C-y>` 接受，`<C-x><C-o>` 手动触发。诊断默认行内显示。
+助记：`g` = go，`r` = LSP 默认映射固定前缀，第三个字母是动作首字母；`grr` = `g` + `r` + **r**eferences，`gO` 的 `O` = **O**utline。`grr` 打开 quickfix；引用列表操作、自动修复和补全排序等细节见 [`nvim/keymaps.md`](../nvim/keymaps.md)。
+
+Lua、Python、Bash、C/C++ 共用同一套键位。补全由 Neovim 原生 `vim.lsp.completion` 提供：`<C-n>` / `<C-p>` 选择，`<C-y>` 接受，`<C-x><C-o>` 手动触发；补全顺序由 server 决定，Neovim 不按选择频率学习。诊断默认行内显示；自动修复用 `gra` 选择 code action，目前没有保存时自动修复。
 
 LuaLS 首次打开项目需要索引，索引完成前 `K` 可能暂时没有结果；`grn` 只对可重命名的符号生效，`gra` 只在当前位置有 code action 时才有内容，这两类提示不一定是配置错误。`grn` 对局部变量只改当前作用域，对模块字段/导出函数可能跨文件修改 LSP 引用；建议先用 `grr` 看引用范围。
 

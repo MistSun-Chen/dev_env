@@ -93,5 +93,6 @@ bash install.sh --allow-root    # 仅容器/CI
 - 离线安装用 `dpkg -i` + `dpkg --configure -a`，不执行 `apt-get update`，不会访问网络。
 - 已有 `~/.config/nvim` 会先备份为 `~/.config/nvim.bak.YYYYMMDD-HHMMSS`。
 - 离线包不会安装 fzf 的 shell 集成，只安装二进制；Neovim 使用不需要 shell 集成。
+- 离线包不包含 language server、Node/npm、`clangd` 或 C/C++ 编译器。离线机器上如果想要 Python/Bash/C/C++ LSP，需要另外准备这些包；否则 Neovim 仍可启动，只是对应语言的 LSP 不工作。可用 `bash nvim/scripts/check-lsp.sh` 查看缺失项。
 - `download.sh` 会清空并重新生成 `dist/debs/`；不要把重要文件放在这个目录。
 - 离线包默认不提交到 git（见 `.gitignore`），需要时再单独传输。

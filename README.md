@@ -16,6 +16,7 @@
 
 - [使用与安装](./docs/USAGE.md)：联网/离线安装、验证、PATH、版本修改、回滚、常见问题
 - [测试与验证](./docs/TESTING.md)：Ubuntu Docker 测试、macOS 本机测试、实测记录
+- [LSP 练习样例](./samples/lsp/README.md)：C/C++/Bash/Python 的跳转、诊断、补全练习
 - [文档索引](./docs/README.md)
 
 ### 平台与配置
@@ -36,6 +37,7 @@ dev_env/
 ├── docs/              # 使用、测试、文档索引
 ├── nvim/              # 跨平台共用的 Neovim 配置
 ├── platforms/         # 各平台联网/离线安装脚本
+├── samples/           # LSP 练习样例（C/C++/Bash/Python）
 └── tests/             # Docker/本地测试脚本
 ```
 

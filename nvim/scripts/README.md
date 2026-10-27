@@ -15,7 +15,16 @@ bash nvim/scripts/install-plugins.sh --check
 - lazy.nvim 自身由 `nvim/lua/config/lazy.lua` 引导，固定到该文件中的 commit。
 - 插件版本来自 `nvim/lua/config/plugins.lua`，实际 revision 由 `nvim/lazy-lock.json` 固定。
 - 插件目录位于 `$XDG_DATA_HOME/nvim/lazy/`（默认 `~/.local/share/nvim/lazy/`）。
-- 本脚本只安装 Neovim 插件，不安装 language server；`lua-language-server` 需要按 `nvim/README.md` 的 LSP 一节手动安装。
+- 本脚本只安装 Neovim 插件，不安装 language server；`lua-language-server`、`pyright-langserver`、`bash-language-server`、`clangd` 需要按 `nvim/README.md` 的 LSP 一节准备。
+
+## check-lsp.sh
+
+```sh
+bash nvim/scripts/check-lsp.sh
+bash nvim/scripts/check-lsp.sh --strict
+```
+
+只读检查 LSP server、Node/npm、C/C++ 编译器、Linux 标准头文件和可选的 `shellcheck`，不会安装任何东西。默认始终返回 0；`--strict` 在有必需项缺失时返回 1。
 
 ## build-latex-parser.sh
 

@@ -429,5 +429,5 @@ fi
 
 log "完成。"
 log "启动 Neovim: nvim"
-log "检查 LSP: :checkhealth vim.lsp（当前尚未配置 LSP）"
+log "检查 LSP: bash $NVIM_CONFIG_SRC/scripts/check-lsp.sh（或 :checkhealth vim.lsp）"
 log "配置源文件: $NVIM_CONFIG_SRC/init.lua"

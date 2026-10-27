@@ -162,18 +162,29 @@ XDG_CONFIG_HOME="$TMP_CONFIG" XDG_DATA_HOME="$TMP_DATA" \
 
 ### 4.4 LSP 手动验收
 
-`lua-language-server` 未安装时，smoke test 只验证插件和配置加载。安装 server 后，在真实或临时配置中打开 `dev_env/nvim/lua/config/lsp.lua`，检查：
+`lua-language-server`、`pyright-langserver`、`bash-language-server` 都是手动安装；`clangd` 在 macOS 上通常由 Xcode Command Line Tools 提供。未安装时 smoke test 只验证插件和配置加载。安装 server 后，分别打开 Lua、Python、Bash、C/C++ 文件，检查：
 
 ```vim
 :checkhealth vim.lsp
 ```
 
-- `lua_ls` 已 attach；
+- Lua 文件显示 `lua_ls`，Python 显示 `pyright`，Bash 显示 `bashls`，C/C++ 显示 `clangd`；
 - `K` 显示 hover；
 - `gd` 跳转定义；
 - `grr` 查看引用；
 - `<leader>ld` 打开诊断列表；
-- 输入 `vim.` 出现原生补全，`<C-y>` 接受。
+- Lua 输入 `vim.`、Python 输入对象成员、Bash 输入变量、C/C++ 输入对象成员时出现原生补全，`<C-y>` 接受；
+- C/C++ 项目有 `compile_flags.txt` 或 `compile_commands.json` 时，系统头文件和第三方头文件的解析更准确。
+
+Python 的 Pyright 配置启用了 `basic` 类型检查；Bash 的 shellcheck 诊断需要本机有 `shellcheck`。如果 `:checkhealth vim.lsp` 没有显示已 attach 的 client，先确认 `command -v pyright-langserver`、`command -v bash-language-server`、`command -v clangd` 有输出，再检查 buffer 的 filetype 和 LSP 日志。
+
+在 Ubuntu 上，可以先运行只读检查：
+
+```sh
+bash nvim/scripts/check-lsp.sh
+```
+
+它会分别检查 server、Node/npm、C/C++ 编译器和 Linux 标准头文件。缺少 server 时 Neovim 仍可启动；打开对应类型文件时会提示缺什么。C/C++ 只有 `clangd` 但没有编译器时，clangd 可能 attach，但标准头文件解析会不完整。
 
 ### 4.5 离线插件加载
 
