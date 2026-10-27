@@ -3,6 +3,10 @@
 > 配置事实源：`dev_env/nvim/`。`<leader>` = 空格（Space）。
 > 本文件列本配置新增的映射，以及需要记住的 LSP/插件默认键位；纯 Vim 默认键位见 `:help`。
 
+## which-key 提示
+
+按 `<leader>` 后停顿约 250ms，会弹出当前可用的分组；继续按 `f`、`b`、`e`、`l`、`s`、`m`、`t` 等前缀查看下一级。键位说明来自各映射的 `desc`，不需要先把整张表背下来。
+
 ## 自定义映射
 
 命名规则：`f` = find、`b` = buffer、`e` = explorer、`l` = lsp、`s` = search/replace、`m` = markdown、`t` = theme；第二个字母表示对象或动作。

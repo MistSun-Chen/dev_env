@@ -8,7 +8,7 @@
 - `nvim-linux-*.tar.gz`：Neovim 官方二进制
 - `fzf-*-linux_*.tar.gz`：fzf 官方二进制
 - `tree-sitter-cli-linux-*.zip`：tree-sitter CLI
-- `nvim-plugins/`：lazy.nvim 根目录，含 lazy.nvim、fzf-lua、markview.nvim、grug-far.nvim、neo-tree.nvim、nui.nvim、plenary.nvim、nvim-lspconfig、lazydev.nvim、配色插件（均带 `.git`）
+- `nvim-plugins/`：lazy.nvim 根目录，含 lazy.nvim、which-key.nvim、fzf-lua、markview.nvim、grug-far.nvim、neo-tree.nvim、nui.nvim、plenary.nvim、nvim-lspconfig、lazydev.nvim、配色插件（均带 `.git`）
 - `nvim-parser/latex.so`：预编译公式 parser
 - `nvim/`：Neovim 配置与 lockfile
 - `install.sh`：离线安装脚本

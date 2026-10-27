@@ -9,7 +9,7 @@ bash nvim/scripts/install-plugins.sh
 bash nvim/scripts/install-plugins.sh --check
 ```
 
-- 无参数：联网安装缺失的 lazy.nvim 插件，并验证 `lazy`、`fzf-lua`、`markview`、`grug-far`、`neo-tree`、`nvim-lspconfig`、`lazydev` 以及配色插件。已有插件的更新使用 `:Lazy update fzf-lua markview.nvim grug-far.nvim neo-tree.nvim nui.nvim plenary.nvim nvim-lspconfig lazydev.nvim`。
+- 无参数：联网安装缺失的 lazy.nvim 插件，并验证 `lazy`、`which-key`、`fzf-lua`、`markview`、`grug-far`、`neo-tree`、`nvim-lspconfig`、`lazydev` 以及配色插件。已有插件的更新使用 `:Lazy update which-key.nvim fzf-lua markview.nvim grug-far.nvim neo-tree.nvim nui.nvim plenary.nvim nvim-lspconfig lazydev.nvim`。
 - `--check`：只检查配置目录、`lazy-lock.json`、插件目录和 `require`，用于离线安装和 CI。
 - 可通过 `NVIM_BIN`、`XDG_CONFIG_HOME`、`XDG_DATA_HOME` 覆盖路径，适合临时环境。
 - lazy.nvim 自身由 `nvim/lua/config/lazy.lua` 引导，固定到该文件中的 commit。
@@ -49,7 +49,7 @@ bash nvim/scripts/stage-plugins.sh --output /tmp/bundle
 供离线包 `download.sh` 使用：在临时 `XDG_*` 目录中安装 lazy.nvim 插件、编译 latex parser，然后把以下产物放到输出目录：
 
 ```text
-nvim-plugins/       # lazy.nvim 根目录，含 lazy.nvim、fzf-lua、markview.nvim、grug-far.nvim、neo-tree.nvim、nui.nvim、plenary.nvim、nvim-lspconfig、lazydev.nvim、配色插件 和 .git
+nvim-plugins/       # lazy.nvim 根目录，含 lazy.nvim、which-key.nvim、fzf-lua、markview.nvim、grug-far.nvim、neo-tree.nvim、nui.nvim、plenary.nvim、nvim-lspconfig、lazydev.nvim、配色插件 和 .git
 nvim-parser/latex.so
 nvim/lazy-lock.json
 ```

@@ -147,7 +147,7 @@ XDG_CONFIG_HOME="$TMP_CONFIG" XDG_DATA_HOME="$TMP_DATA" \
 TMP_CONFIG="$(mktemp -d)"
 TMP_DATA="$(mktemp -d)"
 XDG_CONFIG_HOME="$TMP_CONFIG" XDG_DATA_HOME="$TMP_DATA" \
-  nvim --headless "+lua assert(pcall(require,'lazy')); assert(pcall(require,'fzf-lua')); assert(pcall(require,'markview')); assert(pcall(require,'grug-far')); assert(pcall(require,'neo-tree')); assert(pcall(require,'lazydev')); assert(vim.lsp.config ~= nil); assert(vim.treesitter.language.add('latex')); assert(vim.g.colors_name == 'catppuccin-mocha'); local colors=vim.fn.getcompletion('', 'color'); for _,n in ipairs({'catppuccin-mocha','catppuccin-macchiato','catppuccin-frappe','catppuccin-latte'}) do assert(vim.tbl_contains(colors,n), n) end; assert(require('config.markdown_toc').get_headings(0)); assert(vim.fn.maparg('<leader>et','n') ~= ''); assert(vim.fn.maparg('<leader>er','n') == ''); assert(vim.fn.maparg('<leader>ld','n') ~= ''); assert(vim.fn.maparg('<leader>ls','n') ~= '')" +qa
+  nvim --headless "+lua assert(pcall(require,'lazy')); assert(pcall(require,'which-key')); assert(pcall(require,'fzf-lua')); assert(pcall(require,'markview')); assert(pcall(require,'grug-far')); assert(pcall(require,'neo-tree')); assert(pcall(require,'lazydev')); assert(vim.lsp.config ~= nil); assert(vim.treesitter.language.add('latex')); assert(vim.g.colors_name == 'catppuccin-mocha'); local colors=vim.fn.getcompletion('', 'color'); for _,n in ipairs({'catppuccin-mocha','catppuccin-macchiato','catppuccin-frappe','catppuccin-latte'}) do assert(vim.tbl_contains(colors,n), n) end; assert(require('config.markdown_toc').get_headings(0)); assert(vim.fn.maparg('<leader>et','n') ~= ''); assert(vim.fn.maparg('<leader>er','n') == ''); assert(vim.fn.maparg('<leader>ld','n') ~= ''); assert(vim.fn.maparg('<leader>ls','n') ~= '')" +qa
 ```
 
 ### 4.3 Markdown 预览冒烟测试
@@ -194,7 +194,7 @@ bash nvim/scripts/check-lsp.sh
 bash nvim/scripts/install-plugins.sh --check
 ```
 
-确认 `lazy-lock.json`、`lazy/{lazy.nvim,fzf-lua,markview.nvim,grug-far.nvim,neo-tree.nvim,nui.nvim,plenary.nvim,nvim-lspconfig,lazydev.nvim,配色插件}`、`site/parser/latex.so` 都存在，并且启动过程不访问网络。
+确认 `lazy-lock.json`、`lazy/{lazy.nvim,which-key.nvim,fzf-lua,markview.nvim,grug-far.nvim,neo-tree.nvim,nui.nvim,plenary.nvim,nvim-lspconfig,lazydev.nvim,配色插件}`、`site/parser/latex.so` 都存在，并且启动过程不访问网络。
 
 ## 5. 手动验证清单
 

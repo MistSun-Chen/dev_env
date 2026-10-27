@@ -9,7 +9,7 @@
 - `ripgrep-*-apple-darwin.tar.gz`：ripgrep 15.2.0
 - `fd-v*-apple-darwin.tar.gz`：fd 10.5.0
 - `tree-sitter-cli-macos-*.zip`：tree-sitter CLI 0.27.1
-- `nvim-plugins/`：lazy.nvim 根目录，含 lazy.nvim、fzf-lua、markview.nvim、grug-far.nvim、neo-tree.nvim、nui.nvim、plenary.nvim、nvim-lspconfig、lazydev.nvim、配色插件（均带 `.git`）
+- `nvim-plugins/`：lazy.nvim 根目录，含 lazy.nvim、which-key.nvim、fzf-lua、markview.nvim、grug-far.nvim、neo-tree.nvim、nui.nvim、plenary.nvim、nvim-lspconfig、lazydev.nvim、配色插件（均带 `.git`）
 - `nvim-parser/latex.so`：预编译公式 parser
 - `nvim/`：Neovim 配置与 lockfile
 - `install.sh`：离线安装脚本

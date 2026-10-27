@@ -15,6 +15,7 @@
 插件：
 
 - **lazy.nvim**：插件管理器，由 `lua/config/lazy.lua` 引导安装
+- **which-key.nvim**：按 `<leader>` 后显示分组和键位提示
 - **fzf-lua**：找文件、全局/当前 buffer/选区/路径搜索、切换 buffer、最近文件
 - **grug-far.nvim**：搜索并替换，支持项目、当前文件、选区范围和 glob/路径过滤
 - **neo-tree.nvim**：侧边栏文件树，支持文件操作、Git 状态和诊断
@@ -31,6 +32,7 @@ init.lua
 └── config/lazy.lua          # 引导 lazy.nvim
     └── lazy.nvim            # 安装/加载其他插件
         ├── config/plugins.lua
+        ├── which-key.nvim
         ├── fzf-lua
         ├── grug-far.nvim
         ├── neo-tree.nvim
@@ -75,7 +77,7 @@ bash platforms/macos/install.sh
 
 ### 插件安装 / 更新
 
-插件清单和版本在 `lua/config/plugins.lua`。lazy.nvim 自身固定到 `lua/config/lazy.lua` 中的 commit；fzf-lua、markview.nvim、grug-far.nvim、neo-tree.nvim、nvim-lspconfig、lazydev.nvim 及其依赖和配色插件的实际 revision 由 `lazy-lock.json` 固定。
+插件清单和版本在 `lua/config/plugins.lua`。lazy.nvim 自身固定到 `lua/config/lazy.lua` 中的 commit；which-key.nvim、fzf-lua、markview.nvim、grug-far.nvim、neo-tree.nvim、nvim-lspconfig、lazydev.nvim 及其依赖和配色插件的实际 revision 由 `lazy-lock.json` 固定。
 
 ```sh
 # 联网安装缺失插件（首次安装或新增插件后）
@@ -96,13 +98,14 @@ bash nvim/scripts/install-plugins.sh
 1. 检查 `nvim`、`git`、`fzf`；
 2. 必要时把 `~/.config/nvim` 链接到仓库；
 3. 执行 `nvim --headless "+Lazy! install"`，由 lazy.nvim 安装缺失插件；
-4. 检查 `lazy.nvim`、`fzf-lua`、`markview.nvim`、`grug-far.nvim`、`neo-tree.nvim`、`nui.nvim`、`plenary.nvim`、`nvim-lspconfig`、`lazydev.nvim`、配色插件目录和 `lazy-lock.json`；
+4. 检查 `lazy.nvim`、`which-key.nvim`、`fzf-lua`、`markview.nvim`、`grug-far.nvim`、`neo-tree.nvim`、`nui.nvim`、`plenary.nvim`、`nvim-lspconfig`、`lazydev.nvim`、配色插件目录和 `lazy-lock.json`；
 5. 验证插件可以被 `require`。
 
 插件安装位置：
 
 ```text
 ~/.local/share/nvim/lazy/lazy.nvim
+~/.local/share/nvim/lazy/which-key.nvim
 ~/.local/share/nvim/lazy/fzf-lua
 ~/.local/share/nvim/lazy/markview.nvim
 ~/.local/share/nvim/lazy/grug-far.nvim
@@ -118,7 +121,7 @@ bash nvim/scripts/install-plugins.sh
 已有插件需要升级时，在 Neovim 中执行：
 
 ```vim
-:Lazy update fzf-lua markview.nvim grug-far.nvim neo-tree.nvim nui.nvim plenary.nvim nvim-lspconfig lazydev.nvim
+:Lazy update which-key.nvim fzf-lua markview.nvim grug-far.nvim neo-tree.nvim nui.nvim plenary.nvim nvim-lspconfig lazydev.nvim
 ```
 
 这样只更新这些插件，不会顺带移动 lazy.nvim 自身的固定 commit。
@@ -152,6 +155,8 @@ Windows 安装脚本尚未实现；当前以复制方式为准，后续会在 `p
 ## 键位
 
 完整键位（含 LSP 默认键位、grug-far/neo-tree/fzf 内部键位）见 [`keymaps.md`](./keymaps.md)。
+
+按 `<leader>` 后停顿约 250ms，which-key 会显示当前可用的分组；再按 `f`、`b`、`l` 等前缀可以继续查看下一级。例如 `<leader>` → `f` 显示查找类键位，`<leader>` → `l` 显示 LSP 键位。
 
 | 键位 | 功能 |
 |---|---|

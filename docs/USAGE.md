@@ -108,6 +108,7 @@ bash nvim/scripts/install-plugins.sh --check
 脚本会检查 `nvim`、`git`、`fzf`，执行 `nvim --headless "+Lazy! install"`，并验证：
 
 - `lazy.nvim`
+- `which-key.nvim`
 - `fzf-lua`
 - `markview.nvim`
 - `grug-far.nvim`
@@ -119,6 +120,7 @@ bash nvim/scripts/install-plugins.sh --check
 
 ```text
 ~/.local/share/nvim/lazy/lazy.nvim
+~/.local/share/nvim/lazy/which-key.nvim
 ~/.local/share/nvim/lazy/fzf-lua
 ~/.local/share/nvim/lazy/markview.nvim
 ~/.local/share/nvim/lazy/grug-far.nvim
@@ -131,6 +133,8 @@ bash nvim/scripts/install-plugins.sh --check
 ```
 
 `lazy-lock.json` 位于配置目录，软链接模式下就是仓库的 `nvim/lazy-lock.json`，需要提交到 git。lazy.nvim 自身固定到 `nvim/lua/config/lazy.lua` 中的 commit，升级时修改该常量并删除旧插件目录后重新启动。
+
+按 `<leader>` 后停顿约 250ms，which-key 会弹出当前可用的分组和键位说明；继续按 `f`、`b`、`l`、`s` 等前缀可以逐级查看。忘记某个快捷键时，先按 `<leader>` 比翻文档更快。
 
 ### 3.2 公式 parser
 
