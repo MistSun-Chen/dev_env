@@ -1,6 +1,6 @@
 # dev_env
 
-个人开发环境仓库：按平台安装 Neovim、ripgrep、fd、fzf、git、tree-sitter，并部署统一的 Neovim 配置与插件。
+个人终端开发环境仓库：按平台安装 Neovim、tmux、zsh、Starship、ripgrep、fd、fzf、git、tree-sitter，并部署统一的 Neovim、tmux、shell 配置、终端配色和 Nerd Font。
 
 当前支持 Ubuntu 24.04 和 macOS（Apple Silicon / Intel），均提供联网安装与离线安装；Windows 待实现。
 
@@ -22,6 +22,10 @@
 ### 平台与配置
 
 - [Neovim 配置](./nvim/README.md)
+- [tmux 配置](./tmux/README.md)
+- [shell 配置](./shell/README.md)
+- [终端配色](./shell/terminal/README.md)
+- [Nerd Font](./shell/fonts/README.md)
 - [平台脚本约定](./platforms/README.md)
 - [Ubuntu 24.04](./platforms/linux/ubuntu/24.04/install.sh)
 - [Ubuntu 24.04 离线包](./platforms/linux/ubuntu/24.04/offline/README.md)
@@ -36,6 +40,8 @@ dev_env/
 ├── README.md
 ├── docs/              # 使用、测试、文档索引
 ├── nvim/              # 跨平台共用的 Neovim 配置
+├── tmux/              # 跨平台共用的 tmux 配置
+├── shell/             # zsh + Starship + 终端配色 + 字体说明
 ├── platforms/         # 各平台联网/离线安装脚本
 ├── samples/           # LSP 练习样例（C/C++/Bash/Python）
 └── tests/             # Docker/本地测试脚本
@@ -43,8 +49,8 @@ dev_env/
 
 ## 设计原则
 
-- 平台安装逻辑放在 `platforms/<os>/`，共用配置只保留在 `nvim/`。
+- 平台安装逻辑放在 `platforms/<os>/`，共用配置只保留在 `nvim/`、`tmux/`、`shell/`。
 - 版本和 SHA256 固定在 `versions.env`，便于复现。
-- 已有 `~/.config/nvim` 先备份，再链接或复制。
+- 已有 `~/.config/nvim`、`~/.config/tmux`、`~/.zshrc` 先备份，再链接或复制。
 - 离线包不提交到 git，只保留生成和安装脚本。
 - 所有测试方法见 [`docs/TESTING.md`](./docs/TESTING.md)。

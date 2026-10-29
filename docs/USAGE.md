@@ -7,6 +7,10 @@
 每个平台安装以下工具：
 
 - Neovim 0.12.x
+- tmux（macOS 在线默认 Homebrew；离线为固定版本自包含二进制；Ubuntu 为 apt 包）
+- zsh（macOS 系统自带；Ubuntu 通过 apt 安装）
+- Starship prompt
+- MesloLGSNerdFont（Regular/Bold/Italic/BoldItalic）
 - ripgrep（`rg`）
 - fd
 - fzf
@@ -14,7 +18,14 @@
 - `tree-sitter` CLI（编译公式 parser）
 - Node.js（仅构建公式 parser 时需要，不是 Neovim 运行时依赖）
 
-并把仓库根目录的 `nvim/` 链接或复制到该平台的 Neovim 配置目录。
+并把仓库根目录的 `nvim/`、`tmux/`、`shell/` 链接或复制到对应配置目录：
+
+```text
+~/.config/nvim       -> <repo>/nvim
+~/.config/tmux/tmux.conf -> <repo>/tmux/tmux.conf
+~/.zshrc             -> <repo>/shell/zshrc
+~/.config/starship.toml -> <repo>/shell/starship.toml
+```
 
 Neovim 插件由 `nvim/scripts/install-plugins.sh` 安装；公式所需 `latex` parser 由 `nvim/scripts/build-latex-parser.sh` 编译。
 
@@ -37,10 +48,16 @@ bash platforms/linux/ubuntu/24.04/install.sh
 exec "$SHELL" -l
 ```
 
-只安装工具、不接管 Neovim 配置（也不会安装插件/公式 parser）：
+只安装工具、不接管 Neovim/tmux/shell 配置（也不会安装插件/公式 parser）：
 
 ```sh
 bash platforms/linux/ubuntu/24.04/install.sh --skip-config
+```
+
+只跳过 shell 配置，保留 Neovim/tmux 配置：
+
+```sh
+bash platforms/linux/ubuntu/24.04/install.sh --skip-shell
 ```
 
 容器/CI 中允许 root：
@@ -60,34 +77,54 @@ bash platforms/macos/install.sh
 exec "$SHELL" -l
 ```
 
-只安装工具、不接管 Neovim 配置（也不会安装插件/公式 parser）：
+只安装工具、不接管 Neovim/tmux/shell 配置（也不会安装插件/公式 parser）：
 
 ```sh
 bash platforms/macos/install.sh --skip-config
+```
+
+只跳过 shell 配置，保留 Neovim/tmux 配置：
+
+```sh
+bash platforms/macos/install.sh --skip-shell
+```
+
+macOS 默认使用 Homebrew 的 tmux；需要固定 3.8 自包含版本时：
+
+```sh
+bash platforms/macos/install.sh --pinned-tmux
 ```
 
 ### 2.3 安装脚本做了什么
 
 Ubuntu：
 
-- apt 安装 `ca-certificates`、`curl`、`git`、`ripgrep`、`fd-find`、`gcc`、`libc6-dev`、`unzip`、`nodejs`；不安装 `npm`、`g++`、`clangd` 或 language server；
+- apt 安装 `ca-certificates`、`curl`、`git`、`ripgrep`、`fd-find`、`gcc`、`libc6-dev`、`unzip`、`nodejs`、`tmux`、`zsh`、`ncurses-term`、`xz-utils`；不安装 `npm`、`g++`、`clangd` 或 language server；
 - 补 `~/.local/bin/fd -> fdfind`；
-- 从官方 release 安装 Neovim 0.12.3、fzf 0.74.5、tree-sitter 0.27.1，并校验 SHA256；
-- 备份并链接 `~/.config/nvim -> <repo>/nvim`；
+- 从官方 release 安装 Neovim 0.12.3、fzf 0.74.5、tree-sitter 0.27.1、Starship 1.27.0，并校验 SHA256；
+- 安装 Meslo Nerd Font 的四个样式到 `~/.local/share/fonts`；
+- 备份并链接 `~/.config/nvim`、`~/.config/tmux/tmux.conf`、`~/.zshrc`、`~/.config/starship.toml`；
+- 创建 `~/.zshrc.local`（不存在时，权限 600）；
 - 调用 `nvim/scripts/install-plugins.sh` 安装插件，调用 `build-latex-parser.sh` 编译公式 parser。
 
 macOS：
 
-- 缺失时用 Homebrew 安装 `ripgrep`、`fd`、`git`、`node`；
-- 从官方 release 安装 Neovim 0.12.3、fzf 0.74.5、tree-sitter 0.27.1，并校验 SHA256；
-- 备份并链接 `~/.config/nvim -> <repo>/nvim`；
+- 缺失时用 Homebrew 安装 `ripgrep`、`fd`、`git`、`node`、`tmux`；
+- 从官方 release 安装 Neovim 0.12.3、fzf 0.74.5、tree-sitter 0.27.1、Starship 1.27.0，并校验 SHA256；
+- 安装 Meslo Nerd Font 的四个样式到 `~/Library/Fonts`；
+- 备份并链接 `~/.config/nvim`、`~/.config/tmux/tmux.conf`、`~/.zshrc`、`~/.config/starship.toml`；
+- 创建 `~/.zshrc.local`（不存在时，权限 600）；
 - 调用 `nvim/scripts/install-plugins.sh` 安装插件，调用 `build-latex-parser.sh` 编译公式 parser。
 
 已有配置会备份为：
 
 ```text
 ~/.config/nvim.bak.YYYYMMDD-HHMMSS
+~/.config/tmux/tmux.conf.bak.YYYYMMDD-HHMMSS
+~/.zshrc.bak.YYYYMMDD-HHMMSS
+~/.config/starship.toml.bak.YYYYMMDD-HHMMSS
 ```
+
 
 ## 3. Neovim 插件与 Markdown 预览
 
@@ -363,10 +400,10 @@ bash install.sh
 
 说明：
 
-- 离线包包含 apt deb、Neovim、fzf、tree-sitter、Neovim 插件、预编译 `latex.so`、Neovim 配置和 `SHA256SUMS`；
+- 离线包包含 apt deb（含 `tmux`、`zsh`、`ncurses-term`、`xz-utils`）、Neovim、fzf、tree-sitter、Starship、Meslo 字体、Neovim/tmux/shell 配置、Neovim 插件、预编译 `latex.so` 和 `SHA256SUMS`；
 - 安装使用 `dpkg -i` + `dpkg --configure -a`，不访问网络；
 - 下载端和目标端必须同为 Ubuntu 24.04、同一架构（`x86_64` / `arm64`）；
-- `download.sh` 会递归收集依赖，并排除构建机已安装的包；目标按干净的 Ubuntu 24.04 处理。
+- `download.sh` 会递归收集依赖，并排除构建机已安装的包；目标按干净的 Ubuntu 24.04 处理。生成离线包应在干净的 `ubuntu:24.04` 容器中执行。
 
 只生成目录、不打包：
 
@@ -376,7 +413,7 @@ bash download.sh --no-tar --output /tmp/dev_env-offline
 
 ### 4.2 macOS
 
-在联网 Mac 上：
+在联网 Mac 上（构建机需要 Node.js、Xcode Command Line Tools 和 `make`，仅用于编译 latex parser 和自包含 tmux；目标机不需要）：
 
 ```sh
 cd platforms/macos/offline
@@ -400,8 +437,8 @@ bash install.sh
 
 说明：
 
-- 离线包包含 Neovim、fzf、ripgrep、fd、tree-sitter、Neovim 插件、预编译 `latex.so`、Neovim 配置和 `SHA256SUMS`；
-- 不包含 Homebrew 和 git；macOS 通常已有 Xcode Command Line Tools 提供的 `git`；
+- 离线包包含 Neovim、fzf、ripgrep、fd、tree-sitter、tmux 3.8 自包含二进制、Starship、Meslo 字体、Neovim/tmux/shell 配置、Neovim 插件、预编译 `latex.so` 和 `SHA256SUMS`；
+- 不包含 Homebrew、编译器和 git；macOS 通常已有 Xcode Command Line Tools 提供的 `git`；
 - Apple Silicon 和 Intel 的包不能混用；
 - 安装到 `~/.local/opt/`，命令链接到 `~/.local/bin/`。
 
@@ -411,6 +448,9 @@ bash install.sh
 
 ```sh
 nvim --version | head -1
+tmux -V
+zsh --version
+starship --version
 rg --version | head -1
 fd --version
 fzf --version
@@ -421,6 +461,9 @@ git --version
 
 - `nvim` 为 `v0.12.3`
 - `fzf` 为 `0.74.5`
+- `tmux` 为 3.4+（macOS 在线可能来自 Homebrew；离线为 3.8）
+- `zsh` 为 5.9（macOS 系统自带；Ubuntu 由 apt 安装）
+- `starship` 为 `1.27.0`
 - `rg`、`fd`、`git` 正常输出版本
 
 验证配置：
@@ -450,17 +493,33 @@ nvim --headless "+lua assert(pcall(require,'lazy')); assert(pcall(require,'fzf-l
 - normal / insert 模式按方向键，应出现 `Use h/l/k/j` 提示；
 - `Q` 保留 Neovim 默认行为，没有被禁用。
 
+验证 tmux/shell 配置：
+
+```sh
+ls -l ~/.config/tmux/tmux.conf ~/.zshrc ~/.config/starship.toml
+zsh -n ~/.zshrc
+tmux -L dev-env-check -f ~/.config/tmux/tmux.conf new-session -d -s check
+tmux -L dev-env-check show-options -gv mouse
+tmux -L dev-env-check list-keys -T prefix h
+tmux -L dev-env-check send-keys -t check exit Enter
+```
+
+`mouse` 应为 `on`，`h` 对应 `select-pane -L`。测试使用独立 socket，
+不要对默认 tmux server 执行 `kill-server`。
+
 ## 6. PATH
 
-`nvim`、`fzf`、`fd`（macOS 离线包还有 `rg`）会链接到 `~/.local/bin`。如果命令找不到：
+`nvim`、`fzf`、`fd`、`tmux`、`starship`（macOS 离线包还有 `rg`）会链接到 `~/.local/bin`。如果命令找不到：
 
 ```sh
 echo "$PATH"
 command -v nvim
-command -v fzf
+command -v tmux
+command -v starship
 ```
 
-确保 `~/.local/bin` 在 `/usr/bin` 前面。重新登录通常会让 Ubuntu 的 `~/.profile` 生效；自定义 shell 可在 `~/.zshrc` 加入：
+确保 `~/.local/bin` 在 `/usr/bin` 前面。`dev_env` 的 `shell/options.zsh` 会自动把
+`~/.local/bin` 放到 PATH 前面；如果使用 `--skip-shell` 或 `--skip-config`，需要手动加：
 
 ```sh
 export PATH="$HOME/.local/bin:$PATH"
@@ -476,7 +535,7 @@ macOS 如果已有 `/usr/local/bin/nvim`，它可能优先于 `~/.local/bin` 被
 - macOS：`platforms/macos/versions.env`
 - 公式 parser：`nvim/scripts/versions.env`
 
-修改 `NVIM_VERSION` / `FZF_VERSION` / `RG_VERSION` / `FD_VERSION` / `TREE_SITTER_VERSION` 时，必须同步更新对应的 SHA256，否则下载会校验失败。修改 tree-sitter-latex 版本时，同步更新 `nvim/scripts/versions.env` 中的 URL/commit/SHA256，并重新生成离线包。
+修改 `NVIM_VERSION` / `FZF_VERSION` / `RG_VERSION` / `FD_VERSION` / `TREE_SITTER_VERSION` / `TMUX_VERSION` / `STARSHIP_VERSION` / `NERD_FONT_VERSION` 时，必须同步更新对应的 SHA256，否则下载会校验失败。修改 tree-sitter-latex 版本时，同步更新 `nvim/scripts/versions.env` 中的 URL/commit/SHA256，并重新生成离线包。
 
 也可以在运行时覆盖：
 
@@ -492,6 +551,15 @@ NVIM_VERSION=0.12.3 NVIM_SHA256=<sha256> \
 ```sh
 rm ~/.config/nvim
 mv ~/.config/nvim.bak.YYYYMMDD-HHMMSS ~/.config/nvim
+
+rm ~/.config/tmux/tmux.conf
+mv ~/.config/tmux/tmux.conf.bak.YYYYMMDD-HHMMSS ~/.config/tmux/tmux.conf
+
+rm ~/.zshrc
+mv ~/.zshrc.bak.YYYYMMDD-HHMMSS ~/.zshrc
+rm ~/.config/starship.toml
+mv ~/.config/starship.toml.bak.YYYYMMDD-HHMMSS ~/.config/starship.toml
+# ~/.zshrc.local 是用户数据，不要删除
 ```
 
 删除用户目录安装：
@@ -499,7 +567,9 @@ mv ~/.config/nvim.bak.YYYYMMDD-HHMMSS ~/.config/nvim
 ```sh
 rm -rf ~/.local/opt/nvim-0.12.3 ~/.local/opt/fzf-0.74.5
 rm -rf ~/.local/opt/tree-sitter-0.27.1
+rm -rf ~/.local/opt/tmux-3.8 ~/.local/opt/starship-1.27.0
 rm -f ~/.local/bin/nvim ~/.local/bin/fzf ~/.local/bin/tree-sitter
+rm -f ~/.local/bin/tmux ~/.local/bin/starship
 
 # 插件和公式 parser
 rm -rf ~/.local/share/nvim/lazy
@@ -517,7 +587,7 @@ rm -f ~/.local/bin/rg ~/.local/bin/fd
 Ubuntu 的 apt 包：
 
 ```sh
-sudo apt remove ripgrep fd-find git curl
+sudo apt remove ripgrep fd-find git curl tmux zsh
 ```
 
 ## 9. 常见问题
@@ -550,10 +620,65 @@ command -v nvim
 
 离线包里的 tarball 和 deb 都是架构相关的。Apple Silicon / Intel、x86_64 / arm64 不能混用；安装脚本会检查 `manifest.txt` 并报错。
 
-## 10. 相关文档
+### 9.5 tmux 还是旧配置
+
+安装器不会 kill 正在运行的 tmux server。执行：
+
+```sh
+tmux source-file ~/.config/tmux/tmux.conf
+```
+
+或者新开一个 server/session。旧 `~/.tmux.conf` 会被备份并移走，避免覆盖 XDG 配置。
+
+### 9.6 Ubuntu 新开终端还是 bash
+
+安装器不自动 `chsh`。执行：
+
+```sh
+chsh -s "$(command -v zsh)"
+```
+
+然后重新登录。也可以先在终端 profile 里把启动命令设为 `zsh`。
+
+### 9.7 Prompt 图标显示成方块
+
+终端没有选中 Meslo Nerd Font。字体安装后，仍需在 iTerm2/Terminal/GNOME Terminal/Kitty 等的 profile 里手动选择字体；详见 `shell/terminal/README.md`。
+
+## 10. tmux、shell 与主题
+
+### 10.1 tmux
+
+- 键位：`C-b h/j/k/l` 切 pane，`C-b H/J/K/L` 调分割线，`C-b z` 最大化，
+  `C-b Tab` 上一个 window。
+- 没有 PgUp/PgDn：目前用鼠标/触控板滚动，或 `C-b [` 后的 `C-u/C-d`、`C-b u`。
+- 复制/粘贴暂不配置，后续单独章节统一处理。
+- 配置：`tmux/README.md`。
+- 本地覆盖：`~/.tmux.local.conf`（默认不存在）。
+
+### 10.2 shell
+
+- `~/.zshrc` 链接到 `dev_env/shell/zshrc`。
+- 机器相关路径、代理、密钥、nvm/uv/Docker/OpenClaw 等放 `~/.zshrc.local`。
+- Ubuntu 需要手动 `chsh -s "$(command -v zsh)"`；安装器不会自动改登录 shell。
+- 详细说明：`shell/README.md`。
+
+### 10.3 主题与终端 profile
+
+- Starship 使用 Catppuccin Mocha Powerline；tmux 使用同色系状态栏。
+- 终端 profile 在 `shell/terminal/`，安装器复制到
+  `${XDG_DATA_HOME:-$HOME/.local/share}/dev_env/terminal/`，但不自动修改终端偏好。
+- 导入方式：`shell/terminal/README.md`。
+- Nerd Font：MesloLGSNerdFont Regular/Bold/Italic/BoldItalic；macOS 安装到
+  `~/Library/Fonts`，Ubuntu 安装到 `~/.local/share/fonts`。
+
+## 11. 相关文档
 
 - 测试方法：[`TESTING.md`](./TESTING.md)
 - Neovim 配置：[`../nvim/README.md`](../nvim/README.md)
+- tmux 配置：[`../tmux/README.md`](../tmux/README.md)
+- shell 配置：[`../shell/README.md`](../shell/README.md)
+- 终端配色：[`../shell/terminal/README.md`](../shell/terminal/README.md)
+- Nerd Font：[`../shell/fonts/README.md`](../shell/fonts/README.md)
 - 平台脚本约定：[`../platforms/README.md`](../platforms/README.md)
 - Ubuntu 离线包：[`../platforms/linux/ubuntu/24.04/offline/README.md`](../platforms/linux/ubuntu/24.04/offline/README.md)
 - macOS 离线包：[`../platforms/macos/offline/README.md`](../platforms/macos/offline/README.md)
