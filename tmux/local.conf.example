@@ -1,0 +1,15 @@
+# 复制到 ~/.tmux.local.conf 后按机器覆盖。
+# dev_env/tmux/tmux.conf 会在最后 source 这个文件（不存在时静默跳过）。
+
+# 示例：把状态栏放到顶部
+# set -g status-position top
+
+# 示例：机器上有 Nerd Font 时，给 pane 加标签
+# set -g pane-border-status top
+# set -g pane-border-format "#{pane_index}: #{pane_current_command}"
+
+# 示例：额外快捷键
+# bind C-s split-window -h -c "#{pane_current_path}"
+# bind C-v split-window -v -c "#{pane_current_path}"
+
+# 复制/粘贴相关配置暂不在本阶段提供；后续单独章节统一处理。
