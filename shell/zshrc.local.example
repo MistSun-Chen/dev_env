@@ -1,0 +1,22 @@
+# 机器相关配置：复制为 ~/.zshrc.local，并保持 chmod 600。
+# 这个文件不进入 dev_env；不要把真实密钥提交到仓库。
+
+# ---------- secrets / proxy ----------
+# export ALL_PROXY=socks5://127.0.0.1:7890
+# export HTTPS_PROXY=http://127.0.0.1:7890
+# export ANTHROPIC_API_KEY='...'
+
+# ---------- machine-specific PATHs ----------
+# export PATH="/opt/homebrew/bin:$PATH"
+# export PATH="/Applications/Docker.app/Contents/Resources/bin:$PATH"
+
+# ---------- optional local tools ----------
+# source "$HOME/.nvm/nvm.sh"
+# [[ -r "$HOME/.local/bin/env" ]] && source "$HOME/.local/bin/env"
+# [[ -r "$HOME/.openclaw/completions/openclaw.zsh" ]] && source "$HOME/.openclaw/completions/openclaw.zsh"
+
+# ---------- override Starship config ----------
+# export STARSHIP_CONFIG="$HOME/.config/starship.local.toml"
+
+# ---------- optional old aliases ----------
+# alias j='autojump'

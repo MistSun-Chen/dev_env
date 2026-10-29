@@ -1,0 +1,30 @@
+# dev_env zsh entry point
+# 安装器会把 ~/.zshrc 软链接到这里；机器相关配置放 ~/.zshrc.local。
+
+if [[ ! -o interactive ]]; then
+  return
+fi
+
+typeset -g DEV_ENV_SHELL_DIR="${${(%):-%x}:A:h}"
+
+[[ -r "$DEV_ENV_SHELL_DIR/options.zsh" ]] && source "$DEV_ENV_SHELL_DIR/options.zsh"
+[[ -r "$DEV_ENV_SHELL_DIR/completion.zsh" ]] && source "$DEV_ENV_SHELL_DIR/completion.zsh"
+[[ -r "$DEV_ENV_SHELL_DIR/aliases.zsh" ]] && source "$DEV_ENV_SHELL_DIR/aliases.zsh"
+[[ -r "$DEV_ENV_SHELL_DIR/plugins.zsh" ]] && source "$DEV_ENV_SHELL_DIR/plugins.zsh"
+
+# 机器相关路径/代理/密钥/nvm/uv/Docker 等放这里。
+# 先加载 local，允许它设置 STARSHIP_CONFIG。
+[[ -r "$HOME/.zshrc.local" ]] && source "$HOME/.zshrc.local"
+
+if (( $+commands[starship] )); then
+  export STARSHIP_CONFIG="${STARSHIP_CONFIG:-$DEV_ENV_SHELL_DIR/starship.toml}"
+  eval "$(starship init zsh)"
+else
+  # 未安装 Starship 时的最小回退 prompt。
+  PROMPT='%F{111}%~%f %(?..%F{210}%?%f )%# '
+fi
+
+# 必须在最后加载。
+if [[ -r "$DEV_ENV_SHELL_DIR/vendor/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]]; then
+  source "$DEV_ENV_SHELL_DIR/vendor/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+fi
