@@ -20,31 +20,33 @@ dev_env_warn() {
 
 # Portable canonical path. macOS readlink(1) has no reliable -f.
 dev_env_canonical_path() {
-  local path="$1"
+  # Avoid the name "path": in zsh it is tied to the PATH array and would
+  # clobber command lookup if this file is ever sourced outside bash.
+  local source_path="$1"
   local target
 
-  if [[ -L "$path" ]]; then
-    target="$(readlink "$path")"
+  if [[ -L "$source_path" ]]; then
+    target="$(readlink "$source_path")"
     case "$target" in
-      /*) path="$target" ;;
-      *) path="$(dirname -- "$path")/$target" ;;
+      /*) source_path="$target" ;;
+      *) source_path="$(dirname -- "$source_path")/$target" ;;
     esac
   fi
 
-  if [[ -d "$path" ]]; then
-    (cd -- "$path" && pwd -P)
-  elif [[ -e "$path" ]]; then
-    (cd -- "$(dirname -- "$path")" && printf '%s/%s\n' "$(pwd -P)" "$(basename -- "$path")")
+  if [[ -d "$source_path" ]]; then
+    (cd -- "$source_path" && pwd -P)
+  elif [[ -e "$source_path" ]]; then
+    (cd -- "$(dirname -- "$source_path")" && printf '%s/%s\n' "$(pwd -P)" "$(basename -- "$source_path")")
   else
-    printf '%s\n' "$path"
+    printf '%s\n' "$source_path"
   fi
 }
 
 dev_env_backup_path() {
-  local path="$1"
+  local target_path="$1"
   local backup
 
-  backup="${path}.bak.$(date +%Y%m%d-%H%M%S)"
+  backup="${target_path}.bak.$(date +%Y%m%d-%H%M%S)"
   while [[ -e "$backup" || -L "$backup" ]]; do
     backup="${backup}-$$"
   done
@@ -78,8 +80,10 @@ dev_env_link_path() {
   fi
 
   install -d "$(dirname -- "$dest")"
-  ln -sfn "$src" "$dest"
-  dev_env_log "已链接${label}: $dest -> $src"
+  # Link to the resolved source: callers may pass a relative path, and a
+  # relative symlink target would be interpreted relative to the destination.
+  ln -sfn "$src_real" "$dest"
+  dev_env_log "已链接${label}: $dest -> $src_real"
 }
 
 dev_env_deploy_nvim_config() {
@@ -142,4 +146,28 @@ dev_env_deploy_terminal_assets() {
     cp -a "$shell_dir/terminal/." "$dst/"
     dev_env_log "已复制终端配色资源: $dst"
   fi
+}
+
+# Offline bundles are often extracted under /tmp or ~/Downloads and deleted
+# after installation. Copy their config trees to a stable data directory so
+# ~/.zshrc and friends do not become dangling symlinks.
+# Prints the destination directory; callers should log it themselves.
+dev_env_stage_configs() {
+  local bundle="$1"
+  local data_home="${2:-${XDG_DATA_HOME:-$HOME/.local/share}}"
+  local dst="$data_home/dev_env/config"
+  local name
+
+  [[ -d "$bundle/nvim" && -d "$bundle/tmux" && -d "$bundle/shell" ]] \
+    || {
+      dev_env_warn "离线包缺少 nvim/tmux/shell 配置目录: $bundle"
+      return 1
+    }
+
+  install -d "$dst"
+  for name in nvim tmux shell; do
+    rm -rf "${dst:?}/$name"
+    cp -a "$bundle/$name" "$dst/$name"
+  done
+  printf '%s\n' "$dst"
 }

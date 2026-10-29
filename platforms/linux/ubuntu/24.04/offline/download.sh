@@ -18,6 +18,7 @@ ALLOW_ROOT=0
 SUDO=""
 OUT_DIR=""
 MAKE_TAR=1
+FORCE=0
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PLATFORM_DIR="$(dirname "$SCRIPT_DIR")"
@@ -47,6 +48,7 @@ usage() {
 选项:
   --output DIR    指定输出目录（默认: 本脚本目录下的 dist）
   --no-tar        只生成目录，不额外打 tar.gz（Docker/CI 常用）
+  --force         允许覆盖非空的输出目录
   --allow-root    允许以 root 运行（仅建议在容器/CI 中使用）
   -h, --help      显示帮助
 
@@ -65,6 +67,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --no-tar)
       MAKE_TAR=0
+      shift
+      ;;
+    --force)
+      FORCE=1
       shift
       ;;
     --allow-root)
@@ -133,11 +139,21 @@ fi
 OUT_DIR="${OUT_DIR:-$SCRIPT_DIR/dist}"
 mkdir -p "$OUT_DIR"
 OUT_DIR="$(cd "$OUT_DIR" && pwd)"
+[[ "$OUT_DIR" != "/" ]] || die "拒绝使用 / 作为输出目录。"
+
+BUNDLE_MARKER="$OUT_DIR/.dev_env_bundle"
+if [[ ! -f "$BUNDLE_MARKER" ]] \
+  && [[ -n "$(find "$OUT_DIR" -mindepth 1 -maxdepth 1 -print -quit)" ]] \
+  && [[ "$FORCE" -ne 1 ]]; then
+  die "输出目录非空且不是 dev_env 离线包: ${OUT_DIR}（换新目录，或确认后加 --force）"
+fi
+printf 'dev_env offline bundle\n' > "$BUNDLE_MARKER"
+
 DEBS_DIR="$OUT_DIR/debs"
 FZF_ASSET="fzf-${FZF_VERSION}-linux_${FZF_ARCH}.tar.gz"
 NVIM_ASSET="nvim-linux-${NVIM_ARCH}.tar.gz"
 TMP_DIR="$(mktemp -d)"
-cleanup() { rm -rf "$TMP_DIR"; }
+cleanup() { rm -rf "${TMP_DIR:?}"; }
 trap cleanup EXIT
 
 log "输出目录: $OUT_DIR"
@@ -150,19 +166,21 @@ APT_OPTS=(
   -o Acquire::ForceIPv4=true
   -o Acquire::http::Timeout=30
   -o Acquire::https::Timeout=30
+  -o Acquire::Retries=3
+  -o Acquire::http::Pipeline-Depth=0
 )
 
 log "更新 apt 索引..."
 run_sudo apt-get "${APT_OPTS[@]}" update
 
 log "下载 apt 包及依赖到 $DEBS_DIR ..."
-rm -rf "$DEBS_DIR"
+rm -rf "${DEBS_DIR:?}"
 mkdir -p "$DEBS_DIR"
 read -r -a APT_PACKAGE_ARRAY <<< "$APT_PACKAGES_OFFLINE"
 
-# 递归收集依赖，并排除当前系统已安装的包。
-# 目标机器按干净的 Ubuntu 24.04 处理；这样下载集合不会因为构建机
-# 已经装了 curl 而漏掉 curl 的依赖。
+# 递归收集完整依赖闭包，不减去构建机已安装的包。离线包的目标是干净的
+# Ubuntu 24.04；如果按构建机状态裁剪，构建机恰好装过 tmux/curl 时就会
+# 漏掉目标机需要的依赖。
 mapfile -t ALL_PKGS < <(
   apt-cache depends --recurse --no-recommends --no-suggests \
     --no-conflicts --no-breaks --no-replaces --no-enhances \
@@ -170,14 +188,10 @@ mapfile -t ALL_PKGS < <(
     | awk '/^[a-zA-Z0-9]/ {print $1}' \
     | sort -u
 )
-mapfile -t INSTALLED_PKGS < <(dpkg-query -W -f='${Package}\n' | sort -u)
-mapfile -t MISSING_PKGS < <(
-  comm -23 \
-    <(printf '%s\n' "${ALL_PKGS[@]}") \
-    <(printf '%s\n' "${INSTALLED_PKGS[@]}")
-)
 mapfile -t DOWNLOAD_PKGS < <(
-  printf '%s\n' "${APT_PACKAGE_ARRAY[@]}" "${MISSING_PKGS[@]}" | sort -u
+  printf '%s\n' "${APT_PACKAGE_ARRAY[@]}" "${ALL_PKGS[@]}" \
+    | sed '/^$/d' \
+    | sort -u
 )
 
 (
@@ -241,7 +255,7 @@ download_verified \
 # ---------- 配置与离线安装脚本 ----------
 
 log "复制 Neovim/tmux/shell 配置和离线安装脚本..."
-rm -rf "$OUT_DIR/nvim" "$OUT_DIR/tmux" "$OUT_DIR/shell" "$OUT_DIR/lib"
+rm -rf "${OUT_DIR:?}/nvim" "${OUT_DIR:?}/tmux" "${OUT_DIR:?}/shell" "${OUT_DIR:?}/lib"
 cp -a "$REPO_ROOT/nvim" "$OUT_DIR/nvim"
 cp -a "$REPO_ROOT/tmux" "$OUT_DIR/tmux"
 cp -a "$REPO_ROOT/shell" "$OUT_DIR/shell"

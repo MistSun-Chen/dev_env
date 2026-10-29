@@ -32,7 +32,7 @@ usage() {
 
 选项:
   --output DIR             输出目录（必需；生成 tmux 二进制和 build-info.txt）
-  --work DIR               构建目录（默认: mktemp）
+  --work DIR               构建目录（默认: mktemp；用户指定的目录不会被删除）
   --deployment-target VER  macOS 最低版本（默认: 12.0）
   --keep                   保留构建目录
   -h, --help               显示帮助
@@ -92,16 +92,20 @@ done
 
 mkdir -p "$OUT_DIR"
 OUT_DIR="$(cd -- "$OUT_DIR" && pwd)"
+WORK_DIR_IS_TEMP=0
 if [[ -z "$WORK_DIR" ]]; then
   WORK_DIR="$(mktemp -d)"
+  WORK_DIR_IS_TEMP=1
 else
   mkdir -p "$WORK_DIR"
   WORK_DIR="$(cd -- "$WORK_DIR" && pwd)"
 fi
 
 cleanup() {
-  if [[ "$KEEP" -eq 0 && -n "$WORK_DIR" && -d "$WORK_DIR" ]]; then
-    rm -rf "$WORK_DIR"
+  # Never delete a user-supplied --work directory: it may contain unrelated
+  # files. Only clean the private mktemp directory, and only without --keep.
+  if [[ "$KEEP" -eq 0 && "$WORK_DIR_IS_TEMP" -eq 1 && -n "$WORK_DIR" && -d "$WORK_DIR" ]]; then
+    rm -rf "${WORK_DIR:?}"
   fi
 }
 trap cleanup EXIT
@@ -208,3 +212,6 @@ EOF
 
 log "完成: $OUT_DIR/tmux"
 otool -L "$OUT_DIR/tmux"
+if [[ "$WORK_DIR_IS_TEMP" -eq 0 || "$KEEP" -eq 1 ]]; then
+  log "保留构建目录: $WORK_DIR"
+fi

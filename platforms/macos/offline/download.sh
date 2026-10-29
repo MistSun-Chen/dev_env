@@ -11,6 +11,7 @@ set -euo pipefail
 
 OUT_DIR=""
 MAKE_TAR=1
+FORCE=0
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PLATFORM_DIR="$(dirname "$SCRIPT_DIR")"
@@ -33,6 +34,7 @@ usage() {
 选项:
   --output DIR    指定输出目录（默认: 本脚本目录下的 dist）
   --no-tar        只生成目录，不额外打 tar.gz
+  --force         允许覆盖非空的输出目录
   -h, --help      显示帮助
 EOF
 }
@@ -46,6 +48,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --no-tar)
       MAKE_TAR=0
+      shift
+      ;;
+    --force)
+      FORCE=1
       shift
       ;;
     -h|--help)
@@ -100,8 +106,18 @@ esac
 OUT_DIR="${OUT_DIR:-$SCRIPT_DIR/dist}"
 mkdir -p "$OUT_DIR"
 OUT_DIR="$(cd "$OUT_DIR" && pwd)"
+[[ "$OUT_DIR" != "/" ]] || die "拒绝使用 / 作为输出目录。"
+
+BUNDLE_MARKER="$OUT_DIR/.dev_env_bundle"
+if [[ ! -f "$BUNDLE_MARKER" ]] \
+  && [[ -n "$(find "$OUT_DIR" -mindepth 1 -maxdepth 1 -print -quit)" ]] \
+  && [[ "$FORCE" -ne 1 ]]; then
+  die "输出目录非空且不是 dev_env 离线包: ${OUT_DIR}（换新目录，或确认后加 --force）"
+fi
+printf 'dev_env offline bundle\n' > "$BUNDLE_MARKER"
+
 TMP_DIR="$(mktemp -d)"
-cleanup() { rm -rf "$TMP_DIR"; }
+cleanup() { rm -rf "${TMP_DIR:?}"; }
 trap cleanup EXIT
 
 download_verify() {
@@ -163,7 +179,7 @@ install -m 755 "$TMUX_BUILD_DIR/tmux" "$OUT_DIR/tmux-bin"
 cp -a "$TMUX_BUILD_DIR/build-info.txt" "$OUT_DIR/tmux-build-info.txt"
 
 log "复制 Neovim/tmux/shell 配置和离线安装脚本..."
-rm -rf "$OUT_DIR/nvim" "$OUT_DIR/tmux" "$OUT_DIR/shell" "$OUT_DIR/lib"
+rm -rf "${OUT_DIR:?}/nvim" "${OUT_DIR:?}/tmux" "${OUT_DIR:?}/shell" "${OUT_DIR:?}/lib"
 cp -a "$REPO_ROOT/nvim" "$OUT_DIR/nvim"
 cp -a "$REPO_ROOT/tmux" "$OUT_DIR/tmux"
 cp -a "$REPO_ROOT/shell" "$OUT_DIR/shell"

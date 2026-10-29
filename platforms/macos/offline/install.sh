@@ -25,9 +25,9 @@ if [[ -f "$BUNDLE_DIR/lib/common.sh" ]]; then
 else
   . "$(dirname "$BUNDLE_DIR")/../lib/common.sh"
 fi
-TMUX_CONFIG_SRC="$BUNDLE_DIR/tmux/tmux.conf"
-SHELL_CONFIG_SRC="$BUNDLE_DIR/shell"
 XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+CONFIG_ROOT=""
 
 log()  { printf '\033[1;32m[offline]\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m[offline]\033[0m %s\n' "$*" >&2; }
@@ -185,37 +185,39 @@ if ! command -v git >/dev/null 2>&1; then
 fi
 
 if [[ "$SKIP_CONFIG" -eq 0 ]]; then
-  dev_env_deploy_nvim_config "$BUNDLE_DIR/nvim" "$XDG_CONFIG_HOME"
-  dev_env_deploy_tmux_config "$TMUX_CONFIG_SRC" "$XDG_CONFIG_HOME"
+  # The extracted bundle may live in /tmp or ~/Downloads and be deleted after
+  # installation. Keep the config it links to under XDG_DATA_HOME.
+  CONFIG_ROOT="$(dev_env_stage_configs "$BUNDLE_DIR" "$DATA_HOME")"
+  log "配置已复制到稳定目录: $CONFIG_ROOT"
+
+  dev_env_deploy_nvim_config "$CONFIG_ROOT/nvim" "$XDG_CONFIG_HOME"
+  dev_env_deploy_tmux_config "$CONFIG_ROOT/tmux/tmux.conf" "$XDG_CONFIG_HOME"
   if [[ "$SKIP_SHELL" -eq 0 ]]; then
-    dev_env_deploy_shell_config "$SHELL_CONFIG_SRC" "$XDG_CONFIG_HOME"
-    dev_env_deploy_terminal_assets "$SHELL_CONFIG_SRC" "${XDG_DATA_HOME:-$HOME/.local/share}"
+    dev_env_deploy_shell_config "$CONFIG_ROOT/shell" "$XDG_CONFIG_HOME"
+    dev_env_deploy_terminal_assets "$CONFIG_ROOT/shell" "$DATA_HOME"
   else
     log "已跳过 shell 配置链接（--skip-shell）。"
   fi
-else
-  log "已跳过 Neovim/tmux/shell 配置链接（--skip-config）。"
-fi
 
-DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
-PLUGIN_DST="$DATA_HOME/nvim/lazy"
-PARSER_DST="$DATA_HOME/nvim/site/parser"
-install -d "$PLUGIN_DST" "$PARSER_DST"
+  PLUGIN_DST="$DATA_HOME/nvim/lazy"
+  PARSER_DST="$DATA_HOME/nvim/site/parser"
+  install -d "$PLUGIN_DST" "$PARSER_DST"
 
-log "安装离线 Neovim 插件 ..."
-for name in lazy.nvim which-key.nvim gitsigns.nvim fzf-lua markview.nvim grug-far.nvim neo-tree.nvim nui.nvim plenary.nvim lazydev.nvim nvim-lspconfig catppuccin; do
-  [[ -d "$BUNDLE_DIR/nvim-plugins/$name" ]] || die "离线包缺少插件目录: $name"
-  rm -rf "$PLUGIN_DST/$name"
-  cp -a "$BUNDLE_DIR/nvim-plugins/$name" "$PLUGIN_DST/$name"
-done
-cp -a "$BUNDLE_DIR/nvim-parser/latex.so" "$PARSER_DST/latex.so"
+  log "安装离线 Neovim 插件 ..."
+  for name in lazy.nvim which-key.nvim gitsigns.nvim fzf-lua markview.nvim grug-far.nvim neo-tree.nvim nui.nvim plenary.nvim lazydev.nvim nvim-lspconfig catppuccin; do
+    [[ -d "$BUNDLE_DIR/nvim-plugins/$name" ]] || die "离线包缺少插件目录: $name"
+    rm -rf "${PLUGIN_DST:?}/$name"
+    cp -a "$BUNDLE_DIR/nvim-plugins/$name" "$PLUGIN_DST/$name"
+  done
+  cp -a "$BUNDLE_DIR/nvim-parser/latex.so" "$PARSER_DST/latex.so"
 
-if [[ "$SKIP_CONFIG" -eq 0 ]]; then
   PATH="$LOCAL_BIN:$PATH" \
     NVIM_BIN="$LOCAL_BIN/nvim" \
-    XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}" \
+    XDG_CONFIG_HOME="$XDG_CONFIG_HOME" \
     XDG_DATA_HOME="$DATA_HOME" \
-    bash "$BUNDLE_DIR/nvim/scripts/install-plugins.sh" --check
+    bash "$CONFIG_ROOT/nvim/scripts/install-plugins.sh" --check
+else
+  log "已跳过 Neovim/tmux/shell 配置、插件和 parser（--skip-config）。"
 fi
 
 hash -r
@@ -235,10 +237,13 @@ fi
 
 if [[ "$SKIP_CONFIG" -eq 0 ]]; then
   log "Neovim 配置冒烟测试："
-  if ! "$LOCAL_BIN/nvim" --headless \
-    "+lua print('number='..tostring(vim.o.number)..' relativenumber='..tostring(vim.o.relativenumber)..' mouse='..vim.o.mouse)" \
+  if ! PATH="$LOCAL_BIN:$PATH" \
+    XDG_CONFIG_HOME="$XDG_CONFIG_HOME" \
+    XDG_DATA_HOME="$DATA_HOME" \
+    "$LOCAL_BIN/nvim" --headless \
+    "+lua if vim.o.number ~= true or vim.o.relativenumber ~= true or vim.o.mouse ~= 'a' or vim.g.colors_name ~= 'catppuccin-mocha' then error('Neovim config smoke test failed') end" \
     +qa; then
-    warn "Neovim 配置加载失败。"
+    die "Neovim 配置加载失败；请检查 $XDG_CONFIG_HOME/nvim。"
   fi
 fi
 
@@ -259,7 +264,10 @@ log "离线安装完成。"
 log "启动 Neovim: $LOCAL_BIN/nvim"
 log "tmux 配置: ${XDG_CONFIG_HOME}/tmux/tmux.conf"
 if [[ "$SKIP_CONFIG" -eq 0 && "$SKIP_SHELL" -eq 0 ]]; then
-  log "shell 配置: ~/.zshrc -> $SHELL_CONFIG_SRC/zshrc"
+  log "shell 配置: ~/.zshrc -> $CONFIG_ROOT/shell/zshrc"
   log "本地覆盖: ~/.zshrc.local（已存在则未改动）"
 fi
 log "配置目录: ${XDG_CONFIG_HOME}/nvim"
+if [[ -n "$CONFIG_ROOT" ]]; then
+  log "稳定配置副本: ${CONFIG_ROOT}（删除解压后的离线包不会影响配置）"
+fi
