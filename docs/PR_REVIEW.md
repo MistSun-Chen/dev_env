@@ -116,7 +116,7 @@ HOME="$TMP_HOME" XDG_CONFIG_HOME="$TMP_CONFIG" bash platforms/macos/install.sh
 
 ## 6. 安全与隐私
 
-- 扫描 diff：私钥头、`sk-...`、非注释的 `API_KEY=`/`TOKEN=`/`SECRET=`/`PASSWORD=`。
+- 扫描 diff：私钥头、`sk-` 前缀、非注释的 `API_KEY`/`TOKEN`/`SECRET`/`PASSWORD` 赋值。
 - 不打印或提交 `~/.claude/settings.json`、备份文件、真实 `.zshrc.local`。
 - 新增下载源必须使用 HTTPS、固定版本、校验 SHA256；不使用 `curl | sh`。
 - 安装器默认拒绝 root；容器/CI 才允许 `--allow-root`。
