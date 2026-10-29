@@ -76,8 +76,10 @@ bash platforms/macos/install.sh --pinned-tmux
 安装器不会 kill 正在运行的 tmux server。链接新配置后，执行：
 
 ```sh
-tmux source-file ~/.config/tmux/tmux.conf
+tmux source-file "${XDG_CONFIG_HOME:-$HOME/.config}/tmux/tmux.conf"
 ```
+
+或者在 tmux 里按 `C-b r`；它会按 `XDG_CONFIG_HOME` 找到配置。
 
 或者新开一个 tmux server/session 让配置生效。
 
@@ -87,5 +89,6 @@ tmux source-file ~/.config/tmux/tmux.conf
 bash tests/tmux-config-smoke.sh
 ```
 
-测试使用唯一 socket，断言选项和键位；结束测试时通过 `exit`/`C-c` 关闭测试
+测试使用唯一 socket 和自定义 `XDG_CONFIG_HOME`（不传 `-f`），断言配置发现、
+选项、键位和 `C-b r` 的重载路径；结束测试时通过 `exit`/`C-c` 关闭测试
 session，不触碰默认 tmux server，也不执行 `tmux kill-*`。

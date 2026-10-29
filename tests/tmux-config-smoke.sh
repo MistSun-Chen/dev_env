@@ -56,8 +56,11 @@ assert_contains() {
   [[ "$got" == *"$want"* ]] || die "$label: '$got' does not contain '$want'"
 }
 
+# Deliberately do not pass -f: this also verifies tmux discovers the config
+# through a custom XDG_CONFIG_HOME.
+printf 'set -g @dev-env-smoke-reloaded 0\n' > "$TMP_HOME/.tmux.local.conf"
 HOME="$TMP_HOME" XDG_CONFIG_HOME="$TMP_XDG" \
-  "$TMUX_BIN" -L "$SOCK" -f "$CONF" new-session -d -s smoke
+  "$TMUX_BIN" -L "$SOCK" new-session -d -s smoke
 
 assert_eq "$("$TMUX_BIN" -L "$SOCK" show-options -gv prefix)" "C-b" "prefix"
 assert_eq "$("$TMUX_BIN" -L "$SOCK" show-options -gv mouse)" "on" "mouse"
@@ -81,9 +84,22 @@ assert_contains "$("$TMUX_BIN" -L "$SOCK" list-keys -T prefix r)" "source-file" 
 assert_contains "$("$TMUX_BIN" -L "$SOCK" list-keys -T prefix R)" "refresh-client" "R"
 assert_contains "$("$TMUX_BIN" -L "$SOCK" list-keys -T prefix '|')" "split-window -h" "|"
 assert_contains "$("$TMUX_BIN" -L "$SOCK" list-keys -T prefix '-')" "split-window -v" "-"
+assert_contains "$("$TMUX_BIN" -L "$SOCK" list-keys -T prefix c)" "new-window" "c"
+assert_contains "$("$TMUX_BIN" -L "$SOCK" list-keys -T prefix z)" "resize-pane -Z" "z"
+assert_contains "$("$TMUX_BIN" -L "$SOCK" list-keys -T prefix '[')" "copy-mode" "["
 assert_contains "$("$TMUX_BIN" -L "$SOCK" list-keys -T prefix u)" "copy-mode -u" "u"
+assert_contains "$("$TMUX_BIN" -L "$SOCK" list-keys -T prefix r)" "XDG_CONFIG_HOME" "r reload path"
 [[ "$("$TMUX_BIN" -L "$SOCK" show-options -gv set-clipboard)" != "on" ]] \
   || die "set-clipboard 不应由 dev_env 开启"
+
+# Reload through the same shell command used by C-b r, with custom XDG.
+assert_eq "$("$TMUX_BIN" -L "$SOCK" show-options -gv @dev-env-smoke-reloaded)" "0" "local override"
+printf 'set -g @dev-env-smoke-reloaded 1\n' > "$TMP_HOME/.tmux.local.conf"
+HOME="$TMP_HOME" XDG_CONFIG_HOME="$TMP_XDG" \
+  "$TMUX_BIN" -L "$SOCK" run-shell \
+  'tmux source-file "${XDG_CONFIG_HOME:-$HOME/.config}/tmux/tmux.conf"'
+sleep 0.3
+assert_eq "$("$TMUX_BIN" -L "$SOCK" show-options -gv @dev-env-smoke-reloaded)" "1" "reload with XDG"
 
 for key in v V C-v y Space Enter MouseDragEnd1Pane; do
   if "$TMUX_BIN" -L "$SOCK" list-keys -T copy-mode-vi "$key" 2>/dev/null | grep -q .; then
