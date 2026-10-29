@@ -22,7 +22,8 @@ die()  { printf '[shell-smoke] %s\n' "$*" >&2; exit 1; }
 
 TMP_HOME="$(mktemp -d)"
 TMP_XDG="$(mktemp -d)"
-cleanup() { rm -rf "$TMP_HOME" "$TMP_XDG"; }
+OUT_FILE="$(mktemp)"
+cleanup() { rm -rf "$TMP_HOME" "$TMP_XDG"; rm -f "$OUT_FILE"; }
 trap cleanup EXIT
 
 # Syntax check every shell file.
@@ -35,11 +36,11 @@ printf 'old zshrc\n' > "$TMP_HOME/.zshrc"
 HOME="$TMP_HOME" XDG_CONFIG_HOME="$TMP_XDG" \
   dev_env_deploy_shell_config "$REPO_ROOT/shell" "$TMP_XDG"
 
-[[ -L "$TMP_HOME/.zshrc" ]] || die "~/.zshrc 不是软链接"
-[[ -L "$TMP_XDG/starship.toml" ]] || die "~/.config/starship.toml 不是软链接"
-[[ -f "$TMP_HOME/.zshrc.local" ]] || die "~/.zshrc.local 未创建"
+[[ -L "$TMP_HOME/.zshrc" ]] || die "$TMP_HOME/.zshrc 不是软链接"
+[[ -L "$TMP_XDG/starship.toml" ]] || die "$TMP_XDG/starship.toml 不是软链接"
+[[ -f "$TMP_HOME/.zshrc.local" ]] || die "$TMP_HOME/.zshrc.local 未创建"
 [[ "$(stat -c %a "$TMP_HOME/.zshrc.local" 2>/dev/null || stat -f %Lp "$TMP_HOME/.zshrc.local")" == "600" ]] \
-  || die "~/.zshrc.local 权限不是 600"
+  || die "$TMP_HOME/.zshrc.local 权限不是 600"
 printf 'export DEV_ENV_SMOKE=ok\n' > "$TMP_HOME/.zshrc.local"
 HOME="$TMP_HOME" XDG_CONFIG_HOME="$TMP_XDG" \
   dev_env_deploy_shell_config "$REPO_ROOT/shell" "$TMP_XDG"
@@ -49,7 +50,11 @@ find "$TMP_HOME" -maxdepth 1 -name '.zshrc.bak.*' | grep -q . || die "旧 ~/.zsh
 cat > "$TMP_HOME/check.zsh" <<'EOF'
 source "$HOME/.zshrc"
 [[ -n "${PROMPT:-}" ]] || { print -u2 'PROMPT empty'; exit 1; }
-alias vim | grep -q 'nvim' || { print -u2 'vim alias missing'; exit 1; }
+if (( $+commands[nvim] )); then
+  alias vim | grep -q 'nvim' || { print -u2 'vim alias missing'; exit 1; }
+else
+  print 'nvim not installed; skip vim alias check'
+fi
 alias ll >/dev/null || { print -u2 'll alias missing'; exit 1; }
 [[ "${path[1]}" == "$HOME/.local/bin" ]] || { print -u2 "PATH first is ${path[1]}"; exit 1; }
 [[ "${DEV_ENV_SMOKE:-}" == "ok" ]] || { print -u2 'local override not loaded'; exit 1; }
@@ -61,10 +66,9 @@ alias ll >/dev/null || { print -u2 'll alias missing'; exit 1; }
 print "PROMPT_OK=${PROMPT}"
 EOF
 
-HOME="$TMP_HOME" ZDOTDIR="$TMP_HOME" "$ZSH_BIN" -f -i "$TMP_HOME/check.zsh" >/tmp/dev_env-shell-smoke.out 2>&1 \
-  || { cat /tmp/dev_env-shell-smoke.out >&2; die "zsh 配置加载失败"; }
-grep -q 'PROMPT_OK=' /tmp/dev_env-shell-smoke.out || die "PROMPT 未设置"
-rm -f /tmp/dev_env-shell-smoke.out
+HOME="$TMP_HOME" ZDOTDIR="$TMP_HOME" "$ZSH_BIN" -f -i "$TMP_HOME/check.zsh" >"$OUT_FILE" 2>&1 \
+  || { cat "$OUT_FILE" >&2; die "zsh 配置加载失败"; }
+grep -q 'PROMPT_OK=' "$OUT_FILE" || die "PROMPT 未设置"
 
 STARSHIP_BIN="${STARSHIP_BIN:-$(command -v starship || true)}"
 if [[ -n "$STARSHIP_BIN" ]]; then

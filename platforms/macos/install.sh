@@ -98,7 +98,6 @@ command -v brew >/dev/null 2>&1 || die "找不到 Homebrew，请先安装：http
 
 case "$(uname -m)" in
   arm64)
-    FZF_ARCH="arm64"
     NVIM_ASSET="nvim-macos-arm64.tar.gz"
     FZF_ASSET="fzf-${FZF_VERSION}-darwin_arm64.tar.gz"
     TREE_SITTER_ASSET="tree-sitter-cli-macos-arm64.zip"
@@ -109,7 +108,6 @@ case "$(uname -m)" in
     STARSHIP_SHA256="$STARSHIP_SHA256_ARM64"
     ;;
   x86_64)
-    FZF_ARCH="amd64"
     NVIM_ASSET="nvim-macos-x86_64.tar.gz"
     FZF_ASSET="fzf-${FZF_VERSION}-darwin_amd64.tar.gz"
     TREE_SITTER_ASSET="tree-sitter-cli-macos-x64.zip"
@@ -418,10 +416,13 @@ zsh --version
 
 if [[ "$SKIP_CONFIG" -eq 0 ]]; then
   log "Neovim 配置冒烟测试："
-  if ! "$NVIM_BIN" --headless \
-    "+lua print('number='..tostring(vim.o.number)..' relativenumber='..tostring(vim.o.relativenumber)..' mouse='..vim.o.mouse)" \
+  if ! PATH="$LOCAL_BIN:$PATH" \
+    XDG_CONFIG_HOME="$XDG_CONFIG_HOME" \
+    XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}" \
+    "$NVIM_BIN" --headless \
+    "+lua if vim.o.number ~= true or vim.o.relativenumber ~= true or vim.o.mouse ~= 'a' or vim.g.colors_name ~= 'catppuccin-mocha' then error('Neovim config smoke test failed') end" \
     +qa; then
-    warn "Neovim 配置加载失败，请检查 ${NVIM_CONFIG_DST}。"
+    die "Neovim 配置加载失败，请检查 ${NVIM_CONFIG_DST}。"
   fi
 fi
 

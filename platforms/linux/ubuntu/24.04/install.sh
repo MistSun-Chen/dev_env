@@ -72,7 +72,7 @@ usage() {
 可通过环境变量覆盖版本:
   NVIM_VERSION=0.12.3
   FZF_VERSION=0.74.5
-  NVIM_SHA256=<sha256>    # 覆盖 Neovim 版本时建议同时提供
+  NVIM_SHA256=<sha256>    # 覆盖 Neovim 版本时必须提供
 EOF
 }
 
@@ -175,12 +175,20 @@ fi
 
 # ---------- 系统包 ----------
 
+APT_OPTS=(
+  -o Acquire::ForceIPv4=true
+  -o Acquire::http::Timeout=30
+  -o Acquire::https::Timeout=30
+  -o Acquire::Retries=3
+  -o Acquire::http::Pipeline-Depth=0
+)
+
 log "更新 apt 索引..."
-run_sudo apt-get update
+run_sudo apt-get "${APT_OPTS[@]}" update
 
 read -r -a APT_PACKAGE_ARRAY <<< "$APT_PACKAGES"
 log "安装系统包：${APT_PACKAGES}..."
-run_sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+run_sudo env DEBIAN_FRONTEND=noninteractive apt-get "${APT_OPTS[@]}" install -y --no-install-recommends \
   "${APT_PACKAGE_ARRAY[@]}"
 
 # Ubuntu 的 fd 包提供的是 fdfind；补一个 fd 命令，方便插件和脚本统一调用
@@ -372,11 +380,9 @@ install_neovim() {
   curl -fL --http1.1 --retry 3 --retry-all-errors --retry-delay 2 --connect-timeout 15 \
     "$url" -o "$TMP_DIR/$asset"
 
-  if [[ -n "$NVIM_SHA256" ]]; then
-    printf '%s  %s\n' "$NVIM_SHA256" "$TMP_DIR/$asset" | sha256sum -c -
-  else
-    warn "未提供 Neovim 校验和，跳过压缩包校验。"
-  fi
+  [[ -n "$NVIM_SHA256" ]] \
+    || die "未提供 Neovim 校验和；覆盖 NVIM_VERSION 时必须同时设置 NVIM_SHA256。"
+  printf '%s  %s\n' "$NVIM_SHA256" "$TMP_DIR/$asset" | sha256sum -c -
 
   rm -rf "$prefix"
   install -d "$prefix"
@@ -462,10 +468,13 @@ zsh --version
 
 if [[ "$SKIP_CONFIG" -eq 0 ]]; then
   log "Neovim 配置冒烟测试："
-  if ! "$NVIM_BIN" --headless \
-    "+lua print('number='..tostring(vim.o.number)..' relativenumber='..tostring(vim.o.relativenumber)..' mouse='..vim.o.mouse)" \
+  if ! PATH="$LOCAL_BIN:$PATH" \
+    XDG_CONFIG_HOME="$XDG_CONFIG_HOME" \
+    XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}" \
+    "$NVIM_BIN" --headless \
+    "+lua if vim.o.number ~= true or vim.o.relativenumber ~= true or vim.o.mouse ~= 'a' or vim.g.colors_name ~= 'catppuccin-mocha' then error('Neovim config smoke test failed') end" \
     +qa; then
-    warn "Neovim 配置加载失败，请检查 ${NVIM_CONFIG_DST}。"
+    die "Neovim 配置加载失败，请检查 ${NVIM_CONFIG_DST}。"
   fi
 fi
 
