@@ -1,3 +1,8 @@
 __pycache__/
 *.pyc
 .DS_Store
+CLAUDE.local.md
+
+# Generated offline bundles (nested .gitignore files also cover these)
+**/offline/dist/
+**/offline/dev_env-*.tar.gz
