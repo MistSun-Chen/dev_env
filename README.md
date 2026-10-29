@@ -16,6 +16,7 @@
 
 - [使用与安装](./docs/USAGE.md)：联网/离线安装、验证、PATH、版本修改、回滚、常见问题
 - [测试与验证](./docs/TESTING.md)：Ubuntu Docker 测试、macOS 本机测试、实测记录
+- [PR 审核与合并标准](./docs/PR_REVIEW.md)：通过条件、问题分级、自审和合并流程
 - [LSP 练习样例](./samples/lsp/README.md)：C/C++/Bash/Python 的跳转、诊断、补全练习
 - [文档索引](./docs/README.md)
 
