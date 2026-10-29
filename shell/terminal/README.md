@@ -45,25 +45,28 @@ it the default.
 
 ## Linux: Kitty
 
-Append or include `kitty/mocha.conf` in `~/.config/kitty/kitty.conf`:
+Append or include the installed copy in `~/.config/kitty/kitty.conf`:
 
 ```conf
-include /path/to/dev_env/terminal/kitty/mocha.conf
+include ~/.local/share/dev_env/terminal/kitty/mocha.conf
 ```
 
 The profile comes from <https://github.com/catppuccin/kitty> (MIT).
 
 ## Linux: WezTerm
 
-Merge the `[colors]` table from `wezterm/catppuccin-mocha.toml` into your
-`~/.config/wezterm/wezterm.lua` configuration, for example:
+Use the installed TOML directly (WezTerm can load a color scheme file):
 
 ```lua
-local colors = require('path.to.catppuccin-mocha')
-return { colors = colors.colors }
+local wezterm = require('wezterm')
+return {
+  colors = wezterm.color.load_scheme(
+    wezterm.home_dir .. '/.local/share/dev_env/terminal/wezterm/catppuccin-mocha.toml'
+  ),
+}
 ```
 
-Or copy the `[colors]` block into your own config. Source:
+Or copy the `[colors]` table into your own config. Source:
 <https://github.com/catppuccin/wezterm> (MIT).
 
 ## Linux: Alacritty

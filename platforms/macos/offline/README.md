@@ -54,6 +54,13 @@ https_proxy=http://127.0.0.1:7897 http_proxy=http://127.0.0.1:7897 bash download
 bash download.sh --no-tar
 ```
 
+输出目录默认是 `offline/dist/`。如果目录非空且不是之前生成的 dev_env 离线包，
+脚本会拒绝覆盖；确认可以清空时加 `--force`：
+
+```sh
+bash download.sh --output /tmp/dev_env-bundle --force
+```
+
 ## 2. 拷贝到离线 Mac
 
 ```sh
@@ -84,9 +91,20 @@ git --version
 ## 选项
 
 ```sh
-bash install.sh --skip-config   # 只装工具，不接管 Neovim/tmux/shell 配置
+bash install.sh --skip-config   # 只装工具；不链接配置，也不修改已有 Neovim 插件/parser
 bash install.sh --skip-shell    # 只跳过 shell 配置
 ```
+
+## 配置副本
+
+安装时会把包内的 `nvim/`、`tmux/`、`shell/` 复制到：
+
+```text
+${XDG_DATA_HOME:-$HOME/.local/share}/dev_env/config/
+```
+
+`~/.zshrc`、`~/.config/nvim`、`~/.config/tmux/tmux.conf` 等链接到这个稳定副本。
+因此安装完成后可以删除解压出来的离线包目录，不会让配置变成悬空软链接。
 
 ## 注意事项
 

@@ -5,11 +5,12 @@
 这里放可重复执行的安装测试。当前覆盖 Ubuntu 24.04：
 
 - `ubuntu-24.04-online.sh`：在 Docker 里跑联网安装，并验证 Neovim、tmux、zsh、Starship、插件与 latex parser
-- `ubuntu-24.04-offline.sh`：先在 Docker 里生成离线包，再在 `--network none` 的容器里离线安装
+- `ubuntu-24.04-offline.sh`：先在 Docker 里生成离线包，再在 `--network none` 的容器里离线安装；检查稳定配置副本，并验证 `--skip-config` 不删除已有插件/parser
 - `nvim-plugins-smoke.sh`：在本机临时 XDG 目录中安装 lazy.nvim 插件、检查配色、Markdown 目录和 latex parser
 - `tmux-config-smoke.sh`：用独立 socket 验证 tmux 选项和键位，不碰默认 server
 - `shell-config-smoke.sh`：临时 HOME/ZDOTDIR 验证 zsh 配置、alias、local override 和 Starship
 - `theme-assets-smoke.sh`：验证 iTerm2/Terminal/Linux/VS Code 配色文件和调色板
+- `macos-offline-installer-safety-smoke.sh`：用合成离线包验证稳定配置副本和 `--skip-config` 不删除插件/parser（无需网络）
 - `macos-tmux-build-smoke.sh`：macOS 慢测试，构建并检查自包含 tmux 二进制（需 `DEV_ENV_RUN_SLOW_TESTS=1`）
 
 ## 前置条件

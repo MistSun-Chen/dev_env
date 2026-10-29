@@ -45,7 +45,13 @@ bash download.sh --output /tmp/dev_env-offline
 bash download.sh --output /tmp/dev_env-offline --no-tar
 ```
 
-`download.sh` 会递归收集 apt 依赖，并排除当前系统已安装的包；目标按干净的 Ubuntu 24.04 处理。
+输出目录非空且不是之前生成的 dev_env 离线包时，脚本会拒绝覆盖；确认可以清空时加 `--force`：
+
+```sh
+bash download.sh --output /tmp/dev_env-offline --force
+```
+
+`download.sh` 会递归收集完整 apt 依赖闭包，不按构建机已安装的包裁剪；目标按干净的 Ubuntu 24.04 处理。
 
 如果在容器/CI 中以 root 运行：
 
@@ -88,10 +94,21 @@ tree-sitter --version
 ## 选项
 
 ```sh
-bash install.sh --skip-config   # 只装工具，不接管 Neovim/tmux/shell 配置
+bash install.sh --skip-config   # 只装工具；不链接配置，也不修改已有 Neovim 插件/parser
 bash install.sh --skip-shell    # 只跳过 shell 配置
 bash install.sh --allow-root    # 仅容器/CI
 ```
+
+## 配置副本
+
+安装时会把包内的 `nvim/`、`tmux/`、`shell/` 复制到：
+
+```text
+${XDG_DATA_HOME:-$HOME/.local/share}/dev_env/config/
+```
+
+`~/.zshrc`、`~/.config/nvim`、`~/.config/tmux/tmux.conf` 等链接到这个稳定副本。
+因此安装完成后可以删除解压出来的离线包目录，不会让配置变成悬空软链接。
 
 ## 注意事项
 
@@ -103,5 +120,5 @@ bash install.sh --allow-root    # 仅容器/CI
 - 离线包不包含 language server、Node/npm、`clangd` 或 C/C++ 编译器。离线机器上如果想要 Python/Bash/C/C++ LSP，需要另外准备这些包；否则 Neovim 仍可启动，只是对应语言的 LSP 不工作。可用 `bash nvim/scripts/check-lsp.sh` 查看缺失项。
 - Ubuntu 安装器不会自动 `chsh`；需要默认 zsh 时手动执行 `chsh -s "$(command -v zsh)"`。
 - 终端配色只复制到 `~/.local/share/dev_env/terminal/`，不会自动修改 GNOME Terminal/Kitty 等终端偏好。
-- `download.sh` 会清空并重新生成 `dist/debs/`；不要把重要文件放在这个目录。
+- `download.sh` 只会在带 dev_env 标记或显式 `--force` 的输出目录里重新生成 `dist/debs/`；不要把重要文件放在这个目录。
 - 离线包默认不提交到 git（见 `.gitignore`），需要时再单独传输。

@@ -403,7 +403,10 @@ bash install.sh
 - 离线包包含 apt deb（含 `tmux`、`zsh`、`ncurses-term`、`xz-utils`）、Neovim、fzf、tree-sitter、Starship、Meslo 字体、Neovim/tmux/shell 配置、Neovim 插件、预编译 `latex.so` 和 `SHA256SUMS`；
 - 安装使用 `dpkg -i` + `dpkg --configure -a`，不访问网络；
 - 下载端和目标端必须同为 Ubuntu 24.04、同一架构（`x86_64` / `arm64`）；
-- `download.sh` 会递归收集依赖，并排除构建机已安装的包；目标按干净的 Ubuntu 24.04 处理。生成离线包应在干净的 `ubuntu:24.04` 容器中执行。
+- `download.sh` 会递归收集完整依赖闭包，不按构建机已安装包裁剪；目标按干净的 Ubuntu 24.04 处理。仍建议在干净的 `ubuntu:24.04` 容器中生成。
+- 安装时把配置复制到 `~/.local/share/dev_env/config/` 再链接，删除解压后的离线包不会让配置变成悬空软链接；
+- `--skip-config` 只安装工具，不修改已有 Neovim 插件或 `latex.so`；
+- 如果输出目录非空且不是 dev_env 离线包，`download.sh` 会拒绝覆盖；确认后加 `--force`。
 
 只生成目录、不打包：
 
@@ -440,7 +443,10 @@ bash install.sh
 - 离线包包含 Neovim、fzf、ripgrep、fd、tree-sitter、tmux 3.8 自包含二进制、Starship、Meslo 字体、Neovim/tmux/shell 配置、Neovim 插件、预编译 `latex.so` 和 `SHA256SUMS`；
 - 不包含 Homebrew、编译器和 git；macOS 通常已有 Xcode Command Line Tools 提供的 `git`；
 - Apple Silicon 和 Intel 的包不能混用；
-- 安装到 `~/.local/opt/`，命令链接到 `~/.local/bin/`。
+- 安装到 `~/.local/opt/`，命令链接到 `~/.local/bin/`；
+- 配置会复制到 `~/.local/share/dev_env/config/` 再链接，删除解压后的离线包不会让 `~/.zshrc`、`~/.config/nvim` 等变成悬空软链接；
+- `--skip-config` 只安装工具，不修改已有 Neovim 插件或 `latex.so`；
+- 输出目录非空且不是 dev_env 离线包时，`download.sh` 会拒绝覆盖；确认后加 `--force`。
 
 ## 5. 验证
 
@@ -544,6 +550,8 @@ NVIM_VERSION=0.12.3 NVIM_SHA256=<sha256> \
   bash platforms/linux/ubuntu/24.04/install.sh
 ```
 
+覆盖 `NVIM_VERSION` 时必须同时提供 `NVIM_SHA256`；安装器不会再跳过校验。
+
 ## 8. 回滚
 
 恢复配置：
@@ -574,7 +582,13 @@ rm -f ~/.local/bin/tmux ~/.local/bin/starship
 # 插件和公式 parser
 rm -rf ~/.local/share/nvim/lazy
 rm -f ~/.local/share/nvim/site/parser/latex.so
-rm -f ~/.config/nvim/lazy-lock.json
+rm -rf ~/.local/share/dev_env
+
+# 只有 ~/.config/nvim 是普通目录时才删；如果仍链接到 dev_env，
+# 这会删掉仓库里的 nvim/lazy-lock.json。
+if [ ! -L ~/.config/nvim ]; then
+  rm -f ~/.config/nvim/lazy-lock.json
+fi
 ```
 
 macOS 离线包还会安装：
@@ -625,10 +639,10 @@ command -v nvim
 安装器不会 kill 正在运行的 tmux server。执行：
 
 ```sh
-tmux source-file ~/.config/tmux/tmux.conf
+tmux source-file "${XDG_CONFIG_HOME:-$HOME/.config}/tmux/tmux.conf"
 ```
 
-或者新开一个 server/session。旧 `~/.tmux.conf` 会被备份并移走，避免覆盖 XDG 配置。
+或者在 tmux 里按 `C-b r`。或者新开一个 server/session。旧 `~/.tmux.conf` 会被备份并移走，避免覆盖 XDG 配置。
 
 ### 9.6 Ubuntu 新开终端还是 bash
 

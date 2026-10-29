@@ -25,6 +25,8 @@ export DOCKER_PROXY=http://host.docker.internal:7897
 
 Linux 上如果 Docker 不支持 `host.docker.internal`，改用宿主机在 Docker bridge 上的地址，或让容器直接联网。
 
+如果代理只监听 `127.0.0.1`（例如某些 Clash 配置），容器内的 `host.docker.internal:7897` 会连接失败；此时让容器直接联网，或在代理里开启允许局域网/绑定可用地址。不要把这种代理不可达误判为安装脚本失败。
+
 ### 2.2 联网安装测试
 
 ```sh
@@ -51,7 +53,9 @@ bash tests/ubuntu-24.04-offline.sh
 2. 把离线包生成到宿主机临时目录；
 3. 启动 `--network none` 的全新 `ubuntu:24.04`；
 4. 执行离线包的 `install.sh --allow-root`，安装插件和预编译 parser；
-5. 检查版本、配置链接、tmux 私有 socket，并清理临时目录。
+5. 检查版本、稳定配置副本（`~/.local/share/dev_env/config`）、配置链接、tmux 私有 socket；
+6. 再执行一次 `--skip-config`，确认已有 Neovim 插件和 `latex.so` 未被删除；
+7. 清理临时目录。
 
 离线包约 100–130 MB（含 apt deb、插件、parser、tmux、Starship 和字体），生成和安装需要几分钟。
 
@@ -74,13 +78,15 @@ bash tests/ubuntu-24.04-offline.sh
 
 ### 3.1 联网安装测试
 
-使用临时配置目录，避免改动真实配置：
+使用临时 HOME 和配置目录，避免改动真实配置：
 
 ```sh
-XDG_CONFIG_HOME="$(mktemp -d)" bash platforms/macos/install.sh
+TMP_HOME="$(mktemp -d)"
+TMP_CONFIG="$(mktemp -d)"
+HOME="$TMP_HOME" XDG_CONFIG_HOME="$TMP_CONFIG" bash platforms/macos/install.sh
 ```
 
-注意：这个测试会真实安装/升级 `~/.local` 下的 Neovim/fzf，以及 Homebrew 的 `ripgrep`/`fd`/`git`（仅缺失时）。
+注意：这个测试仍会通过 Homebrew 安装/升级 `ripgrep`/`fd`/`git`/`node`/`tmux`（仅缺失时），但不会改写真实 `~/.zshrc`、`~/.config`、`~/Library/Fonts` 或 `~/.local`。
 
 验证：
 
@@ -121,6 +127,15 @@ zsh --version
 readlink "$CONFIG_TMP/nvim"
 readlink "$CONFIG_TMP/tmux/tmux.conf"
 readlink "$HOME_TMP/.zshrc"
+
+# 配置链接应指向稳定副本，而不是临时解压目录。
+# macOS 的 /var 是 /private/var 的软链接，比较前先取物理路径。
+CONFIG_ROOT_REAL="$(cd "$HOME_TMP/.local/share/dev_env/config" && pwd -P)"
+test -f "$CONFIG_ROOT_REAL/nvim/init.lua"
+case "$(readlink "$CONFIG_TMP/nvim")" in
+  "$CONFIG_ROOT_REAL/"*) ;;
+  *) echo "nvim config 未指向稳定副本" >&2; exit 1 ;;
+esac
 ```
 
 ### 3.3 实测记录
@@ -154,6 +169,19 @@ readlink "$HOME_TMP/.zshrc"
 - zsh 增加 Option/Ctrl+方向键 word navigation，`tests/shell-config-smoke.sh` 增加对应 bindkey 断言；
 - `tests/tmux-config-smoke.sh`、`tests/shell-config-smoke.sh`、`tests/theme-assets-smoke.sh` 均通过；
 - 本机 `~/.config/nvim`、`~/.config/tmux/tmux.conf`、`~/.zshrc`、`~/.config/starship.toml` 已链接到 `dev_env`，当前 tmux server 已 reload 新配置。
+
+2026-10-29 PR 自审修复：
+
+- 离线包把配置复制到 `${XDG_DATA_HOME:-$HOME/.local/share}/dev_env/config/` 后再链接，删除解压目录不会产生悬空软链接；
+- `--skip-config` 不再删除已有 Neovim 插件或 `latex.so`；
+- `download.sh` 对非空输出目录要求 dev_env 标记或 `--force`；`build-tmux.sh` 不再删除用户通过 `--work` 指定的目录；
+- Ubuntu 离线包的 apt 依赖改为完整递归闭包，不按构建机已安装包裁剪；
+- tmux `C-b r` 使用 `XDG_CONFIG_HOME`；测试改为不传 `-f`，验证自定义 XDG 配置发现；
+- Neovim 安装后冒烟测试改为断言核心选项和配色，并显式设置 `PATH`/`XDG_*`；
+- shell smoke 使用 `mktemp` 输出文件；shellcheck 新警告已清零；
+- Ubuntu 安装/离线下载的 apt 增加 `Acquire::Retries`、超时和 `Pipeline-Depth=0`，降低大包卡住后失败的概率；
+- `tests/macos-tmux-build-smoke.sh` 通过；额外验证 `build-tmux.sh --work <用户目录>` 不会删除该目录中的已有文件；
+- `tests/macos-offline-installer-safety-smoke.sh` 通过：合成离线包验证稳定配置副本和 `--skip-config` 保留插件/parser。
 
 ## 4. Neovim 插件与预览测试
 
@@ -235,11 +263,13 @@ bash nvim/scripts/install-plugins.sh --check
 bash tests/tmux-config-smoke.sh
 bash tests/shell-config-smoke.sh
 bash tests/theme-assets-smoke.sh
+bash tests/macos-offline-installer-safety-smoke.sh
 ```
 
-- tmux 测试使用唯一 socket，断言 `prefix=C-b`、`mouse=on`、`h/j/k/l`、`H/J/K/L`、`Tab`、`r` 和滚动入口 `u`；复制/粘贴配置暂不测试。
+- tmux 测试使用唯一 socket 和自定义 `XDG_CONFIG_HOME`（不传 `-f`），断言配置发现、`prefix=C-b`、`mouse=on`、`h/j/k/l`、`H/J/K/L`、`Tab`、`r` 的 XDG 重载路径和滚动入口 `u`；复制/粘贴配置暂不测试。
 - shell 测试使用临时 `HOME`，断言 `.zshrc` 软链接、`~/.zshrc.local` 权限 600、alias、PATH 和 Starship。
 - 主题测试校验 iTerm2/Terminal/Linux/VS Code 配色文件和 Catppuccin 调色板。
+- `macos-offline-installer-safety-smoke.sh` 用合成离线包和临时 HOME 验证：配置链接指向稳定副本，`--skip-config` 不删除已有插件/parser；不需要网络。
 - 慢测试：`DEV_ENV_RUN_SLOW_TESTS=1 bash tests/macos-tmux-build-smoke.sh`，构建并检查 `otool -L` 不含 Homebrew/构建目录。
 
 ## 5. 手动验证清单
@@ -290,6 +320,7 @@ tests/
 ├── tmux-config-smoke.sh
 ├── shell-config-smoke.sh
 ├── theme-assets-smoke.sh
+├── macos-offline-installer-safety-smoke.sh
 └── macos-tmux-build-smoke.sh
 ```
 

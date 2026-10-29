@@ -91,6 +91,9 @@ bash tests/theme-assets-smoke.sh
 按改动范围追加：
 
 ```sh
+# macOS 离线安装数据安全（合成包，无需网络）
+bash tests/macos-offline-installer-safety-smoke.sh
+
 # macOS 构建
 DEV_ENV_RUN_SLOW_TESTS=1 bash tests/macos-tmux-build-smoke.sh
 
