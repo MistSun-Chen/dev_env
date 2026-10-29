@@ -9,9 +9,13 @@
 - `ripgrep-*-apple-darwin.tar.gz`：ripgrep 15.2.0
 - `fd-v*-apple-darwin.tar.gz`：fd 10.5.0
 - `tree-sitter-cli-macos-*.zip`：tree-sitter CLI 0.27.1
+- `starship-*-apple-darwin.tar.gz`：Starship 1.27.0
+- `Meslo.tar.xz`：Nerd Fonts 3.5.1 Meslo
+- `tmux-bin`、`tmux-build-info.txt`：自包含 tmux 3.8
 - `nvim-plugins/`：lazy.nvim 根目录，含 lazy.nvim、which-key.nvim、gitsigns.nvim、fzf-lua、markview.nvim、grug-far.nvim、neo-tree.nvim、nui.nvim、plenary.nvim、nvim-lspconfig、lazydev.nvim、配色插件（均带 `.git`）
 - `nvim-parser/latex.so`：预编译公式 parser
-- `nvim/`：Neovim 配置与 lockfile
+- `nvim/`、`tmux/`、`shell/`：配置与 lockfile
+- `lib/common.sh`：配置部署 helper
 - `install.sh`：离线安装脚本
 - `versions.env`、`manifest.txt`、`SHA256SUMS`
 
@@ -24,7 +28,7 @@
 - macOS
 - 架构与目标机器一致（Apple Silicon `arm64` 或 Intel `x86_64`）
 - 能访问 GitHub
-- 构建机需要 Node.js 和 Xcode Command Line Tools（`cc`），仅用于编译 latex parser
+- 构建机需要 Node.js、Xcode Command Line Tools（`cc`）和 `make`；用于编译 latex parser 和自包含 tmux。目标机不需要这些工具。
 
 ```sh
 cd platforms/macos/offline
@@ -68,6 +72,9 @@ bash install.sh
 
 ```sh
 ~/.local/bin/nvim --version | head -1
+~/.local/bin/tmux -V
+zsh --version
+~/.local/bin/starship --version
 ~/.local/bin/fzf --version
 ~/.local/bin/rg --version | head -1
 ~/.local/bin/fd --version
@@ -77,13 +84,15 @@ git --version
 ## 选项
 
 ```sh
-bash install.sh --skip-config   # 只装工具，不接管 Neovim 配置
+bash install.sh --skip-config   # 只装工具，不接管 Neovim/tmux/shell 配置
+bash install.sh --skip-shell    # 只跳过 shell 配置
 ```
 
 ## 注意事项
 
-- 架构必须一致：Apple Silicon 和 Intel 的 tarball 不能混用。
-- 已有 `~/.config/nvim` 会先备份为 `~/.config/nvim.bak.YYYYMMDD-HHMMSS`。
-- 离线包不包含 Homebrew，也不修改 shell 配置。
+- 架构必须一致：Apple Silicon 和 Intel 的 tarball、tmux 二进制不能混用。
+- 已有 `~/.config/nvim`、`~/.config/tmux/tmux.conf`、`~/.zshrc` 会先备份。
+- 离线包不包含 Homebrew 或编译器；tmux 是预构建自包含二进制。
 - 安装位置是 `~/.local/opt/`，命令链接到 `~/.local/bin/`。
+- 终端配色只复制到 `~/.local/share/dev_env/terminal/`，不会自动修改 iTerm2/Terminal 偏好。
 - 离线包默认不提交到 git（见 `.gitignore`）。

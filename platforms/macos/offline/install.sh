@@ -11,9 +11,23 @@
 set -euo pipefail
 
 SKIP_CONFIG=0
+SKIP_SHELL=0
 BUNDLE_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=versions.env
-. "$BUNDLE_DIR/versions.env"
+if [[ -f "$BUNDLE_DIR/versions.env" ]]; then
+  # shellcheck source=versions.env
+  . "$BUNDLE_DIR/versions.env"
+else
+  . "$(dirname "$BUNDLE_DIR")/versions.env"
+fi
+if [[ -f "$BUNDLE_DIR/lib/common.sh" ]]; then
+  # shellcheck source=lib/common.sh
+  . "$BUNDLE_DIR/lib/common.sh"
+else
+  . "$(dirname "$BUNDLE_DIR")/../lib/common.sh"
+fi
+TMUX_CONFIG_SRC="$BUNDLE_DIR/tmux/tmux.conf"
+SHELL_CONFIG_SRC="$BUNDLE_DIR/shell"
+XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 
 log()  { printf '\033[1;32m[offline]\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m[offline]\033[0m %s\n' "$*" >&2; }
@@ -24,7 +38,8 @@ usage() {
 用法: install.sh [选项]
 
 选项:
-  --skip-config   只安装工具，不链接 Neovim 配置
+  --skip-config   只安装工具，不链接 Neovim/tmux/shell 配置
+  --skip-shell    只跳过 shell 配置链接
   -h, --help      显示帮助
 EOF
 }
@@ -33,6 +48,10 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --skip-config)
       SKIP_CONFIG=1
+      shift
+      ;;
+    --skip-shell)
+      SKIP_SHELL=1
       shift
       ;;
     -h|--help)
@@ -72,6 +91,7 @@ case "$ARCH" in
     RG_ASSET="ripgrep-${RG_VERSION}-aarch64-apple-darwin.tar.gz"
     FD_ASSET="fd-v${FD_VERSION}-aarch64-apple-darwin.tar.gz"
     TREE_SITTER_ASSET="tree-sitter-cli-macos-arm64.zip"
+    STARSHIP_ASSET="starship-aarch64-apple-darwin.tar.gz"
     ;;
   x86_64)
     NVIM_ASSET="nvim-macos-x86_64.tar.gz"
@@ -79,13 +99,17 @@ case "$ARCH" in
     RG_ASSET="ripgrep-${RG_VERSION}-x86_64-apple-darwin.tar.gz"
     FD_ASSET="fd-v${FD_VERSION}-x86_64-apple-darwin.tar.gz"
     TREE_SITTER_ASSET="tree-sitter-cli-macos-x64.zip"
+    STARSHIP_ASSET="starship-x86_64-apple-darwin.tar.gz"
     ;;
 esac
 
-for f in "$NVIM_ASSET" "$FZF_ASSET" "$RG_ASSET" "$FD_ASSET" "$TREE_SITTER_ASSET"; do
+for f in "$NVIM_ASSET" "$FZF_ASSET" "$RG_ASSET" "$FD_ASSET" "$TREE_SITTER_ASSET" "$STARSHIP_ASSET" "$NERD_FONT_ASSET" tmux-bin tmux-build-info.txt; do
   [[ -f "$BUNDLE_DIR/$f" ]] || die "缺少 $f"
 done
 [[ -d "$BUNDLE_DIR/nvim" ]] || die "缺少 nvim/ 配置目录"
+[[ -d "$BUNDLE_DIR/tmux" ]] || die "缺少 tmux/ 配置目录"
+[[ -d "$BUNDLE_DIR/shell" ]] || die "缺少 shell/ 配置目录"
+[[ -f "$BUNDLE_DIR/lib/common.sh" ]] || die "缺少 lib/common.sh"
 [[ -d "$BUNDLE_DIR/nvim-plugins" ]] || die "缺少 nvim-plugins/ 目录"
 [[ -f "$BUNDLE_DIR/nvim-parser/latex.so" ]] || die "缺少 nvim-parser/latex.so"
 
@@ -133,36 +157,44 @@ unzip -q -o "$BUNDLE_DIR/$TREE_SITTER_ASSET" -d "$TS_PREFIX"
 chmod +x "$TS_PREFIX/tree-sitter"
 ln -sfn "$TS_PREFIX/tree-sitter" "$LOCAL_BIN/tree-sitter"
 
+log "安装 tmux $TMUX_VERSION ..."
+TMUX_PREFIX="$LOCAL_OPT/tmux-${TMUX_VERSION}"
+rm -rf "$TMUX_PREFIX"
+install -d "$TMUX_PREFIX/bin"
+install -m 755 "$BUNDLE_DIR/tmux-bin" "$TMUX_PREFIX/bin/tmux"
+ln -sfn "$TMUX_PREFIX/bin/tmux" "$LOCAL_BIN/tmux"
+
+log "安装 Starship $STARSHIP_VERSION ..."
+STARSHIP_PREFIX="$LOCAL_OPT/starship-${STARSHIP_VERSION}"
+rm -rf "$STARSHIP_PREFIX"
+install -d "$STARSHIP_PREFIX"
+tar -xzf "$BUNDLE_DIR/$STARSHIP_ASSET" -C "$STARSHIP_PREFIX"
+[[ -x "$STARSHIP_PREFIX/starship" ]] || die "Starship 压缩包结构不符合预期。"
+ln -sfn "$STARSHIP_PREFIX/starship" "$LOCAL_BIN/starship"
+
+log "安装 Nerd Font $NERD_FONT_VERSION ..."
+install -d "$HOME/Library/Fonts"
+tar -xJf "$BUNDLE_DIR/$NERD_FONT_ASSET" -C "$HOME/Library/Fonts" \
+  MesloLGSNerdFont-Regular.ttf \
+  MesloLGSNerdFont-Bold.ttf \
+  MesloLGSNerdFont-Italic.ttf \
+  MesloLGSNerdFont-BoldItalic.ttf
+
 if ! command -v git >/dev/null 2>&1; then
   warn "未找到 git；离线包不包含 git，请安装 Xcode Command Line Tools 或 Homebrew git。"
 fi
 
 if [[ "$SKIP_CONFIG" -eq 0 ]]; then
-  CONFIG_DST="${XDG_CONFIG_HOME:-$HOME/.config}/nvim"
-  install -d "$(dirname "$CONFIG_DST")"
-
-  if [[ -L "$CONFIG_DST" ]]; then
-    current="$(readlink -f "$CONFIG_DST" || true)"
-    if [[ "$current" == "$(readlink -f "$BUNDLE_DIR/nvim")" ]]; then
-      log "Neovim 配置已经链接到离线包，跳过。"
-      CONFIG_DST=""
-    fi
-  fi
-
-  if [[ -n "${CONFIG_DST:-}" ]]; then
-    if [[ -e "$CONFIG_DST" || -L "$CONFIG_DST" ]]; then
-      backup="${CONFIG_DST}.bak.$(date +%Y%m%d-%H%M%S)"
-      while [[ -e "$backup" || -L "$backup" ]]; do
-        backup="${backup}-$$"
-      done
-      mv "$CONFIG_DST" "$backup"
-      log "已备份旧配置: $backup"
-    fi
-    ln -sfn "$BUNDLE_DIR/nvim" "$CONFIG_DST"
-    log "已链接配置: $CONFIG_DST -> $BUNDLE_DIR/nvim"
+  dev_env_deploy_nvim_config "$BUNDLE_DIR/nvim" "$XDG_CONFIG_HOME"
+  dev_env_deploy_tmux_config "$TMUX_CONFIG_SRC" "$XDG_CONFIG_HOME"
+  if [[ "$SKIP_SHELL" -eq 0 ]]; then
+    dev_env_deploy_shell_config "$SHELL_CONFIG_SRC" "$XDG_CONFIG_HOME"
+    dev_env_deploy_terminal_assets "$SHELL_CONFIG_SRC" "${XDG_DATA_HOME:-$HOME/.local/share}"
+  else
+    log "已跳过 shell 配置链接（--skip-shell）。"
   fi
 else
-  log "已跳过 Neovim 配置链接（--skip-config）。"
+  log "已跳过 Neovim/tmux/shell 配置链接（--skip-config）。"
 fi
 
 DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
@@ -194,6 +226,9 @@ log "版本检查："
 "$LOCAL_BIN/rg" --version | head -n 1
 "$LOCAL_BIN/fd" --version
 "$LOCAL_BIN/tree-sitter" --version
+"$LOCAL_BIN/tmux" -V
+zsh --version
+"$LOCAL_BIN/starship" --version
 if command -v git >/dev/null 2>&1; then
   git --version
 fi
@@ -211,11 +246,20 @@ case ":$PATH:" in
   *":$LOCAL_BIN:"*) ;;
   *)
     warn "当前 PATH 不包含 ${LOCAL_BIN}。"
-    warn "请重新登录，或把下面一行加入 ~/.zshrc："
-    warn "  export PATH=\"\$HOME/.local/bin:\$PATH\""
+    if [[ "$SKIP_CONFIG" -eq 0 && "$SKIP_SHELL" -eq 0 ]]; then
+      warn "dev_env shell 配置已链接；新开 zsh 后会自动把 ~/.local/bin 放到 PATH 前面。"
+    else
+      warn "请重新登录，或把下面一行加入 ~/.zshrc："
+      warn "  export PATH=\"\$HOME/.local/bin:\$PATH\""
+    fi
     ;;
 esac
 
 log "离线安装完成。"
 log "启动 Neovim: $LOCAL_BIN/nvim"
-log "配置目录: ${XDG_CONFIG_HOME:-$HOME/.config}/nvim"
+log "tmux 配置: ${XDG_CONFIG_HOME}/tmux/tmux.conf"
+if [[ "$SKIP_CONFIG" -eq 0 && "$SKIP_SHELL" -eq 0 ]]; then
+  log "shell 配置: ~/.zshrc -> $SHELL_CONFIG_SRC/zshrc"
+  log "本地覆盖: ~/.zshrc.local（已存在则未改动）"
+fi
+log "配置目录: ${XDG_CONFIG_HOME}/nvim"

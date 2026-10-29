@@ -26,6 +26,24 @@ docker run --rm \
   ${DOCKER_ENV[@]+"${DOCKER_ENV[@]}"} \
   -v "$REPO_ROOT:/work:ro" \
   ubuntu:24.04 \
-  bash -lc 'cp -a /work /tmp/work && bash /tmp/work/platforms/linux/ubuntu/24.04/install.sh --allow-root && /root/.local/bin/nvim --headless +qa'
+  bash -lc '
+    set -euo pipefail
+    cp -a /work /tmp/work
+    bash /tmp/work/platforms/linux/ubuntu/24.04/install.sh --allow-root
+    /root/.local/bin/nvim --headless +qa
+    /usr/bin/tmux -V
+    /usr/bin/zsh --version
+    /root/.local/bin/starship --version
+    test -L /root/.zshrc
+    test -L /root/.config/tmux/tmux.conf
+    test -L /root/.config/starship.toml
+    test -f /root/.zshrc.local
+    test "$(stat -c %a /root/.zshrc.local)" = 600
+    /usr/bin/zsh -n /root/.zshrc
+    /usr/bin/tmux -L dev-env-ci -f /root/.config/tmux/tmux.conf new-session -d -s smoke
+    test "$(/usr/bin/tmux -L dev-env-ci show-options -gv mouse)" = on
+    /usr/bin/tmux -L dev-env-ci list-keys -T prefix h | grep -q "select-pane -L"
+    /usr/bin/tmux -L dev-env-ci send-keys -t smoke "exit" Enter
+  '
 
 echo "[test] 通过"

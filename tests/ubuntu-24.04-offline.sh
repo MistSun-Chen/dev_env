@@ -41,12 +41,37 @@ docker run --rm \
 
 echo "[test] 离线包内容："
 find "$BUNDLE_DIR" -maxdepth 1 -type f | sort
+find "$BUNDLE_DIR/debs" -maxdepth 1 -name '*.deb' | sort | grep -E '/(tmux|zsh|zsh-common|ncurses-term|xz-utils|libevent-core|libutempter)' || true
 du -sh "$BUNDLE_DIR"
+
+for f in "$BUNDLE_DIR/shell/zshrc" "$BUNDLE_DIR/shell/starship.toml" "$BUNDLE_DIR/lib/common.sh"; do
+  [[ -e "$f" ]] || { echo "缺少 $f" >&2; exit 1; }
+done
+ls "$BUNDLE_DIR"/Meslo.tar.xz >/dev/null || { echo "缺少 Meslo.tar.xz" >&2; exit 1; }
+compgen -G "$BUNDLE_DIR/debs/tmux*.deb" >/dev/null || { echo "缺少 tmux deb" >&2; exit 1; }
+compgen -G "$BUNDLE_DIR/debs/zsh*.deb" >/dev/null || { echo "缺少 zsh deb" >&2; exit 1; }
 
 echo "[test] 2/2 在无网络容器中安装"
 docker run --rm --network none \
   -v "$BUNDLE_DIR:/bundle:ro" \
   ubuntu:24.04 \
-  bash -lc 'bash /bundle/install.sh --allow-root && /root/.local/bin/nvim --headless +qa'
+  bash -lc '
+    set -euo pipefail
+    bash /bundle/install.sh --allow-root
+    /root/.local/bin/nvim --headless +qa
+    /usr/bin/tmux -V
+    /usr/bin/zsh --version
+    /root/.local/bin/starship --version
+    test -L /root/.zshrc
+    test -L /root/.config/tmux/tmux.conf
+    test -L /root/.config/starship.toml
+    test -f /root/.zshrc.local
+    test "$(stat -c %a /root/.zshrc.local)" = 600
+    /usr/bin/zsh -n /root/.zshrc
+    /usr/bin/tmux -L dev-env-ci -f /root/.config/tmux/tmux.conf new-session -d -s smoke
+    test "$(/usr/bin/tmux -L dev-env-ci show-options -gv mouse)" = on
+    /usr/bin/tmux -L dev-env-ci list-keys -T prefix H | grep -q "resize-pane -L 5"
+    /usr/bin/tmux -L dev-env-ci send-keys -t smoke "exit" Enter
+  '
 
 echo "[test] 通过"

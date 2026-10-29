@@ -102,13 +102,17 @@ case "$(uname -m)" in
     FZF_ARCH="amd64"
     NVIM_ARCH="x86_64"
     TREE_SITTER_ASSET="tree-sitter-cli-linux-x64.zip"
+    STARSHIP_ASSET="starship-x86_64-unknown-linux-musl.tar.gz"
     TREE_SITTER_SHA256="$TREE_SITTER_SHA256_X86_64"
+    STARSHIP_SHA256="$STARSHIP_SHA256_X86_64"
     ;;
   aarch64|arm64)
     FZF_ARCH="arm64"
     NVIM_ARCH="arm64"
     TREE_SITTER_ASSET="tree-sitter-cli-linux-arm64.zip"
+    STARSHIP_ASSET="starship-aarch64-unknown-linux-musl.tar.gz"
     TREE_SITTER_SHA256="$TREE_SITTER_SHA256_ARM64"
+    STARSHIP_SHA256="$STARSHIP_SHA256_ARM64"
     ;;
   *)
     die "不支持的 CPU 架构: $(uname -m)"
@@ -224,11 +228,25 @@ download_verified \
   "$OUT_DIR/$TREE_SITTER_ASSET" \
   "$TREE_SITTER_SHA256"
 
+download_verified \
+  "https://github.com/starship/starship/releases/download/v${STARSHIP_VERSION}/${STARSHIP_ASSET}" \
+  "$OUT_DIR/$STARSHIP_ASSET" \
+  "$STARSHIP_SHA256"
+
+download_verified \
+  "https://github.com/ryanoasis/nerd-fonts/releases/download/v${NERD_FONT_VERSION}/${NERD_FONT_ASSET}" \
+  "$OUT_DIR/$NERD_FONT_ASSET" \
+  "$NERD_FONT_SHA256"
+
 # ---------- 配置与离线安装脚本 ----------
 
-log "复制 Neovim 配置和离线安装脚本..."
-rm -rf "$OUT_DIR/nvim"
+log "复制 Neovim/tmux/shell 配置和离线安装脚本..."
+rm -rf "$OUT_DIR/nvim" "$OUT_DIR/tmux" "$OUT_DIR/shell" "$OUT_DIR/lib"
 cp -a "$REPO_ROOT/nvim" "$OUT_DIR/nvim"
+cp -a "$REPO_ROOT/tmux" "$OUT_DIR/tmux"
+cp -a "$REPO_ROOT/shell" "$OUT_DIR/shell"
+mkdir -p "$OUT_DIR/lib"
+cp -a "$REPO_ROOT/platforms/lib/common.sh" "$OUT_DIR/lib/common.sh"
 cp -a "$SCRIPT_DIR/install.sh" "$OUT_DIR/install.sh"
 cp -a "$PLATFORM_DIR/versions.env" "$OUT_DIR/versions.env"
 chmod +x "$OUT_DIR/install.sh"
@@ -253,6 +271,8 @@ arch=${NVIM_ARCH}
 neovim=${NVIM_VERSION}
 fzf=${FZF_VERSION}
 tree_sitter=${TREE_SITTER_VERSION}
+starship=${STARSHIP_VERSION}
+nerd_font=${NERD_FONT_VERSION}
 apt_packages=${APT_PACKAGES_OFFLINE}
 EOF
 

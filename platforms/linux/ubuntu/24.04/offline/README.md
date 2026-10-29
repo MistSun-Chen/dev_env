@@ -4,13 +4,16 @@
 
 离线包包含：
 
-- `debs/`：`ca-certificates`、`curl`、`git`、`ripgrep`、`fd-find` 及其依赖
+- `debs/`：`ca-certificates`、`curl`、`git`、`ripgrep`、`fd-find`、`tmux`、`zsh`、`ncurses-term`、`xz-utils` 及其依赖
 - `nvim-linux-*.tar.gz`：Neovim 官方二进制
 - `fzf-*-linux_*.tar.gz`：fzf 官方二进制
 - `tree-sitter-cli-linux-*.zip`：tree-sitter CLI
+- `starship-*-unknown-linux-musl.tar.gz`：Starship 1.27.0
+- `Meslo.tar.xz`：Nerd Fonts 3.5.1 Meslo
 - `nvim-plugins/`：lazy.nvim 根目录，含 lazy.nvim、which-key.nvim、gitsigns.nvim、fzf-lua、markview.nvim、grug-far.nvim、neo-tree.nvim、nui.nvim、plenary.nvim、nvim-lspconfig、lazydev.nvim、配色插件（均带 `.git`）
 - `nvim-parser/latex.so`：预编译公式 parser
-- `nvim/`：Neovim 配置与 lockfile
+- `nvim/`、`tmux/`、`shell/`：配置与 lockfile
+- `lib/common.sh`：配置部署 helper
 - `install.sh`：离线安装脚本
 - `versions.env`、`manifest.txt`、`SHA256SUMS`
 
@@ -70,6 +73,9 @@ bash install.sh
 
 ```sh
 nvim --version | head -1
+tmux -V
+zsh --version
+starship --version
 rg --version | head -1
 fd --version
 fzf --version
@@ -77,12 +83,13 @@ git --version
 tree-sitter --version
 ```
 
-预期与联网安装一致：Neovim 0.12.3、fzf 0.74.5。
+预期与联网安装一致：Neovim 0.12.3、fzf 0.74.5、tmux 3.4+、zsh 5.9、Starship 1.27.0。
 
 ## 选项
 
 ```sh
-bash install.sh --skip-config   # 只装工具，不接管 Neovim 配置
+bash install.sh --skip-config   # 只装工具，不接管 Neovim/tmux/shell 配置
+bash install.sh --skip-shell    # 只跳过 shell 配置
 bash install.sh --allow-root    # 仅容器/CI
 ```
 
@@ -91,8 +98,10 @@ bash install.sh --allow-root    # 仅容器/CI
 - **架构必须一致**：apt deb 和 Neovim/fzf tarball 都是架构相关的；在 arm64 上下载的包不能装到 x86_64。
 - **Ubuntu 版本必须是 24.04**：deb 依赖是按 24.04 的软件源下载的。
 - 离线安装用 `dpkg -i` + `dpkg --configure -a`，不执行 `apt-get update`，不会访问网络。
-- 已有 `~/.config/nvim` 会先备份为 `~/.config/nvim.bak.YYYYMMDD-HHMMSS`。
+- 已有 `~/.config/nvim`、`~/.config/tmux/tmux.conf`、`~/.zshrc` 会先备份。
 - 离线包不会安装 fzf 的 shell 集成，只安装二进制；Neovim 使用不需要 shell 集成。
 - 离线包不包含 language server、Node/npm、`clangd` 或 C/C++ 编译器。离线机器上如果想要 Python/Bash/C/C++ LSP，需要另外准备这些包；否则 Neovim 仍可启动，只是对应语言的 LSP 不工作。可用 `bash nvim/scripts/check-lsp.sh` 查看缺失项。
+- Ubuntu 安装器不会自动 `chsh`；需要默认 zsh 时手动执行 `chsh -s "$(command -v zsh)"`。
+- 终端配色只复制到 `~/.local/share/dev_env/terminal/`，不会自动修改 GNOME Terminal/Kitty 等终端偏好。
 - `download.sh` 会清空并重新生成 `dist/debs/`；不要把重要文件放在这个目录。
 - 离线包默认不提交到 git（见 `.gitignore`），需要时再单独传输。

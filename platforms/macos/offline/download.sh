@@ -69,11 +69,13 @@ case "$(uname -m)" in
     RG_ASSET="ripgrep-${RG_VERSION}-aarch64-apple-darwin.tar.gz"
     FD_ASSET="fd-v${FD_VERSION}-aarch64-apple-darwin.tar.gz"
     TREE_SITTER_ASSET="tree-sitter-cli-macos-arm64.zip"
+    STARSHIP_ASSET="starship-aarch64-apple-darwin.tar.gz"
     NVIM_SHA="$NVIM_SHA256_ARM64"
     FZF_SHA="$FZF_SHA256_ARM64"
     RG_SHA="$RG_SHA256_ARM64"
     FD_SHA="$FD_SHA256_ARM64"
     TREE_SITTER_SHA="$TREE_SITTER_SHA256_ARM64"
+    STARSHIP_SHA="$STARSHIP_SHA256_ARM64"
     ;;
   x86_64)
     ARCH="x86_64"
@@ -82,11 +84,13 @@ case "$(uname -m)" in
     RG_ASSET="ripgrep-${RG_VERSION}-x86_64-apple-darwin.tar.gz"
     FD_ASSET="fd-v${FD_VERSION}-x86_64-apple-darwin.tar.gz"
     TREE_SITTER_ASSET="tree-sitter-cli-macos-x64.zip"
+    STARSHIP_ASSET="starship-x86_64-apple-darwin.tar.gz"
     NVIM_SHA="$NVIM_SHA256_X86_64"
     FZF_SHA="$FZF_SHA256_X86_64"
     RG_SHA="$RG_SHA256_X86_64"
     FD_SHA="$FD_SHA256_X86_64"
     TREE_SITTER_SHA="$TREE_SITTER_SHA256_X86_64"
+    STARSHIP_SHA="$STARSHIP_SHA256_X86_64"
     ;;
   *)
     die "不支持的 CPU 架构: $(uname -m)"
@@ -142,9 +146,29 @@ download_verify \
   "$OUT_DIR/$TREE_SITTER_ASSET" \
   "$TREE_SITTER_SHA"
 
-log "复制 Neovim 配置和离线安装脚本..."
-rm -rf "$OUT_DIR/nvim"
+download_verify \
+  "https://github.com/starship/starship/releases/download/v${STARSHIP_VERSION}/${STARSHIP_ASSET}" \
+  "$OUT_DIR/$STARSHIP_ASSET" \
+  "$STARSHIP_SHA"
+
+download_verify \
+  "https://github.com/ryanoasis/nerd-fonts/releases/download/v${NERD_FONT_VERSION}/${NERD_FONT_ASSET}" \
+  "$OUT_DIR/$NERD_FONT_ASSET" \
+  "$NERD_FONT_SHA256"
+
+log "构建自包含 tmux ${TMUX_VERSION} ..."
+TMUX_BUILD_DIR="$TMP_DIR/tmux-build"
+bash "$PLATFORM_DIR/scripts/build-tmux.sh" --output "$TMUX_BUILD_DIR"
+install -m 755 "$TMUX_BUILD_DIR/tmux" "$OUT_DIR/tmux-bin"
+cp -a "$TMUX_BUILD_DIR/build-info.txt" "$OUT_DIR/tmux-build-info.txt"
+
+log "复制 Neovim/tmux/shell 配置和离线安装脚本..."
+rm -rf "$OUT_DIR/nvim" "$OUT_DIR/tmux" "$OUT_DIR/shell" "$OUT_DIR/lib"
 cp -a "$REPO_ROOT/nvim" "$OUT_DIR/nvim"
+cp -a "$REPO_ROOT/tmux" "$OUT_DIR/tmux"
+cp -a "$REPO_ROOT/shell" "$OUT_DIR/shell"
+mkdir -p "$OUT_DIR/lib"
+cp -a "$REPO_ROOT/platforms/lib/common.sh" "$OUT_DIR/lib/common.sh"
 cp -a "$SCRIPT_DIR/install.sh" "$OUT_DIR/install.sh"
 cp -a "$PLATFORM_DIR/versions.env" "$OUT_DIR/versions.env"
 chmod +x "$OUT_DIR/install.sh"
@@ -173,6 +197,9 @@ fzf=${FZF_VERSION}
 ripgrep=${RG_VERSION}
 fd=${FD_VERSION}
 tree_sitter=${TREE_SITTER_VERSION}
+tmux=${TMUX_VERSION}
+starship=${STARSHIP_VERSION}
+nerd_font=${NERD_FONT_VERSION}
 EOF
 
 log "生成 SHA256SUMS ..."

@@ -3,14 +3,13 @@
 # Ubuntu 24.04 开发环境安装脚本
 #
 # 安装内容：
-#   - Neovim 0.12.x（官方 Linux tarball，用户目录安装）
-#   - ripgrep（rg）
-#   - fd（Ubuntu 包名为 fd-find，脚本会补一个 fd 命令）
-#   - fzf（官方 GitHub release，固定版本）
+#   - Neovim 0.12.x、fzf、tree-sitter、Starship（官方 tarball，用户目录安装）
+#   - tmux、zsh、ncurses-term、xz-utils（apt）
+#   - ripgrep、fd（Ubuntu 包名为 fd-find，脚本会补一个 fd 命令）
 #   - git / curl / ca-certificates / gcc / libc6-dev / unzip
-#   - tree-sitter CLI（编译 latex parser）
 #   - Neovim 插件与 latex parser
-#   - 把 dev_env/nvim 链接到 Neovim 配置目录
+#   - Meslo Nerd Font
+#   - 把 dev_env/nvim、dev_env/tmux、dev_env/shell 链接到用户配置目录
 #
 # 设计原则：
 #   - 不使用 Ubuntu 源里的 neovim（24.04 只有 0.9.5，太旧，不支持当前配置）
@@ -26,18 +25,23 @@
 set -euo pipefail
 
 SKIP_CONFIG=0
+SKIP_SHELL=0
 ALLOW_ROOT=0
 SUDO=""
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=versions.env
 . "$SCRIPT_DIR/versions.env"
+# shellcheck source=../../../lib/common.sh
+. "$SCRIPT_DIR/../../../lib/common.sh"
 NVIM_SHA256="${NVIM_SHA256:-}"
 REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || true)"
 if [[ -z "$REPO_ROOT" ]]; then
   REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 fi
 NVIM_CONFIG_SRC="$REPO_ROOT/nvim"
+TMUX_CONFIG_SRC="$REPO_ROOT/tmux/tmux.conf"
+SHELL_CONFIG_SRC="$REPO_ROOT/shell"
 XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 NVIM_CONFIG_DST="$XDG_CONFIG_HOME/nvim"
 LOCAL_BIN="$HOME/.local/bin"
@@ -60,7 +64,8 @@ usage() {
 用法: install.sh [选项]
 
 选项:
-  --skip-config   只安装工具，不链接 Neovim 配置
+  --skip-config   只安装工具，不链接 Neovim/tmux/shell 配置
+  --skip-shell    只跳过 shell 配置链接
   --allow-root    允许以 root 运行（仅建议在容器/CI 中使用）
   -h, --help      显示帮助
 
@@ -82,6 +87,10 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --skip-config)
       SKIP_CONFIG=1
+      shift
+      ;;
+    --skip-shell)
+      SKIP_SHELL=1
       shift
       ;;
     --allow-root)
@@ -130,13 +139,17 @@ case "$(uname -m)" in
     FZF_ARCH="amd64"
     NVIM_ARCH="x86_64"
     TREE_SITTER_ASSET="tree-sitter-cli-linux-x64.zip"
+    STARSHIP_ASSET="starship-x86_64-unknown-linux-musl.tar.gz"
     TREE_SITTER_SHA256="$TREE_SITTER_SHA256_X86_64"
+    STARSHIP_SHA256="$STARSHIP_SHA256_X86_64"
     ;;
   aarch64|arm64)
     FZF_ARCH="arm64"
     NVIM_ARCH="arm64"
     TREE_SITTER_ASSET="tree-sitter-cli-linux-arm64.zip"
+    STARSHIP_ASSET="starship-aarch64-unknown-linux-musl.tar.gz"
     TREE_SITTER_SHA256="$TREE_SITTER_SHA256_ARM64"
+    STARSHIP_SHA256="$STARSHIP_SHA256_ARM64"
     ;;
   *)
     die "不支持的 CPU 架构: $(uname -m)"
@@ -152,6 +165,8 @@ if [[ -z "$NVIM_SHA256" && "$NVIM_VERSION" == "0.12.3" ]]; then
 fi
 
 [[ -f "$NVIM_CONFIG_SRC/init.lua" ]] || die "找不到 Neovim 配置: $NVIM_CONFIG_SRC/init.lua"
+[[ -f "$TMUX_CONFIG_SRC" ]] || die "找不到 tmux 配置: $TMUX_CONFIG_SRC"
+[[ -f "$SHELL_CONFIG_SRC/zshrc" ]] || die "找不到 shell 配置: $SHELL_CONFIG_SRC/zshrc"
 
 # 先刷新一次 sudo 凭据，避免后面多次输入密码
 if [[ -n "$SUDO" ]]; then
@@ -269,6 +284,74 @@ else
   install_tree_sitter
 fi
 
+# ---------- tmux / Starship / Nerd Font ----------
+
+command -v tmux >/dev/null 2>&1 || die "apt 安装后找不到 tmux。"
+log "tmux: $(tmux -V)"
+
+starship_current_version() {
+  if [[ -x "$LOCAL_BIN/starship" ]]; then
+    "$LOCAL_BIN/starship" --version 2>/dev/null | awk '{print $2}'
+    return
+  fi
+  command -v starship >/dev/null 2>&1 || return 1
+  starship --version 2>/dev/null | awk '{print $2}'
+}
+
+install_starship() {
+  local prefix="$LOCAL_OPT/starship-${STARSHIP_VERSION}"
+  local asset="$STARSHIP_ASSET"
+
+  if [[ -z "$TMP_DIR" ]]; then
+    TMP_DIR="$(mktemp -d)"
+  fi
+  download_verify \
+    "https://github.com/starship/starship/releases/download/v${STARSHIP_VERSION}/${asset}" \
+    "$TMP_DIR/$asset" \
+    "$STARSHIP_SHA256"
+  rm -rf "$prefix"
+  install -d "$prefix"
+  tar -xzf "$TMP_DIR/$asset" -C "$prefix"
+  [[ -x "$prefix/starship" ]] || die "Starship 压缩包结构不符合预期。"
+  ln -sfn "$prefix/starship" "$LOCAL_BIN/starship"
+  log "Starship 已安装: $LOCAL_BIN/starship"
+}
+
+CURRENT_STARSHIP="$(starship_current_version || true)"
+if [[ "$CURRENT_STARSHIP" == "$STARSHIP_VERSION" ]]; then
+  log "Starship 已是 ${STARSHIP_VERSION}，跳过。"
+else
+  install_starship
+fi
+
+install_nerd_font() {
+  local asset="$NERD_FONT_ASSET"
+  local font_files=(
+    MesloLGSNerdFont-Regular.ttf
+    MesloLGSNerdFont-Bold.ttf
+    MesloLGSNerdFont-Italic.ttf
+    MesloLGSNerdFont-BoldItalic.ttf
+  )
+
+  if [[ -z "$TMP_DIR" ]]; then
+    TMP_DIR="$(mktemp -d)"
+  fi
+  download_verify \
+    "https://github.com/ryanoasis/nerd-fonts/releases/download/v${NERD_FONT_VERSION}/${asset}" \
+    "$TMP_DIR/$asset" \
+    "$NERD_FONT_SHA256"
+  install -d "$HOME/.local/share/fonts"
+  tar -xJf "$TMP_DIR/$asset" -C "$HOME/.local/share/fonts" "${font_files[@]}"
+  if command -v fc-cache >/dev/null 2>&1; then
+    fc-cache -f "$HOME/.local/share/fonts" >/dev/null 2>&1 || true
+  else
+    warn "找不到 fc-cache；字体已复制，但可能需要手动刷新字体缓存。"
+  fi
+  log "Nerd Font 已安装到 $HOME/.local/share/fonts"
+}
+
+install_nerd_font
+
 # ---------- Neovim ----------
 
 nvim_current_version() {
@@ -315,37 +398,19 @@ else
   install_neovim
 fi
 
-# ---------- Neovim 配置 ----------
-
-deploy_nvim_config() {
-  install -d "$(dirname "$NVIM_CONFIG_DST")"
-
-  if [[ -L "$NVIM_CONFIG_DST" ]]; then
-    local current
-    current="$(readlink -f "$NVIM_CONFIG_DST" || true)"
-    if [[ "$current" == "$(readlink -f "$NVIM_CONFIG_SRC")" ]]; then
-      log "Neovim 配置已经链接到仓库，跳过。"
-      return
-    fi
-  fi
-
-  if [[ -e "$NVIM_CONFIG_DST" || -L "$NVIM_CONFIG_DST" ]]; then
-    local backup="${NVIM_CONFIG_DST}.bak.$(date +%Y%m%d-%H%M%S)"
-    while [[ -e "$backup" || -L "$backup" ]]; do
-      backup="${backup}-$$"
-    done
-    mv "$NVIM_CONFIG_DST" "$backup"
-    log "已备份旧 Neovim 配置: $backup"
-  fi
-
-  ln -sfn "$NVIM_CONFIG_SRC" "$NVIM_CONFIG_DST"
-  log "已链接 Neovim 配置: $NVIM_CONFIG_DST -> $NVIM_CONFIG_SRC"
-}
+# ---------- 配置 ----------
 
 if [[ "$SKIP_CONFIG" -eq 0 ]]; then
-  deploy_nvim_config
+  dev_env_deploy_nvim_config "$NVIM_CONFIG_SRC" "$XDG_CONFIG_HOME"
+  dev_env_deploy_tmux_config "$TMUX_CONFIG_SRC" "$XDG_CONFIG_HOME"
+  if [[ "$SKIP_SHELL" -eq 0 ]]; then
+    dev_env_deploy_shell_config "$SHELL_CONFIG_SRC" "$XDG_CONFIG_HOME"
+    dev_env_deploy_terminal_assets "$SHELL_CONFIG_SRC" "${XDG_DATA_HOME:-$HOME/.local/share}"
+  else
+    log "已跳过 shell 配置链接（--skip-shell）。"
+  fi
 else
-  log "已跳过 Neovim 配置链接（--skip-config）。"
+  log "已跳过 Neovim/tmux/shell 配置链接（--skip-config）。"
 fi
 
 # ---------- 验证 ----------
@@ -391,6 +456,9 @@ else
   warn "fd 命令不可用。"
 fi
 "$LOCAL_BIN/tree-sitter" --version
+tmux -V
+zsh --version
+"$LOCAL_BIN/starship" --version
 
 if [[ "$SKIP_CONFIG" -eq 0 ]]; then
   log "Neovim 配置冒烟测试："
@@ -406,10 +474,19 @@ case ":$PATH:" in
     ;;
   *)
     warn "当前 PATH 不包含 ${LOCAL_BIN}。"
-    warn "请重新登录，或把下面一行加入 ~/.profile / ~/.zshrc："
-    warn "  export PATH=\"\$HOME/.local/bin:\$PATH\""
+    if [[ "$SKIP_CONFIG" -eq 0 && "$SKIP_SHELL" -eq 0 ]]; then
+      warn "dev_env shell 配置已链接；新开 zsh 后会自动把 ~/.local/bin 放到 PATH 前面。"
+    else
+      warn "请重新登录，或把下面一行加入 ~/.profile / ~/.zshrc："
+      warn "  export PATH=\"\$HOME/.local/bin:\$PATH\""
+    fi
     ;;
 esac
+
+if command -v zsh >/dev/null 2>&1 && [[ "$(getent passwd "$(id -un)" | cut -d: -f7)" != "$(command -v zsh)" ]]; then
+  warn "当前登录 shell 不是 zsh。如需默认使用 zsh，请手动执行："
+  warn "  chsh -s $(command -v zsh)"
+fi
 
 if command -v nvim >/dev/null 2>&1; then
   NVIM_RESOLVED="$(command -v nvim)"
@@ -429,5 +506,10 @@ fi
 
 log "完成。"
 log "启动 Neovim: nvim"
+log "tmux 配置: ${XDG_CONFIG_HOME}/tmux/tmux.conf"
+if [[ "$SKIP_CONFIG" -eq 0 && "$SKIP_SHELL" -eq 0 ]]; then
+  log "shell 配置: ~/.zshrc -> $SHELL_CONFIG_SRC/zshrc"
+  log "本地覆盖: ~/.zshrc.local（已存在则未改动）"
+fi
 log "检查 LSP: bash $NVIM_CONFIG_SRC/scripts/check-lsp.sh（或 :checkhealth vim.lsp）"
 log "配置源文件: $NVIM_CONFIG_SRC/init.lua"
