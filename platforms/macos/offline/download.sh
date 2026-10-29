@@ -11,6 +11,7 @@ set -euo pipefail
 
 OUT_DIR=""
 MAKE_TAR=1
+FORCE=0
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PLATFORM_DIR="$(dirname "$SCRIPT_DIR")"
@@ -33,6 +34,7 @@ usage() {
 选项:
   --output DIR    指定输出目录（默认: 本脚本目录下的 dist）
   --no-tar        只生成目录，不额外打 tar.gz
+  --force         允许覆盖非空的输出目录
   -h, --help      显示帮助
 EOF
 }
@@ -46,6 +48,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --no-tar)
       MAKE_TAR=0
+      shift
+      ;;
+    --force)
+      FORCE=1
       shift
       ;;
     -h|--help)
@@ -69,11 +75,13 @@ case "$(uname -m)" in
     RG_ASSET="ripgrep-${RG_VERSION}-aarch64-apple-darwin.tar.gz"
     FD_ASSET="fd-v${FD_VERSION}-aarch64-apple-darwin.tar.gz"
     TREE_SITTER_ASSET="tree-sitter-cli-macos-arm64.zip"
+    STARSHIP_ASSET="starship-aarch64-apple-darwin.tar.gz"
     NVIM_SHA="$NVIM_SHA256_ARM64"
     FZF_SHA="$FZF_SHA256_ARM64"
     RG_SHA="$RG_SHA256_ARM64"
     FD_SHA="$FD_SHA256_ARM64"
     TREE_SITTER_SHA="$TREE_SITTER_SHA256_ARM64"
+    STARSHIP_SHA="$STARSHIP_SHA256_ARM64"
     ;;
   x86_64)
     ARCH="x86_64"
@@ -82,11 +90,13 @@ case "$(uname -m)" in
     RG_ASSET="ripgrep-${RG_VERSION}-x86_64-apple-darwin.tar.gz"
     FD_ASSET="fd-v${FD_VERSION}-x86_64-apple-darwin.tar.gz"
     TREE_SITTER_ASSET="tree-sitter-cli-macos-x64.zip"
+    STARSHIP_ASSET="starship-x86_64-apple-darwin.tar.gz"
     NVIM_SHA="$NVIM_SHA256_X86_64"
     FZF_SHA="$FZF_SHA256_X86_64"
     RG_SHA="$RG_SHA256_X86_64"
     FD_SHA="$FD_SHA256_X86_64"
     TREE_SITTER_SHA="$TREE_SITTER_SHA256_X86_64"
+    STARSHIP_SHA="$STARSHIP_SHA256_X86_64"
     ;;
   *)
     die "不支持的 CPU 架构: $(uname -m)"
@@ -96,8 +106,18 @@ esac
 OUT_DIR="${OUT_DIR:-$SCRIPT_DIR/dist}"
 mkdir -p "$OUT_DIR"
 OUT_DIR="$(cd "$OUT_DIR" && pwd)"
+[[ "$OUT_DIR" != "/" ]] || die "拒绝使用 / 作为输出目录。"
+
+BUNDLE_MARKER="$OUT_DIR/.dev_env_bundle"
+if [[ ! -f "$BUNDLE_MARKER" ]] \
+  && [[ -n "$(find "$OUT_DIR" -mindepth 1 -maxdepth 1 -print -quit)" ]] \
+  && [[ "$FORCE" -ne 1 ]]; then
+  die "输出目录非空且不是 dev_env 离线包: ${OUT_DIR}（换新目录，或确认后加 --force）"
+fi
+printf 'dev_env offline bundle\n' > "$BUNDLE_MARKER"
+
 TMP_DIR="$(mktemp -d)"
-cleanup() { rm -rf "$TMP_DIR"; }
+cleanup() { rm -rf "${TMP_DIR:?}"; }
 trap cleanup EXIT
 
 download_verify() {
@@ -142,9 +162,29 @@ download_verify \
   "$OUT_DIR/$TREE_SITTER_ASSET" \
   "$TREE_SITTER_SHA"
 
-log "复制 Neovim 配置和离线安装脚本..."
-rm -rf "$OUT_DIR/nvim"
+download_verify \
+  "https://github.com/starship/starship/releases/download/v${STARSHIP_VERSION}/${STARSHIP_ASSET}" \
+  "$OUT_DIR/$STARSHIP_ASSET" \
+  "$STARSHIP_SHA"
+
+download_verify \
+  "https://github.com/ryanoasis/nerd-fonts/releases/download/v${NERD_FONT_VERSION}/${NERD_FONT_ASSET}" \
+  "$OUT_DIR/$NERD_FONT_ASSET" \
+  "$NERD_FONT_SHA256"
+
+log "构建自包含 tmux ${TMUX_VERSION} ..."
+TMUX_BUILD_DIR="$TMP_DIR/tmux-build"
+bash "$PLATFORM_DIR/scripts/build-tmux.sh" --output "$TMUX_BUILD_DIR"
+install -m 755 "$TMUX_BUILD_DIR/tmux" "$OUT_DIR/tmux-bin"
+cp -a "$TMUX_BUILD_DIR/build-info.txt" "$OUT_DIR/tmux-build-info.txt"
+
+log "复制 Neovim/tmux/shell 配置和离线安装脚本..."
+rm -rf "${OUT_DIR:?}/nvim" "${OUT_DIR:?}/tmux" "${OUT_DIR:?}/shell" "${OUT_DIR:?}/lib"
 cp -a "$REPO_ROOT/nvim" "$OUT_DIR/nvim"
+cp -a "$REPO_ROOT/tmux" "$OUT_DIR/tmux"
+cp -a "$REPO_ROOT/shell" "$OUT_DIR/shell"
+mkdir -p "$OUT_DIR/lib"
+cp -a "$REPO_ROOT/platforms/lib/common.sh" "$OUT_DIR/lib/common.sh"
 cp -a "$SCRIPT_DIR/install.sh" "$OUT_DIR/install.sh"
 cp -a "$PLATFORM_DIR/versions.env" "$OUT_DIR/versions.env"
 chmod +x "$OUT_DIR/install.sh"
@@ -173,6 +213,9 @@ fzf=${FZF_VERSION}
 ripgrep=${RG_VERSION}
 fd=${FD_VERSION}
 tree_sitter=${TREE_SITTER_VERSION}
+tmux=${TMUX_VERSION}
+starship=${STARSHIP_VERSION}
+nerd_font=${NERD_FONT_VERSION}
 EOF
 
 log "生成 SHA256SUMS ..."

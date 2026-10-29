@@ -41,12 +41,54 @@ docker run --rm \
 
 echo "[test] 离线包内容："
 find "$BUNDLE_DIR" -maxdepth 1 -type f | sort
+find "$BUNDLE_DIR/debs" -maxdepth 1 -name '*.deb' | sort | grep -E '/(tmux|zsh|zsh-common|ncurses-term|xz-utils|libevent-core|libutempter)' || true
 du -sh "$BUNDLE_DIR"
+
+for f in "$BUNDLE_DIR/shell/zshrc" "$BUNDLE_DIR/shell/starship.toml" "$BUNDLE_DIR/lib/common.sh"; do
+  [[ -e "$f" ]] || { echo "缺少 $f" >&2; exit 1; }
+done
+ls "$BUNDLE_DIR"/Meslo.tar.xz >/dev/null || { echo "缺少 Meslo.tar.xz" >&2; exit 1; }
+compgen -G "$BUNDLE_DIR/debs/tmux*.deb" >/dev/null || { echo "缺少 tmux deb" >&2; exit 1; }
+compgen -G "$BUNDLE_DIR/debs/zsh*.deb" >/dev/null || { echo "缺少 zsh deb" >&2; exit 1; }
 
 echo "[test] 2/2 在无网络容器中安装"
 docker run --rm --network none \
   -v "$BUNDLE_DIR:/bundle:ro" \
   ubuntu:24.04 \
-  bash -lc 'bash /bundle/install.sh --allow-root && /root/.local/bin/nvim --headless +qa'
+  bash -lc '
+    set -euo pipefail
+    bash /bundle/install.sh --allow-root
+    CONFIG_ROOT=/root/.local/share/dev_env/config
+    PATH="/root/.local/bin:$PATH" /root/.local/bin/nvim --headless \
+      "+lua if vim.o.number ~= true or vim.g.colors_name ~= \"catppuccin-mocha\" then error(\"config smoke failed\") end" +qa
+    /usr/bin/tmux -V
+    /usr/bin/zsh --version
+    /root/.local/bin/starship --version
+    test -f "$CONFIG_ROOT/shell/zshrc"
+    test -f "$CONFIG_ROOT/nvim/init.lua"
+    test -L /root/.zshrc
+    test -L /root/.config/tmux/tmux.conf
+    test -L /root/.config/starship.toml
+    case "$(readlink -f /root/.zshrc)" in "$CONFIG_ROOT"/*) ;; *) exit 1 ;; esac
+    case "$(readlink -f /root/.config/nvim)" in "$CONFIG_ROOT"/*) ;; *) exit 1 ;; esac
+    test -f /root/.zshrc.local
+    test "$(stat -c %a /root/.zshrc.local)" = 600
+    /usr/bin/zsh -n /root/.zshrc
+    # No -f: verify config discovery, not just explicit loading.
+    /usr/bin/tmux -L dev-env-ci new-session -d -s smoke
+    test "$(/usr/bin/tmux -L dev-env-ci show-options -gv prefix)" = C-b
+    test "$(/usr/bin/tmux -L dev-env-ci show-options -gv mouse)" = on
+    /usr/bin/tmux -L dev-env-ci list-keys -T prefix H | grep -q "resize-pane -L 5"
+    /usr/bin/tmux -L dev-env-ci list-keys -T prefix r | grep -q "XDG_CONFIG_HOME"
+    /usr/bin/tmux -L dev-env-ci send-keys -t smoke "exit" Enter
+
+    # --skip-config must not remove an existing plugin tree or parser.
+    mkdir -p /root/.local/share/nvim/lazy/fzf-lua
+    printf "keep\n" > /root/.local/share/nvim/lazy/fzf-lua/.dev_env-keep
+    printf "keep\n" > /root/.local/share/nvim/site/parser/latex.so
+    bash /bundle/install.sh --allow-root --skip-config
+    test -f /root/.local/share/nvim/lazy/fzf-lua/.dev_env-keep
+    grep -q keep /root/.local/share/nvim/site/parser/latex.so
+  '
 
 echo "[test] 通过"
