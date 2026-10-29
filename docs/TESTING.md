@@ -57,7 +57,7 @@ bash tests/ubuntu-24.04-offline.sh
 6. 再执行一次 `--skip-config`，确认已有 Neovim 插件和 `latex.so` 未被删除；
 7. 清理临时目录。
 
-离线包约 100–130 MB（含 apt deb、插件、parser、tmux、Starship 和字体），生成和安装需要几分钟。
+离线包约 140–150 MB（含 apt deb、插件、parser、tmux、Starship 和字体），生成和安装需要几分钟。
 
 ### 2.4 实测记录
 
@@ -181,7 +181,15 @@ esac
 - shell smoke 使用 `mktemp` 输出文件；shellcheck 新警告已清零；
 - Ubuntu 安装/离线下载的 apt 增加 `Acquire::Retries`、超时和 `Pipeline-Depth=0`，降低大包卡住后失败的概率；
 - `tests/macos-tmux-build-smoke.sh` 通过；额外验证 `build-tmux.sh --work <用户目录>` 不会删除该目录中的已有文件；
-- `tests/macos-offline-installer-safety-smoke.sh` 通过：合成离线包验证稳定配置副本和 `--skip-config` 保留插件/parser。
+- `tests/macos-offline-installer-safety-smoke.sh` 通过：合成离线包验证稳定配置副本和 `--skip-config` 保留插件/parser；
+- macOS 完整离线包本次没有重跑（GitHub release 资产在当前网络不可达）；此前 2026-10-27 的完整离线安装通过，本次改动路径由 synthetic + build 测试覆盖。
+
+2026-10-29 PR 自审后的 Ubuntu 平台验证：
+
+- 当前网络下 `github.com` 解析到不可达 IP，默认 GitHub release 下载超时；apt 阶段本身可通过。这是外部网络问题，不是安装脚本错误；
+- 为完成回归验证，使用临时测试副本把 GitHub release URL 指向 `ghproxy.net`，并让 Docker 通过宿主机可达的 TCP 代理访问 apt/git；仓库默认 URL 未改动；
+- `tests/ubuntu-24.04-offline.sh` 通过：离线包约 142 MB，在 `--network none` 容器中安装成功；配置链接指向 `/root/.local/share/dev_env/config`，`--skip-config` 未删除已有插件/parser；
+- `tests/ubuntu-24.04-online.sh` 使用同一镜像/代理通过：Neovim 0.12.3、tmux 3.4、zsh 5.9、Starship 1.27.0；验证了新加的核心选项/配色断言、tmux 无 `-f` 配置发现、`prefix=C-b` 和 `C-b r` 的 XDG 路径。
 
 ## 4. Neovim 插件与预览测试
 

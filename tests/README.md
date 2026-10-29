@@ -58,7 +58,7 @@ bash tests/ubuntu-24.04-offline.sh
 4. 执行离线包的 `install.sh --allow-root`，安装插件和 parser；
 5. 检查版本、配置链接、tmux 私有 socket，并删除临时离线包。
 
-离线包体积约 100–130 MB（含插件、parser、tmux、Starship 和字体），生成和安装都需要几分钟；脚本不会把离线包提交到仓库。
+离线包体积约 140–150 MB（含插件、parser、tmux、Starship 和字体），生成和安装都需要几分钟；脚本不会把离线包提交到仓库。
 
 ## 本机冒烟测试
 
