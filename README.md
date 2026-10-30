@@ -4,6 +4,8 @@
 
 当前支持 Ubuntu 24.04 和 macOS（Apple Silicon / Intel），均提供联网安装与离线安装；Windows 待实现。
 
+macOS 的在线安装和离线包默认使用同一份 tmux 3.8 自包含二进制；Ubuntu 24.04 使用 apt 提供的 tmux 3.4。
+
 ## 支持平台
 
 | 平台 | 联网安装 | 离线安装 |

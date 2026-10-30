@@ -7,6 +7,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# shellcheck source=../platforms/macos/versions.env
+. "$REPO_ROOT/platforms/macos/versions.env"
 
 if [[ "${DEV_ENV_RUN_SLOW_TESTS:-0}" != "1" ]]; then
   echo "[tmux-build-smoke] 跳过（设置 DEV_ENV_RUN_SLOW_TESTS=1 启用）"
@@ -25,6 +27,8 @@ echo "[tmux-build-smoke] 构建 tmux ..."
 bash "$REPO_ROOT/platforms/macos/scripts/build-tmux.sh" --output "$OUT"
 
 "$OUT/tmux" -V
+"$OUT/tmux" -V | grep -q "tmux ${TMUX_VERSION}" \
+  || { echo "[tmux-build-smoke] tmux 版本不是 ${TMUX_VERSION}" >&2; exit 1; }
 if otool -L "$OUT/tmux" | tail -n +2 | grep -E '/opt/homebrew|/usr/local|@rpath'; then
   echo "[tmux-build-smoke] tmux 仍依赖非系统路径" >&2
   exit 1
@@ -34,5 +38,8 @@ case "$(uname -m)" in
   arm64) file "$OUT/tmux" | grep -q arm64 ;;
   x86_64) file "$OUT/tmux" | grep -q x86_64 ;;
 esac
+
+echo "[tmux-build-smoke] 运行 tmux 配置 smoke（tmux ${TMUX_VERSION}）..."
+TMUX_BIN="$OUT/tmux" bash "$REPO_ROOT/tests/tmux-config-smoke.sh"
 
 echo "[tmux-build-smoke] 通过"

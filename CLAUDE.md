@@ -41,6 +41,7 @@ DOCKER_PROXY=http://host.docker.internal:7897 bash tests/ubuntu-24.04-offline.sh
 
 - 目标平台：macOS（Apple Silicon/Intel）和 Ubuntu 24.04；两者都要联网 + 离线安装。
 - tmux 从 0 设计，保留 `C-b`；`C-b h/j/k/l` 切 pane，`C-b H/J/K/L` 调分割线，`C-b z` 最大化，`C-b Tab` 上一个 window。
+- macOS 在线/离线默认使用固定 3.8 自包含构建；`--brew-tmux` 仅在 Homebrew tmux >=3.8 时使用。Ubuntu 24.04 保持 apt 3.4，配置必须兼容 3.4+。
 - 用户没有 PageUp/PageDown：滚动用鼠标、`C-b u`、`C-b [`，copy-mode 内用 `C-u/C-d`、`C-b/C-f`、`g/G`。
 - tmux 复制/粘贴是明确的后续章节；当前只保留滚动入口，不要重新引入选择/复制、`pbcopy`、OSC52 或 `set-clipboard`。
 - shell 是 zsh + Starship；不引入 Oh My Zsh、Zinit、TPM。syntax-highlighting 必须最后加载。
@@ -69,6 +70,8 @@ DOCKER_PROXY=http://host.docker.internal:7897 bash tests/ubuntu-24.04-offline.sh
 | 脚本在 macOS 报 bash 4 语法错误 | 目标机可能是 `/bin/bash` 3.2；不要用 `mapfile`、关联数组等 bash 4+ 特性 |
 | 改了 tmux 配置但当前 server 没变 | 不要 kill；执行 `C-b r` 或 `tmux source-file ...`，新 server 才自动加载 |
 | 运行中的 tmux 仍保留旧选项 | 旧值可能来自已加载的 server；用 `set-option -u` 或重载配置，不要 kill server |
+| Homebrew tmux 仍停留在 3.5a | tap/formula 可能滞后；macOS 在线安装默认构建 pinned 3.8，不要依赖 `brew upgrade tmux` |
+| 运行中的 tmux server 仍是旧版本 | 不 kill；已运行的 server 保持旧二进制，退出旧 session 后新 server 才使用 3.8 |
 | Option+方向键输出 `3D`/`3C` | iTerm 发送 CSI `1;3D`/`1;3C`；在 `shell/options.zsh` 绑定，同时覆盖 `1;5D/C` 和 `^[b/^[f` |
 | zsh 插件加载顺序错误 | syntax-highlighting 必须最后 source；autosuggestions 在它之前 |
 | zsh-syntax-highlighting 报缺文件 | 保留上游 `.version` 和 `.revision-hash`，升级时一起替换 |

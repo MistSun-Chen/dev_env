@@ -65,11 +65,13 @@ bash platforms/macos/install.sh
 bash platforms/linux/ubuntu/24.04/install.sh
 ```
 
-macOS 默认使用 Homebrew 的 tmux；想固定 3.8 自包含版本时：
+macOS 默认构建固定 3.8 自包含 tmux，在线/离线使用同一版本。想改用 Homebrew（要求 >=3.8）：
 
 ```sh
-bash platforms/macos/install.sh --pinned-tmux
+bash platforms/macos/install.sh --brew-tmux
 ```
+
+`--pinned-tmux` 保留为兼容参数，等同于默认行为。
 
 离线安装包会带 macOS 自包含 tmux 二进制；Ubuntu 使用 `tmux` 的 `.deb`。
 

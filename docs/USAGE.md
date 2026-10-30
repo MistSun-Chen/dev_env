@@ -7,7 +7,7 @@
 每个平台安装以下工具：
 
 - Neovim 0.12.x
-- tmux（macOS 在线默认 Homebrew；离线为固定版本自包含二进制；Ubuntu 为 apt 包）
+- tmux（macOS 在线和离线默认固定 3.8 自包含二进制；Ubuntu 24.04 为 apt 3.4）
 - zsh（macOS 系统自带；Ubuntu 通过 apt 安装）
 - Starship prompt
 - MesloLGSNerdFont（Regular/Bold/Italic/BoldItalic）
@@ -68,7 +68,7 @@ bash platforms/linux/ubuntu/24.04/install.sh --allow-root --skip-config
 
 ### 2.2 macOS
 
-要求已安装 [Homebrew](https://brew.sh/)。
+要求已安装 [Homebrew](https://brew.sh/) 和 Xcode Command Line Tools（默认构建 tmux 3.8）。
 
 ```sh
 git clone git@github.com:MistSun-Chen/dev_env.git
@@ -89,11 +89,15 @@ bash platforms/macos/install.sh --skip-config
 bash platforms/macos/install.sh --skip-shell
 ```
 
-macOS 默认使用 Homebrew 的 tmux；需要固定 3.8 自包含版本时：
+macOS 默认构建固定 3.8 自包含 tmux，在线安装和离线包使用同一版本。想改用 Homebrew 的 tmux（要求 >=3.8）：
 
 ```sh
-bash platforms/macos/install.sh --pinned-tmux
+bash platforms/macos/install.sh --brew-tmux
 ```
+
+`--pinned-tmux` 保留为兼容参数，等同于默认行为。
+
+安装后新开的 tmux server 使用 3.8；已在运行的 server 保持旧版本，退出旧 session 后重启即可，不要 kill server。
 
 ### 2.3 安装脚本做了什么
 
@@ -109,7 +113,8 @@ Ubuntu：
 
 macOS：
 
-- 缺失时用 Homebrew 安装 `ripgrep`、`fd`、`git`、`node`、`tmux`；
+- 缺失时用 Homebrew 安装 `ripgrep`、`fd`、`git`、`node`；
+- 默认用固定源码构建 tmux 3.8，安装到 `~/.local/opt/tmux-3.8`；`--brew-tmux` 时改用 Homebrew >=3.8；
 - 从官方 release 安装 Neovim 0.12.3、fzf 0.74.5、tree-sitter 0.27.1、Starship 1.27.0，并校验 SHA256；
 - 安装 Meslo Nerd Font 的四个样式到 `~/Library/Fonts`；
 - 备份并链接 `~/.config/nvim`、`~/.config/tmux/tmux.conf`、`~/.zshrc`、`~/.config/starship.toml`；
@@ -467,7 +472,7 @@ git --version
 
 - `nvim` 为 `v0.12.3`
 - `fzf` 为 `0.74.5`
-- `tmux` 为 3.4+（macOS 在线可能来自 Homebrew；离线为 3.8）
+- `tmux` 在 macOS 为 3.8（在线/离线同一自包含版本）；Ubuntu 24.04 为 apt 3.4+
 - `zsh` 为 5.9（macOS 系统自带；Ubuntu 由 apt 安装）
 - `starship` 为 `1.27.0`
 - `rg`、`fd`、`git` 正常输出版本

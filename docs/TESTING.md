@@ -86,7 +86,7 @@ TMP_CONFIG="$(mktemp -d)"
 HOME="$TMP_HOME" XDG_CONFIG_HOME="$TMP_CONFIG" bash platforms/macos/install.sh
 ```
 
-注意：这个测试仍会通过 Homebrew 安装/升级 `ripgrep`/`fd`/`git`/`node`/`tmux`（仅缺失时），但不会改写真实 `~/.zshrc`、`~/.config`、`~/Library/Fonts` 或 `~/.local`。
+注意：这个测试仍会通过 Homebrew 安装/升级 `ripgrep`/`fd`/`git`/`node`（仅缺失时），并默认构建 tmux 3.8 到临时 HOME；不会改写真实 `~/.zshrc`、`~/.config`、`~/Library/Fonts` 或 `~/.local`。
 
 验证：
 
@@ -191,6 +191,17 @@ esac
 - `tests/ubuntu-24.04-offline.sh` 通过：离线包约 142 MB，在 `--network none` 容器中安装成功；配置链接指向 `/root/.local/share/dev_env/config`，`--skip-config` 未删除已有插件/parser；
 - `tests/ubuntu-24.04-online.sh` 使用同一镜像/代理通过：Neovim 0.12.3、tmux 3.4、zsh 5.9、Starship 1.27.0；验证了新加的核心选项/配色断言、tmux 无 `-f` 配置发现、`prefix=C-b` 和 `C-b r` 的 XDG 路径。
 
+2026-10-30 macOS tmux 3.8 统一：
+
+- macOS 在线安装默认改为固定 3.8 自包含源码构建，安装到 `~/.local/opt/tmux-3.8` 并链接 `~/.local/bin/tmux`；`--brew-tmux` 仍可用，但要求 Homebrew tmux >=3.8；
+- 离线包继续使用同一 3.8 构建，macOS 离线安装增加 `tmux -V` 版本断言；
+- 重新生成 macOS 离线包时，tmux 构建阶段通过：`tmux-bin` 为 3.8，`tmux-build-info.txt` 记录 `tmux=3.8`；Neovim 插件 clone 阶段受 GitHub SSL/速度影响未完成，因此完整离线包本次未作为通过项，离线安装断言由 synthetic 测试覆盖；
+- 本机 `tmux` 客户端为 3.8，新开 server 为 3.8；已运行的旧 server 仍为 3.5a，未 kill，退出旧 session 后新 server 才会切换；
+- 临时 HOME 下 `install.sh --skip-config --skip-shell` 通过：tmux 3.8、Starship 1.27.0、Meslo 字体安装成功；
+- `tests/tmux-config-smoke.sh` 在 tmux 3.8 下通过；
+- `tests/shell-config-smoke.sh`、`tests/theme-assets-smoke.sh`、`tests/macos-offline-installer-safety-smoke.sh` 通过；
+- `tests/macos-tmux-build-smoke.sh` 通过（GitHub 直连超时时使用 Clash `127.0.0.1:7897`）：构建 3.8、`otool -L` 只显示系统库，并用构建出的二进制运行 tmux 配置 smoke；直连失败属于外部网络问题。
+
 ## 4. Neovim 插件与预览测试
 
 ### 4.1 临时环境安装插件
@@ -278,7 +289,7 @@ bash tests/macos-offline-installer-safety-smoke.sh
 - shell 测试使用临时 `HOME`，断言 `.zshrc` 软链接、`~/.zshrc.local` 权限 600、alias、PATH 和 Starship。
 - 主题测试校验 iTerm2/Terminal/Linux/VS Code 配色文件和 Catppuccin 调色板。
 - `macos-offline-installer-safety-smoke.sh` 用合成离线包和临时 HOME 验证：配置链接指向稳定副本，`--skip-config` 不删除已有插件/parser；不需要网络。
-- 慢测试：`DEV_ENV_RUN_SLOW_TESTS=1 bash tests/macos-tmux-build-smoke.sh`，构建并检查 `otool -L` 不含 Homebrew/构建目录。
+- 慢测试：`DEV_ENV_RUN_SLOW_TESTS=1 bash tests/macos-tmux-build-smoke.sh`，构建 3.8、检查 `otool -L` 不含 Homebrew/构建目录，并用构建出的二进制运行 tmux 配置 smoke。
 
 ## 5. 手动验证清单
 
