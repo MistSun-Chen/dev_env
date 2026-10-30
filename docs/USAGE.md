@@ -685,6 +685,12 @@ chsh -s "$(command -v zsh)"
 
 - `~/.zshrc` 链接到 `dev_env/shell/zshrc`。
 - 机器相关路径、代理、密钥、nvm/uv/Docker/OpenClaw 等放 `~/.zshrc.local`。
+- 新建 `~/.zshrc.local` 时，安装器会自动检测 `~/.nvm/nvm.sh` 并启用 nvm，
+  安装后新终端可直接使用 nvm 管理的 `node`/`claude`；已有文件如果包含自定义
+  配置则保持不动，如果只有注释/空行则自动补全可检测项。
+- 安装器会检测本机代理监听端口并填入注释模板，但不会自动开启代理；需要时
+  再取消注释。端口必须与 Clash/Mihomo 实际监听一致（本机常见 `7897`，
+  ClashX 常见 `7890`）；端口写错会导致终端网络完全不通。
 - Ubuntu 需要手动 `chsh -s "$(command -v zsh)"`；安装器不会自动改登录 shell。
 - 详细说明：`shell/README.md`。
 

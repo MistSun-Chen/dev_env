@@ -16,8 +16,18 @@ typeset -g DEV_ENV_SHELL_DIR="${${(%):-%x}:A:h}"
 # 先加载 local，允许它设置 STARSHIP_CONFIG。
 [[ -r "$HOME/.zshrc.local" ]] && source "$HOME/.zshrc.local"
 
+# local 里的 nvm/uv 等可能把其他目录插到 PATH 前面；重新保证 dev_env 管理的
+# ~/.local/bin 优先，避免 starship/tmux/nvim 被系统旧版本遮住。
+typeset -U path
+path=("$HOME/.local/bin" $path)
+export PATH
+
 if (( $+commands[starship] )); then
-  export STARSHIP_CONFIG="${STARSHIP_CONFIG:-$DEV_ENV_SHELL_DIR/starship.toml}"
+  # 指向不存在文件的 STARSHIP_CONFIG 会让 Starship 静默退回默认样式；
+  # 这种情况下使用 dev_env 的 Catppuccin 配置。
+  if [[ ! -f "${STARSHIP_CONFIG:-}" ]]; then
+    export STARSHIP_CONFIG="$DEV_ENV_SHELL_DIR/starship.toml"
+  fi
   eval "$(starship init zsh)"
 else
   # 未安装 Starship 时的最小回退 prompt。

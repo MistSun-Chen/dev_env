@@ -217,6 +217,15 @@ esac
 - 本次容器为 arm64；x86_64 使用同一构建脚本，分支存在但尚未实测；
 - 安装器不会自动卸载旧机器上已有的 `/usr/bin/tmux` 3.4；`~/.local/bin/tmux` 在 PATH 中优先，确认后可手动 `sudo apt remove tmux`。
 
+2026-10-30 shell 本地配置自动化：
+
+- 新建 `~/.zshrc.local` 时自动检测 `~/.nvm/nvm.sh` 并启用 nvm，安装后新终端可直接使用 nvm 管理的 `claude`；已有自定义配置保持不动，只有注释/空行的旧模板自动补全；
+- 自动探测本机代理监听端口（`7897`/`7890`），只更新模板注释中的端口，不自动开启代理；
+- `shell/zshrc` 在 `STARSHIP_CONFIG` 指向不存在文件时回退到 dev_env 配置，并重新保证 `~/.local/bin` 在 PATH 最前；
+- `tests/shell-config-smoke.sh` 通过：临时 HOME + 假 nvm 验证自动启用、已有 `.zshrc.local` 不被修改、Starship 配置回退；
+- 本机全新登录 shell 验证通过：`claude 2.1.308`、`nvm v22.17.1`、`STARSHIP_CONFIG` 指向 dev_env 配置、PATH 第一项为 `~/.local/bin`；
+- `tests/tmux-config-smoke.sh`、`shellcheck platforms/lib/common.sh tests/shell-config-smoke.sh` 通过。
+
 ## 4. Neovim 插件与预览测试
 
 ### 4.1 临时环境安装插件

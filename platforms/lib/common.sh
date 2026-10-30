@@ -122,6 +122,112 @@ dev_env_deploy_tmux_config() {
   dev_env_link_path "$src" "$dest" "tmux 配置"
 }
 
+# Rewrite a file without changing its inode/permissions.
+dev_env_rewrite_file() {
+  local file="$1"
+  local tmp
+
+  tmp="$(mktemp "${file}.dev_env.XXXXXX")" || return 1
+  if ! cat > "$tmp" || ! cat "$tmp" > "$file"; then
+    rm -f "$tmp"
+    return 1
+  fi
+  rm -f "$tmp"
+}
+
+# Replace every literal occurrence in a file.
+dev_env_replace_literal() {
+  local file="$1"
+  local from="$2"
+  local to="$3"
+  local line
+
+  {
+    while IFS= read -r line || [[ -n "$line" ]]; do
+      printf '%s\n' "${line//$from/$to}"
+    done < "$file"
+  } | dev_env_rewrite_file "$file"
+}
+
+# Turn an exact commented line ("# <line>") into an active line.
+dev_env_uncomment_exact_line() {
+  local file="$1"
+  local line="$2"
+  local current
+
+  {
+    while IFS= read -r current || [[ -n "$current" ]]; do
+      if [[ "$current" == "# $line" ]]; then
+        printf '%s\n' "$line"
+      else
+        printf '%s\n' "$current"
+      fi
+    done < "$file"
+  } | dev_env_rewrite_file "$file"
+}
+
+# Return the first common local proxy port that is actually listening.
+dev_env_detect_proxy_port() {
+  local port
+
+  for port in 7897 7890; do
+    if command -v lsof >/dev/null 2>&1 \
+      && lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
+      printf '%s\n' "$port"
+      return 0
+    fi
+    if command -v ss >/dev/null 2>&1 \
+      && ss -lnt 2>/dev/null | grep -q ":${port}[[:space:]]"; then
+      printf '%s\n' "$port"
+      return 0
+    fi
+    if command -v netstat >/dev/null 2>&1 \
+      && netstat -an 2>/dev/null | grep -Eq "[.:]${port}[[:space:]].*LISTEN"; then
+      printf '%s\n' "$port"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# Fill in the parts of a newly created ~/.zshrc.local that can be detected
+# safely. Never enables a proxy: that changes network behavior, so the port
+# is only filled into the commented example.
+dev_env_autoconfigure_local() {
+  local local_file="$1"
+  # shellcheck disable=SC2016 # keep $HOME literal for the zsh config file
+  local nvm_line='source "$HOME/.nvm/nvm.sh"'
+  local proxy_port
+
+  [[ -f "$local_file" ]] || return 0
+
+  if [[ -f "$HOME/.nvm/nvm.sh" ]]; then
+    if grep -qxF "$nvm_line" "$local_file"; then
+      :
+    elif grep -qxF "# $nvm_line" "$local_file"; then
+      dev_env_uncomment_exact_line "$local_file" "$nvm_line"
+      dev_env_log "检测到 nvm，已自动启用 ~/.nvm/nvm.sh。"
+    else
+      {
+        printf '\n# dev_env: 检测到 nvm，自动启用\n'
+        printf '%s\n' "$nvm_line"
+      } >> "$local_file"
+      dev_env_log "检测到 nvm，已自动追加初始化。"
+    fi
+  fi
+
+  proxy_port="$(dev_env_detect_proxy_port || true)"
+  if [[ -n "$proxy_port" ]]; then
+    dev_env_replace_literal "$local_file" "127.0.0.1:7897" "127.0.0.1:${proxy_port}"
+    dev_env_log "检测到本机代理监听 127.0.0.1:${proxy_port}；已更新模板端口（代理仍为注释，需要时再启用）。"
+  fi
+}
+
+# True when a config file has at least one non-comment, non-blank line.
+dev_env_local_has_custom_config() {
+  grep -Eq '^[[:space:]]*[^#[:space:]]' "$1"
+}
+
 dev_env_deploy_shell_config() {
   local shell_dir="$1"
   local xdg_config_home="${2:-${XDG_CONFIG_HOME:-$HOME/.config}}"
@@ -134,12 +240,19 @@ dev_env_deploy_shell_config() {
   if [[ ! -e "$local_file" && ! -L "$local_file" ]]; then
     if [[ -f "$example" ]]; then
       install -m 600 "$example" "$local_file"
-      dev_env_log "已创建 ${local_file}（chmod 600）；请把机器相关配置迁移进去。"
+      dev_env_autoconfigure_local "$local_file"
+      dev_env_log "已创建 ${local_file}（chmod 600）；可检测项已自动配置，其余按需取消注释。"
     else
       dev_env_warn "缺少 ${example}，未创建 ~/.zshrc.local。"
     fi
+  elif [[ -f "$local_file" && ! -L "$local_file" ]] \
+    && ! dev_env_local_has_custom_config "$local_file"; then
+    # Only comments/blank lines: still the untouched template, so filling in
+    # detectable values is safe. Never touch a file with custom active config.
+    dev_env_autoconfigure_local "$local_file"
+    dev_env_log "${local_file} 只有注释/空行，已自动补全可检测项。"
   else
-    dev_env_log "$local_file 已存在，保持不动。"
+    dev_env_log "$local_file 已存在且包含自定义配置，保持不动。"
   fi
 }
 
