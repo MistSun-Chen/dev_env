@@ -307,7 +307,11 @@ tmux_current_version() {
 install_pinned_tmux() {
   local installed
   local out
-  local prefix="$LOCAL_OPT/tmux-${TMUX_VERSION}"
+  local prefix
+
+  dev_env_validate_tmux_version "$TMUX_VERSION" \
+    || die "tmux 版本不合法: ${TMUX_VERSION}"
+  prefix="$LOCAL_OPT/tmux-${TMUX_VERSION}"
 
   if [[ -z "$TMP_DIR" ]]; then
     TMP_DIR="$(mktemp -d)"

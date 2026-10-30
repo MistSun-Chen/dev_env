@@ -80,6 +80,8 @@ BUNDLE_ARCH="$(awk -F= '$1 == "arch" { print $2 }' "$BUNDLE_DIR/manifest.txt")"
 # The manifest is authoritative for what was actually packaged.
 BUNDLE_TMUX_VERSION="$(awk -F= '$1 == "tmux" { print $2 }' "$BUNDLE_DIR/manifest.txt")"
 [[ -n "$BUNDLE_TMUX_VERSION" ]] || die "manifest.txt 缺少 tmux 版本。"
+dev_env_validate_tmux_version "$BUNDLE_TMUX_VERSION" \
+  || die "manifest.txt 的 tmux 版本不合法: ${BUNDLE_TMUX_VERSION}"
 TMUX_VERSION="$BUNDLE_TMUX_VERSION"
 
 log "校验离线包完整性..."

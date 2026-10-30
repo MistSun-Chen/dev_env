@@ -26,6 +26,13 @@ die()  { printf '[tmux-smoke] %s\n' "$*" >&2; exit 1; }
 # shellcheck source=../platforms/lib/common.sh
 . "$REPO_ROOT/platforms/lib/common.sh"
 
+# Version strings are used in install paths; reject traversal before testing tmux.
+dev_env_validate_tmux_version 3.8 || die "合法 tmux 版本被拒绝"
+dev_env_validate_tmux_version 3.8a || die "合法 tmux 版本被拒绝"
+if dev_env_validate_tmux_version '3.8/../..'; then
+  die "非法 tmux 版本未被拒绝"
+fi
+
 TMP_HOME="$(mktemp -d)"
 TMP_XDG="$(mktemp -d)"
 SOCK="dev_env_tmux_smoke_$$_${RANDOM}"

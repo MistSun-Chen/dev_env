@@ -287,7 +287,11 @@ brew_tmux_version() {
 install_pinned_tmux() {
   local installed
   local out
-  local prefix="$LOCAL_OPT/tmux-${TMUX_VERSION}"
+  local prefix
+
+  dev_env_validate_tmux_version "$TMUX_VERSION" \
+    || die "tmux 版本不合法: ${TMUX_VERSION}"
+  prefix="$LOCAL_OPT/tmux-${TMUX_VERSION}"
 
   if [[ -z "$TMP_DIR" ]]; then
     TMP_DIR="$(mktemp -d)"
@@ -309,18 +313,19 @@ install_pinned_tmux() {
 
 ensure_brew_tmux() {
   local brew_version
-  local current
 
-  current="$(tmux_current_version || true)"
-  if [[ -n "$current" ]] && version_ge "$current" "$TMUX_VERSION"; then
-    log "tmux 已是 ${current}（>= ${TMUX_VERSION}），跳过。"
-    return 0
+  # Resolve Homebrew's tmux explicitly. Checking PATH here would let a
+  # dev_env-pinned ~/.local/bin/tmux masquerade as a successful --brew-tmux
+  # run and keep shadowing the Homebrew binary.
+  brew_version="$(brew_tmux_version || true)"
+
+  if [[ -x "$LOCAL_BIN/tmux" ]]; then
+    die "${LOCAL_BIN}/tmux 会遮蔽 Homebrew tmux；请使用默认的 pinned 构建（去掉 --brew-tmux），或先删除该链接。"
   fi
 
-  # A dev_env-managed binary in ~/.local/bin would shadow Homebrew. Do not
-  # silently leave an older tmux in place.
-  if [[ -x "$LOCAL_BIN/tmux" ]]; then
-    die "${LOCAL_BIN}/tmux 是旧版本 ${current:-unknown}，会遮蔽 Homebrew；请使用默认的 pinned 构建（去掉 --brew-tmux）。"
+  if [[ -n "$brew_version" ]] && version_ge "$brew_version" "$TMUX_VERSION"; then
+    log "Homebrew tmux 已是 ${brew_version}（>= ${TMUX_VERSION}），跳过。"
+    return 0
   fi
 
   if brew list --versions tmux >/dev/null 2>&1; then
@@ -455,7 +460,11 @@ if [[ "$SKIP_CONFIG" -eq 0 ]]; then
     bash "$NVIM_CONFIG_SRC/scripts/build-latex-parser.sh"
 fi
 
-TMUX_BIN="$LOCAL_BIN/tmux"
+if [[ "$PINNED_TMUX" -eq 1 ]]; then
+  TMUX_BIN="$LOCAL_BIN/tmux"
+else
+  TMUX_BIN="$(brew --prefix tmux 2>/dev/null)/bin/tmux"
+fi
 if [[ ! -x "$TMUX_BIN" ]]; then
   TMUX_BIN="$(command -v tmux || true)"
 fi
