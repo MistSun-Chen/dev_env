@@ -58,7 +58,8 @@ grep -q 'DEV_ENV_SMOKE=ok' "$TMP_HOME/.zshrc.local" || die "已有 ~/.zshrc.loca
 ! grep -q 'nvm.sh' "$TMP_HOME/.zshrc.local" || die "已有 ~/.zshrc.local 不应被自动修改"
 find "$TMP_HOME" -maxdepth 1 -name '.zshrc.bak.*' | grep -q . || die "旧 ~/.zshrc 未备份"
 
-# A pre-existing file that is still only comments is safe to auto-fill.
+# A pre-existing file identical to the shipped template is safe to auto-fill,
+# but must be backed up first.
 mkdir -p "$TMP_HOME_TEMPLATE/.nvm"
 printf 'export DEV_ENV_FAKE_NVM=1\n' > "$TMP_HOME_TEMPLATE/.nvm/nvm.sh"
 cp "$REPO_ROOT/shell/zshrc.local.example" "$TMP_HOME_TEMPLATE/.zshrc.local"
@@ -67,7 +68,23 @@ HOME="$TMP_HOME_TEMPLATE" XDG_CONFIG_HOME="$TMP_XDG_TEMPLATE" \
   dev_env_deploy_shell_config "$REPO_ROOT/shell" "$TMP_XDG_TEMPLATE"
 # shellcheck disable=SC2016 # literal line expected in the generated file
 grep -qxF 'source "$HOME/.nvm/nvm.sh"' "$TMP_HOME_TEMPLATE/.zshrc.local" \
-  || die "只有注释的 ~/.zshrc.local 未自动补全 nvm"
+  || die "与模板一致的 ~/.zshrc.local 未自动补全 nvm"
+find "$TMP_HOME_TEMPLATE" -maxdepth 1 -name '.zshrc.local.bak.*' | grep -q . \
+  || die "自动补全前未备份 ~/.zshrc.local"
+
+# A user-authored all-comments file is not the template and must stay untouched.
+# shellcheck disable=SC2016 # literal line expected in the user file
+printf '%s\n' '# my local notes' '# source "$HOME/.nvm/nvm.sh"' \
+  > "$TMP_HOME_TEMPLATE/.zshrc.local"
+chmod 600 "$TMP_HOME_TEMPLATE/.zshrc.local"
+BEFORE_SUM="$(cksum < "$TMP_HOME_TEMPLATE/.zshrc.local")"
+HOME="$TMP_HOME_TEMPLATE" XDG_CONFIG_HOME="$TMP_XDG_TEMPLATE" \
+  dev_env_deploy_shell_config "$REPO_ROOT/shell" "$TMP_XDG_TEMPLATE"
+AFTER_SUM="$(cksum < "$TMP_HOME_TEMPLATE/.zshrc.local")"
+[[ "$BEFORE_SUM" == "$AFTER_SUM" ]] || die "用户自写的注释文件被修改"
+# shellcheck disable=SC2016 # literal line expected in the user file
+grep -qxF '# source "$HOME/.nvm/nvm.sh"' "$TMP_HOME_TEMPLATE/.zshrc.local" \
+  || die "用户注释的 nvm 行被取消注释"
 
 cat > "$TMP_HOME/check.zsh" <<'EOF'
 source "$HOME/.zshrc"

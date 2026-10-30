@@ -219,7 +219,7 @@ esac
 
 2026-10-30 shell 本地配置自动化：
 
-- 新建 `~/.zshrc.local` 时自动检测 `~/.nvm/nvm.sh` 并启用 nvm，安装后新终端可直接使用 nvm 管理的 `claude`；已有自定义配置保持不动，只有注释/空行的旧模板自动补全；
+- 新建 `~/.zshrc.local` 时自动检测 `~/.nvm/nvm.sh` 并启用 nvm，安装后新终端可直接使用 nvm 管理的 `claude`；已有文件保持不动，只有与当前模板逐字节一致时才先备份再自动补全；
 - 自动探测本机代理监听端口（`7897`/`7890`），只更新模板注释中的端口，不自动开启代理；
 - `shell/zshrc` 在 `STARSHIP_CONFIG` 指向不存在文件时回退到 dev_env 配置，并重新保证 `~/.local/bin` 在 PATH 最前；
 - `tests/shell-config-smoke.sh` 通过：临时 HOME + 假 nvm 验证自动启用、已有 `.zshrc.local` 不被修改、Starship 配置回退；

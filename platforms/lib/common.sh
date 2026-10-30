@@ -166,25 +166,29 @@ dev_env_uncomment_exact_line() {
   } | dev_env_rewrite_file "$file"
 }
 
-# Return the first common local proxy port that is actually listening.
+# Return the first common local proxy port that is actually listening on
+# 127.0.0.1 with a recognizable Clash/Mihomo process. Avoid treating an
+# unrelated dev server on the same port as a proxy.
 dev_env_detect_proxy_port() {
   local port
+  local entries
 
   for port in 7897 7890; do
-    if command -v lsof >/dev/null 2>&1 \
-      && lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
-      printf '%s\n' "$port"
-      return 0
+    if command -v lsof >/dev/null 2>&1; then
+      entries="$(lsof -nP -iTCP:"$port" -sTCP:LISTEN -F cn 2>/dev/null || true)"
+      if printf '%s\n' "$entries" | grep -Eiq '^c.*(mihomo|clash|verge)' \
+        && printf '%s\n' "$entries" | grep -q "n127.0.0.1:${port}"; then
+        printf '%s\n' "$port"
+        return 0
+      fi
     fi
-    if command -v ss >/dev/null 2>&1 \
-      && ss -lnt 2>/dev/null | grep -q ":${port}[[:space:]]"; then
-      printf '%s\n' "$port"
-      return 0
-    fi
-    if command -v netstat >/dev/null 2>&1 \
-      && netstat -an 2>/dev/null | grep -Eq "[.:]${port}[[:space:]].*LISTEN"; then
-      printf '%s\n' "$port"
-      return 0
+    if command -v ss >/dev/null 2>&1; then
+      entries="$(ss -lntp 2>/dev/null || true)"
+      if printf '%s\n' "$entries" | grep -q "127.0.0.1:${port}" \
+        && printf '%s\n' "$entries" | grep -Eiq 'mihomo|clash|verge'; then
+        printf '%s\n' "$port"
+        return 0
+      fi
     fi
   done
   return 1
@@ -205,27 +209,26 @@ dev_env_autoconfigure_local() {
     if grep -qxF "$nvm_line" "$local_file"; then
       :
     elif grep -qxF "# $nvm_line" "$local_file"; then
-      dev_env_uncomment_exact_line "$local_file" "$nvm_line"
+      dev_env_uncomment_exact_line "$local_file" "$nvm_line" || return 1
       dev_env_log "检测到 nvm，已自动启用 ~/.nvm/nvm.sh。"
     else
       {
         printf '\n# dev_env: 检测到 nvm，自动启用\n'
         printf '%s\n' "$nvm_line"
-      } >> "$local_file"
+      } >> "$local_file" || {
+        dev_env_warn "无法写入 ${local_file}。"
+        return 1
+      }
       dev_env_log "检测到 nvm，已自动追加初始化。"
     fi
   fi
 
   proxy_port="$(dev_env_detect_proxy_port || true)"
   if [[ -n "$proxy_port" ]]; then
-    dev_env_replace_literal "$local_file" "127.0.0.1:7897" "127.0.0.1:${proxy_port}"
+    dev_env_replace_literal "$local_file" "127.0.0.1:7897" "127.0.0.1:${proxy_port}" \
+      || return 1
     dev_env_log "检测到本机代理监听 127.0.0.1:${proxy_port}；已更新模板端口（代理仍为注释，需要时再启用）。"
   fi
-}
-
-# True when a config file has at least one non-comment, non-blank line.
-dev_env_local_has_custom_config() {
-  grep -Eq '^[[:space:]]*[^#[:space:]]' "$1"
 }
 
 dev_env_deploy_shell_config() {
@@ -233,6 +236,7 @@ dev_env_deploy_shell_config() {
   local xdg_config_home="${2:-${XDG_CONFIG_HOME:-$HOME/.config}}"
   local local_file="$HOME/.zshrc.local"
   local example="$shell_dir/zshrc.local.example"
+  local backup
 
   dev_env_link_path "$shell_dir/zshrc" "$HOME/.zshrc" "zsh 配置"
   dev_env_link_path "$shell_dir/starship.toml" "$xdg_config_home/starship.toml" "Starship 配置"
@@ -240,19 +244,26 @@ dev_env_deploy_shell_config() {
   if [[ ! -e "$local_file" && ! -L "$local_file" ]]; then
     if [[ -f "$example" ]]; then
       install -m 600 "$example" "$local_file"
-      dev_env_autoconfigure_local "$local_file"
+      if ! dev_env_autoconfigure_local "$local_file"; then
+        dev_env_warn "${local_file} 自动补全失败；文件保留为模板。"
+      fi
       dev_env_log "已创建 ${local_file}（chmod 600）；可检测项已自动配置，其余按需取消注释。"
     else
       dev_env_warn "缺少 ${example}，未创建 ~/.zshrc.local。"
     fi
-  elif [[ -f "$local_file" && ! -L "$local_file" ]] \
-    && ! dev_env_local_has_custom_config "$local_file"; then
-    # Only comments/blank lines: still the untouched template, so filling in
-    # detectable values is safe. Never touch a file with custom active config.
-    dev_env_autoconfigure_local "$local_file"
-    dev_env_log "${local_file} 只有注释/空行，已自动补全可检测项。"
+  elif [[ -f "$local_file" && ! -L "$local_file" && -f "$example" ]] \
+    && cmp -s "$local_file" "$example"; then
+    # Only auto-fill a file that is byte-identical to the shipped template.
+    # An arbitrary user-authored all-comments file must never be rewritten.
+    backup="$(dev_env_backup_path "$local_file")"
+    cp -p "$local_file" "$backup"
+    if dev_env_autoconfigure_local "$local_file"; then
+      dev_env_log "${local_file} 与模板一致，已备份到 ${backup} 并自动补全可检测项。"
+    else
+      dev_env_warn "${local_file} 自动补全失败；已保留备份 ${backup}。"
+    fi
   else
-    dev_env_log "$local_file 已存在且包含自定义配置，保持不动。"
+    dev_env_log "$local_file 已存在，保持不动。"
   fi
 }
 

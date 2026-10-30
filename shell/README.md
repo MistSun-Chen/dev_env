@@ -61,7 +61,7 @@ bash platforms/linux/ubuntu/24.04/install.sh
 3. 创建 `~/.zshrc.local`（如果不存在）：
    - 检测到 `~/.nvm/nvm.sh` 时自动启用 nvm，安装后新终端可直接使用 nvm 管理的 `claude`；
    - 检测到本机代理端口时只更新注释中的端口，不自动开启代理；
-   - 已存在且包含自定义配置的文件保持不动；只有注释/空行的旧模板会自动补全可检测项；
+   - 已有文件保持不动；只有与当前模板逐字节一致时，才会先备份再自动补全可检测项；
 4. 安装 Starship、Nerd Font，并复制终端配色资源；
 5. 不修改 `~/.zprofile`、`~/.zshenv`、`~/.profile`。
 

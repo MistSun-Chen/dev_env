@@ -75,7 +75,7 @@ DOCKER_PROXY=http://host.docker.internal:7897 bash tests/ubuntu-24.04-offline.sh
 | 运行中的 tmux server 仍是旧版本 | 不 kill；已运行的 server 保持旧二进制，退出旧 session 后新 server 才使用 3.8 |
 | Option+方向键输出 `3D`/`3C` | iTerm 发送 CSI `1;3D`/`1;3C`；在 `shell/options.zsh` 绑定，同时覆盖 `1;5D/C` 和 `^[b/^[f` |
 | zsh 插件加载顺序错误 | syntax-highlighting 必须最后 source；autosuggestions 在它之前 |
-| 新终端 `claude: command not found` | 新建或只有注释的 `.zshrc.local` 会自动启用检测到的 nvm；已有自定义配置不会改，需手动取消 `source "$HOME/.nvm/nvm.sh"` 注释 |
+| 新终端 `claude: command not found` | 新建或与模板逐字节一致的 `.zshrc.local` 会自动启用检测到的 nvm；其它已有文件不会改，需手动取消 `source "$HOME/.nvm/nvm.sh"` 注释 |
 | 设置了代理后网络全断 | 先确认端口真的在监听；本机 Clash/Mihomo 是 `7897`，`7890` 可能无人监听 |
 | Starship 变成默认样式 | `STARSHIP_CONFIG` 指向了不存在的文件；dev_env 会回退，或删掉该覆盖 |
 | zsh-syntax-highlighting 报缺文件 | 保留上游 `.version` 和 `.revision-hash`，升级时一起替换 |
