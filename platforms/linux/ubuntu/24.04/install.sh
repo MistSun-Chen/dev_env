@@ -4,9 +4,10 @@
 #
 # 安装内容：
 #   - Neovim 0.12.x、fzf、tree-sitter、Starship（官方 tarball，用户目录安装）
-#   - tmux、zsh、ncurses-term、xz-utils（apt）
+#   - tmux 3.8（自包含源码构建；不使用 Ubuntu 源里的 3.4）
+#   - zsh、ncurses-term、xz-utils（apt）
 #   - ripgrep、fd（Ubuntu 包名为 fd-find，脚本会补一个 fd 命令）
-#   - git / curl / ca-certificates / gcc / libc6-dev / unzip
+#   - git / curl / ca-certificates / gcc / libc6-dev / make / bison / libncurses-dev / file / binutils
 #   - Neovim 插件与 latex parser
 #   - Meslo Nerd Font
 #   - 把 dev_env/nvim、dev_env/tmux、dev_env/shell 链接到用户配置目录
@@ -294,8 +295,44 @@ fi
 
 # ---------- tmux / Starship / Nerd Font ----------
 
-command -v tmux >/dev/null 2>&1 || die "apt 安装后找不到 tmux。"
-log "tmux: $(tmux -V)"
+tmux_current_version() {
+  if [[ -x "$LOCAL_BIN/tmux" ]]; then
+    "$LOCAL_BIN/tmux" -V 2>/dev/null | awk '{print $2}'
+    return
+  fi
+  command -v tmux >/dev/null 2>&1 || return 1
+  tmux -V 2>/dev/null | awk '{print $2}'
+}
+
+install_pinned_tmux() {
+  local installed
+  local out
+  local prefix="$LOCAL_OPT/tmux-${TMUX_VERSION}"
+
+  if [[ -z "$TMP_DIR" ]]; then
+    TMP_DIR="$(mktemp -d)"
+  fi
+  out="$TMP_DIR/tmux-build"
+  rm -rf "$out"
+  install -d "$out"
+  log "构建自包含 tmux ${TMUX_VERSION} ..."
+  bash "$SCRIPT_DIR/scripts/build-tmux.sh" --output "$out"
+  rm -rf "$prefix"
+  install -d "$prefix/bin"
+  install -m 755 "$out/tmux" "$prefix/bin/tmux"
+  ln -sfn "$prefix/bin/tmux" "$LOCAL_BIN/tmux"
+  installed="$("$LOCAL_BIN/tmux" -V 2>/dev/null | awk '{print $2}')"
+  [[ "$installed" == "$TMUX_VERSION" ]] \
+    || die "自包含 tmux 版本是 ${installed:-unknown}，期望 ${TMUX_VERSION}。"
+  log "tmux 已安装: $LOCAL_BIN/tmux (${installed})"
+}
+
+if [[ "$(tmux_current_version || true)" == "$TMUX_VERSION" && -x "$LOCAL_BIN/tmux" ]]; then
+  log "pinned tmux ${TMUX_VERSION} 已存在，跳过构建。"
+else
+  install -d "$LOCAL_BIN" "$LOCAL_OPT"
+  install_pinned_tmux
+fi
 
 starship_current_version() {
   if [[ -x "$LOCAL_BIN/starship" ]]; then
@@ -462,7 +499,13 @@ else
   warn "fd 命令不可用。"
 fi
 "$LOCAL_BIN/tree-sitter" --version
-tmux -V
+TMUX_INSTALLED="$("$LOCAL_BIN/tmux" -V 2>/dev/null | awk '{print $2}')"
+[[ "$TMUX_INSTALLED" == "$TMUX_VERSION" ]] \
+  || die "tmux 版本是 ${TMUX_INSTALLED:-unknown}，期望 ${TMUX_VERSION}。"
+log "tmux ${TMUX_INSTALLED}"
+if [[ -x /usr/bin/tmux ]]; then
+  warn "系统仍存在 /usr/bin/tmux ($(/usr/bin/tmux -V 2>/dev/null))；dev_env 使用 $LOCAL_BIN/tmux，不自动卸载系统包。"
+fi
 zsh --version
 "$LOCAL_BIN/starship" --version
 

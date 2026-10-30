@@ -4,7 +4,8 @@
 
 离线包包含：
 
-- `debs/`：`ca-certificates`、`curl`、`git`、`ripgrep`、`fd-find`、`tmux`、`zsh`、`ncurses-term`、`xz-utils` 及其依赖
+- `debs/`：`ca-certificates`、`curl`、`git`、`ripgrep`、`fd-find`、`libncurses6`、`libncursesw6`、`libtinfo6`、`zsh`、`ncurses-term`、`xz-utils` 及其依赖
+- `tmux-bin`、`tmux-build-info.txt`：自包含 tmux 3.8
 - `nvim-linux-*.tar.gz`：Neovim 官方二进制
 - `fzf-*-linux_*.tar.gz`：fzf 官方二进制
 - `tree-sitter-cli-linux-*.zip`：tree-sitter CLI
@@ -24,7 +25,7 @@
 - Ubuntu 24.04
 - 架构与目标机器一致（`x86_64` 或 `arm64`）
 - 能访问 Ubuntu 软件源和 GitHub
-- 构建机需要 `nodejs`、`gcc`、`libc6-dev`、`tree-sitter`（`download.sh` 会处理构建工具；目标端不需要）
+- 构建机需要 `nodejs`、`gcc`、`libc6-dev`、`make`、`bison`、`libncurses-dev`、`pkg-config`、`file`、`binutils`、`tree-sitter`（`download.sh` 会处理构建工具；目标端不需要）
 
 ```sh
 cd platforms/linux/ubuntu/24.04/offline
@@ -89,7 +90,7 @@ git --version
 tree-sitter --version
 ```
 
-预期与联网安装一致：Neovim 0.12.3、fzf 0.74.5、tmux 3.4+、zsh 5.9、Starship 1.27.0。
+预期与联网安装一致：Neovim 0.12.3、fzf 0.74.5、tmux 3.8、zsh 5.9、Starship 1.27.0。
 
 ## 选项
 

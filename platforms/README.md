@@ -65,7 +65,7 @@ platforms/
 无论哪个平台，最终都应提供：
 
 - Neovim 0.12+
-- tmux 3.4+（macOS 默认 3.8 自包含；Ubuntu 24.04 为 3.4）
+- tmux 3.8（macOS 和 Ubuntu 24.04 均为自包含构建）
 - zsh 5.9
 - Starship 1.27.0
 - Meslo Nerd Font（Regular/Bold/Italic/BoldItalic）

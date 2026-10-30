@@ -14,6 +14,11 @@ TMUX_BIN="${TMUX_BIN:-$(command -v tmux || true)}"
   exit 0
 }
 
+# Make the C-b r run-shell command use the same tmux binary under test.
+TMUX_DIR="$(cd -- "$(dirname -- "$TMUX_BIN")" && pwd)"
+PATH="$TMUX_DIR:$PATH"
+export PATH
+
 log()  { printf '[tmux-smoke] %s\n' "$*"; }
 warn() { printf '[tmux-smoke] %s\n' "$*" >&2; }
 die()  { printf '[tmux-smoke] %s\n' "$*" >&2; exit 1; }

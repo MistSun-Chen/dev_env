@@ -1,6 +1,6 @@
 # tmux 配置
 
-`dev_env` 的 tmux 配置从 0 设计，不依赖 TPM 或任何插件，目标兼容 tmux 3.4+。
+`dev_env` 的 tmux 配置从 0 设计，不依赖 TPM 或任何插件；目标平台统一使用 tmux 3.8。
 
 ## 安装位置
 
@@ -73,7 +73,7 @@ bash platforms/macos/install.sh --brew-tmux
 
 `--pinned-tmux` 保留为兼容参数，等同于默认行为。
 
-离线安装包会带 macOS 自包含 tmux 二进制；Ubuntu 使用 `tmux` 的 `.deb`。
+离线安装包会带自包含 tmux 3.8 二进制；macOS 和 Ubuntu 都不再使用 Homebrew/apt 的 tmux 3.4。
 
 安装器不会 kill 正在运行的 tmux server。链接新配置后，执行：
 

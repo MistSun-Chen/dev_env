@@ -57,7 +57,7 @@ bash tests/ubuntu-24.04-offline.sh
 6. 再执行一次 `--skip-config`，确认已有 Neovim 插件和 `latex.so` 未被删除；
 7. 清理临时目录。
 
-离线包约 140–150 MB（含 apt deb、插件、parser、tmux、Starship 和字体），生成和安装需要几分钟。
+离线包约 140–150 MB（含 apt deb、插件、parser、tmux 3.8 二进制、Starship 和字体），生成和安装需要几分钟。
 
 ### 2.4 实测记录
 
@@ -201,6 +201,21 @@ esac
 - `tests/tmux-config-smoke.sh` 在 tmux 3.8 下通过；
 - `tests/shell-config-smoke.sh`、`tests/theme-assets-smoke.sh`、`tests/macos-offline-installer-safety-smoke.sh` 通过；
 - `tests/macos-tmux-build-smoke.sh` 通过（GitHub 直连超时时使用 Clash `127.0.0.1:7897`）：构建 3.8、`otool -L` 只显示系统库，并用构建出的二进制运行 tmux 配置 smoke；直连失败属于外部网络问题。
+
+2026-10-30 Ubuntu tmux 3.8 统一：
+
+- Ubuntu 在线安装不再安装 apt 的 tmux 3.4；改为源码构建 3.8 到 `~/.local/opt/tmux-3.8`，并链接 `~/.local/bin/tmux`；
+- Ubuntu 离线包包含预构建 `tmux-bin` 3.8 和 `tmux-build-info.txt`；离线安装以 `manifest.txt` 的 tmux 版本为准并断言；
+- apt 只保留 ncurses 运行时（`libncurses6`/`libncursesw6`/`libtinfo6`），不再安装或打包 tmux 3.4；
+- `tests/ubuntu-24.04-online.sh`、`tests/ubuntu-24.04-offline.sh` 改用 `~/.local/bin/tmux` 并断言 3.8；
+- 在 `ubuntu:24.04`（arm64）中构建 3.8 成功；`ldd` 只显示 `libtinfo`、`libm`、`libresolv`、`libc`，libevent/utf8proc 静态链接；
+- 用构建出的 3.8 运行 `tests/tmux-config-smoke.sh` 通过；
+- 在线安装的临时容器验证通过（GitHub 直连/代理不稳定，使用临时 ghproxy 测试副本；仓库 URL 未改）：`/root/.local/bin/tmux` 为 3.8，系统 `/usr/bin/tmux` 不存在；
+- 离线包构建成功（约 136 MB）：`tmux-bin` 为 3.8、build-info 记录 `tmux=3.8`，`debs/` 不含 tmux 3.4，包含 `libncurses6`/`libncursesw6`/`libtinfo6`；
+- 在 `--network none` 的干净 `ubuntu:24.04` 中完整离线安装通过：tmux 3.8、配置软链接和 tmux 配置 smoke 通过；`ldd` 只显示 `libtinfo`、`libm`、`libresolv`、`libc`；`--skip-config` 未删除已有插件/parser；
+- Ubuntu 测试使用临时 apt 镜像和 ghproxy 测试副本，仓库默认 apt/GitHub URL 未改动；
+- 本次容器为 arm64；x86_64 使用同一构建脚本，分支存在但尚未实测；
+- 安装器不会自动卸载旧机器上已有的 `/usr/bin/tmux` 3.4；`~/.local/bin/tmux` 在 PATH 中优先，确认后可手动 `sudo apt remove tmux`。
 
 ## 4. Neovim 插件与预览测试
 

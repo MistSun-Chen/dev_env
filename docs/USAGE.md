@@ -7,7 +7,7 @@
 每个平台安装以下工具：
 
 - Neovim 0.12.x
-- tmux（macOS 在线和离线默认固定 3.8 自包含二进制；Ubuntu 24.04 为 apt 3.4）
+- tmux（macOS 和 Ubuntu 24.04 的在线/离线安装均使用固定 3.8 自包含二进制）
 - zsh（macOS 系统自带；Ubuntu 通过 apt 安装）
 - Starship prompt
 - MesloLGSNerdFont（Regular/Bold/Italic/BoldItalic）
@@ -66,6 +66,10 @@ bash platforms/linux/ubuntu/24.04/install.sh --skip-shell
 bash platforms/linux/ubuntu/24.04/install.sh --allow-root --skip-config
 ```
 
+Ubuntu 24.04 默认源码构建 tmux 3.8，不使用 apt 的 tmux 3.4。安装后新开的 tmux server 使用 3.8；已在运行的旧 server 不会自动切换，退出旧 session 后重启即可，不要 kill server。
+
+如果机器以前装过系统的 tmux，`/usr/bin/tmux` 3.4 不会被自动卸载；`~/.local/bin/tmux` 在 PATH 中优先。确认不需要系统包后再手动执行 `sudo apt remove tmux`。
+
 ### 2.2 macOS
 
 要求已安装 [Homebrew](https://brew.sh/) 和 Xcode Command Line Tools（默认构建 tmux 3.8）。
@@ -103,7 +107,8 @@ bash platforms/macos/install.sh --brew-tmux
 
 Ubuntu：
 
-- apt 安装 `ca-certificates`、`curl`、`git`、`ripgrep`、`fd-find`、`gcc`、`libc6-dev`、`unzip`、`nodejs`、`tmux`、`zsh`、`ncurses-term`、`xz-utils`；不安装 `npm`、`g++`、`clangd` 或 language server；
+- apt 安装 `ca-certificates`、`curl`、`git`、`ripgrep`、`fd-find`、`gcc`、`libc6-dev`、`make`、`bison`、`libncurses-dev`、`libncurses6`、`libncursesw6`、`libtinfo6`、`pkg-config`、`file`、`binutils`、`unzip`、`nodejs`、`zsh`、`ncurses-term`、`xz-utils`；不安装 apt 的 `tmux`、`npm`、`g++`、`clangd` 或 language server；
+- 源码构建 tmux 3.8，安装到 `~/.local/opt/tmux-3.8`，链接 `~/.local/bin/tmux`；
 - 补 `~/.local/bin/fd -> fdfind`；
 - 从官方 release 安装 Neovim 0.12.3、fzf 0.74.5、tree-sitter 0.27.1、Starship 1.27.0，并校验 SHA256；
 - 安装 Meslo Nerd Font 的四个样式到 `~/.local/share/fonts`；
@@ -388,6 +393,8 @@ cd platforms/linux/ubuntu/24.04/offline
 bash download.sh
 ```
 
+下载端会安装 `make`、`bison`、`libncurses-dev` 等工具并构建 tmux 3.8；离线目标端不需要编译器和构建依赖。
+
 产物：
 
 ```text
@@ -405,7 +412,7 @@ bash install.sh
 
 说明：
 
-- 离线包包含 apt deb（含 `tmux`、`zsh`、`ncurses-term`、`xz-utils`）、Neovim、fzf、tree-sitter、Starship、Meslo 字体、Neovim/tmux/shell 配置、Neovim 插件、预编译 `latex.so` 和 `SHA256SUMS`；
+- 离线包包含 apt deb（含 `zsh`、`ncurses-term`、`xz-utils`、`libncurses6`、`libncursesw6`、`libtinfo6`）、自包含 `tmux-bin` 3.8、Neovim、fzf、tree-sitter、Starship、Meslo 字体、Neovim/tmux/shell 配置、Neovim 插件、预编译 `latex.so` 和 `SHA256SUMS`；
 - 安装使用 `dpkg -i` + `dpkg --configure -a`，不访问网络；
 - 下载端和目标端必须同为 Ubuntu 24.04、同一架构（`x86_64` / `arm64`）；
 - `download.sh` 会递归收集完整依赖闭包，不按构建机已安装包裁剪；目标按干净的 Ubuntu 24.04 处理。仍建议在干净的 `ubuntu:24.04` 容器中生成。
@@ -472,7 +479,7 @@ git --version
 
 - `nvim` 为 `v0.12.3`
 - `fzf` 为 `0.74.5`
-- `tmux` 在 macOS 为 3.8（在线/离线同一自包含版本）；Ubuntu 24.04 为 apt 3.4+
+- `tmux` 在 macOS 和 Ubuntu 24.04 均为 3.8（在线/离线同一自包含构建）
 - `zsh` 为 5.9（macOS 系统自带；Ubuntu 由 apt 安装）
 - `starship` 为 `1.27.0`
 - `rg`、`fd`、`git` 正常输出版本
@@ -606,7 +613,7 @@ rm -f ~/.local/bin/rg ~/.local/bin/fd
 Ubuntu 的 apt 包：
 
 ```sh
-sudo apt remove ripgrep fd-find git curl tmux zsh
+sudo apt remove ripgrep fd-find git curl zsh
 ```
 
 ## 9. 常见问题
