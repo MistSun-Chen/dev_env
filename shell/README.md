@@ -27,13 +27,25 @@ options -> completion -> aliases -> plugins -> ~/.zshrc.local
 
 `~/.zshrc.local` 用于：
 
-- 代理/VPN；
+- 代理/VPN（`HTTP_PROXY`/`HTTPS_PROXY`/`ALL_PROXY` 和对应小写别名整组启用；
+  `NO_PROXY` 保留 `localhost`/`127.0.0.1`/`::1`）；
 - 真实 API key 或其他密钥；
 - nvm、uv、Docker、OpenClaw、Homebrew 等机器路径；
 - 旧的 colorls/autojump 等个人 alias；
 - 覆盖 `STARSHIP_CONFIG`。
 
 这个文件不进入仓库，安装器创建时权限为 `600`，已存在时绝不覆盖。
+
+### 从旧 `.zshrc` 迁移时必查
+
+安装器备份旧 `~/.zshrc`，但不会自动迁移里面的机器相关配置。至少检查：
+
+- 如果 `node`/`claude` 由 nvm 管理，取消 `# source "$HOME/.nvm/nvm.sh"` 的注释；
+  否则新终端会出现 `claude: command not found`。
+- 代理端口要跟 Clash/Mihomo 实际监听一致。Clash Verge/Mihomo 常见 `7897`，
+  ClashX 常见 `7890`；端口写错会让网络看起来“完全不通”。
+- `STARSHIP_CONFIG` 只在自定义配置文件真实存在时才设置。指向不存在的文件时，
+  Starship 会静默退回默认样式；dev_env 现在会检测这种情况并回退到自带配置。
 
 ## 安装
 
@@ -46,7 +58,10 @@ bash platforms/linux/ubuntu/24.04/install.sh
 
 1. 备份现有 `~/.zshrc`，再链接到 `dev_env/shell/zshrc`；
 2. 备份并链接 `~/.config/starship.toml`；
-3. 创建 `~/.zshrc.local`（如果不存在）；
+3. 创建 `~/.zshrc.local`（如果不存在）：
+   - 检测到 `~/.nvm/nvm.sh` 时自动启用 nvm，安装后新终端可直接使用 nvm 管理的 `claude`；
+   - 检测到本机代理端口时只更新注释中的端口，不自动开启代理；
+   - 已有文件保持不动；只有与当前模板逐字节一致时，才会先备份再自动补全可检测项；
 4. 安装 Starship、Nerd Font，并复制终端配色资源；
 5. 不修改 `~/.zprofile`、`~/.zshenv`、`~/.profile`。
 

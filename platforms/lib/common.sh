@@ -122,11 +122,121 @@ dev_env_deploy_tmux_config() {
   dev_env_link_path "$src" "$dest" "tmux 配置"
 }
 
+# Rewrite a file without changing its inode/permissions.
+dev_env_rewrite_file() {
+  local file="$1"
+  local tmp
+
+  tmp="$(mktemp "${file}.dev_env.XXXXXX")" || return 1
+  if ! cat > "$tmp" || ! cat "$tmp" > "$file"; then
+    rm -f "$tmp"
+    return 1
+  fi
+  rm -f "$tmp"
+}
+
+# Replace every literal occurrence in a file.
+dev_env_replace_literal() {
+  local file="$1"
+  local from="$2"
+  local to="$3"
+  local line
+
+  {
+    while IFS= read -r line || [[ -n "$line" ]]; do
+      printf '%s\n' "${line//$from/$to}"
+    done < "$file"
+  } | dev_env_rewrite_file "$file"
+}
+
+# Turn an exact commented line ("# <line>") into an active line.
+dev_env_uncomment_exact_line() {
+  local file="$1"
+  local line="$2"
+  local current
+
+  {
+    while IFS= read -r current || [[ -n "$current" ]]; do
+      if [[ "$current" == "# $line" ]]; then
+        printf '%s\n' "$line"
+      else
+        printf '%s\n' "$current"
+      fi
+    done < "$file"
+  } | dev_env_rewrite_file "$file"
+}
+
+# Return the first common local proxy port that is actually listening on
+# 127.0.0.1 with a recognizable Clash/Mihomo process. Avoid treating an
+# unrelated dev server on the same port as a proxy.
+dev_env_detect_proxy_port() {
+  local port
+  local entries
+
+  for port in 7897 7890; do
+    if command -v lsof >/dev/null 2>&1; then
+      entries="$(lsof -nP -iTCP:"$port" -sTCP:LISTEN -F cn 2>/dev/null || true)"
+      if printf '%s\n' "$entries" | grep -Eiq '^c.*(mihomo|clash|verge)' \
+        && printf '%s\n' "$entries" | grep -q "n127.0.0.1:${port}"; then
+        printf '%s\n' "$port"
+        return 0
+      fi
+    fi
+    if command -v ss >/dev/null 2>&1; then
+      entries="$(ss -lntp 2>/dev/null || true)"
+      if printf '%s\n' "$entries" | grep -q "127.0.0.1:${port}" \
+        && printf '%s\n' "$entries" | grep -Eiq 'mihomo|clash|verge'; then
+        printf '%s\n' "$port"
+        return 0
+      fi
+    fi
+  done
+  return 1
+}
+
+# Fill in the parts of a newly created ~/.zshrc.local that can be detected
+# safely. Never enables a proxy: that changes network behavior, so the port
+# is only filled into the commented example.
+dev_env_autoconfigure_local() {
+  local local_file="$1"
+  # shellcheck disable=SC2016 # keep $HOME literal for the zsh config file
+  local nvm_line='source "$HOME/.nvm/nvm.sh"'
+  local proxy_port
+
+  [[ -f "$local_file" ]] || return 0
+
+  if [[ -f "$HOME/.nvm/nvm.sh" ]]; then
+    if grep -qxF "$nvm_line" "$local_file"; then
+      :
+    elif grep -qxF "# $nvm_line" "$local_file"; then
+      dev_env_uncomment_exact_line "$local_file" "$nvm_line" || return 1
+      dev_env_log "检测到 nvm，已自动启用 ~/.nvm/nvm.sh。"
+    else
+      {
+        printf '\n# dev_env: 检测到 nvm，自动启用\n'
+        printf '%s\n' "$nvm_line"
+      } >> "$local_file" || {
+        dev_env_warn "无法写入 ${local_file}。"
+        return 1
+      }
+      dev_env_log "检测到 nvm，已自动追加初始化。"
+    fi
+  fi
+
+  proxy_port="$(dev_env_detect_proxy_port || true)"
+  if [[ -n "$proxy_port" ]]; then
+    dev_env_replace_literal "$local_file" "127.0.0.1:7897" "127.0.0.1:${proxy_port}" \
+      || return 1
+    dev_env_log "检测到本机代理监听 127.0.0.1:${proxy_port}；已更新模板端口（代理仍为注释，需要时再启用）。"
+  fi
+}
+
 dev_env_deploy_shell_config() {
   local shell_dir="$1"
   local xdg_config_home="${2:-${XDG_CONFIG_HOME:-$HOME/.config}}"
   local local_file="$HOME/.zshrc.local"
   local example="$shell_dir/zshrc.local.example"
+  local backup
 
   dev_env_link_path "$shell_dir/zshrc" "$HOME/.zshrc" "zsh 配置"
   dev_env_link_path "$shell_dir/starship.toml" "$xdg_config_home/starship.toml" "Starship 配置"
@@ -134,9 +244,23 @@ dev_env_deploy_shell_config() {
   if [[ ! -e "$local_file" && ! -L "$local_file" ]]; then
     if [[ -f "$example" ]]; then
       install -m 600 "$example" "$local_file"
-      dev_env_log "已创建 ${local_file}（chmod 600）；请把机器相关配置迁移进去。"
+      if ! dev_env_autoconfigure_local "$local_file"; then
+        dev_env_warn "${local_file} 自动补全失败；文件保留为模板。"
+      fi
+      dev_env_log "已创建 ${local_file}（chmod 600）；可检测项已自动配置，其余按需取消注释。"
     else
       dev_env_warn "缺少 ${example}，未创建 ~/.zshrc.local。"
+    fi
+  elif [[ -f "$local_file" && ! -L "$local_file" && -f "$example" ]] \
+    && cmp -s "$local_file" "$example"; then
+    # Only auto-fill a file that is byte-identical to the shipped template.
+    # An arbitrary user-authored all-comments file must never be rewritten.
+    backup="$(dev_env_backup_path "$local_file")"
+    cp -p "$local_file" "$backup"
+    if dev_env_autoconfigure_local "$local_file"; then
+      dev_env_log "${local_file} 与模板一致，已备份到 ${backup} 并自动补全可检测项。"
+    else
+      dev_env_warn "${local_file} 自动补全失败；已保留备份 ${backup}。"
     fi
   else
     dev_env_log "$local_file 已存在，保持不动。"

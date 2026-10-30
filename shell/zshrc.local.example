@@ -2,8 +2,17 @@
 # 这个文件不进入 dev_env；不要把真实密钥提交到仓库。
 
 # ---------- secrets / proxy ----------
-# export ALL_PROXY=socks5://127.0.0.1:7890
-# export HTTPS_PROXY=http://127.0.0.1:7890
+# 端口以 Clash/Mihomo 实际监听为准：Clash Verge/Mihomo 常见 7897，
+# ClashX 常见 7890。填错端口会让所有代理请求直接失败。
+# 需要代理时整组一起取消注释；只取消大写或只取消小写会导致部分工具不生效。
+# export ALL_PROXY=socks5://127.0.0.1:7897
+# export HTTPS_PROXY=http://127.0.0.1:7897
+# export HTTP_PROXY=http://127.0.0.1:7897
+# export NO_PROXY=localhost,127.0.0.1,::1
+# export all_proxy="$ALL_PROXY"
+# export https_proxy="$HTTPS_PROXY"
+# export http_proxy="$HTTP_PROXY"
+# export no_proxy="$NO_PROXY"
 # export ANTHROPIC_API_KEY='...'
 
 # ---------- machine-specific PATHs ----------
@@ -11,6 +20,7 @@
 # export PATH="/Applications/Docker.app/Contents/Resources/bin:$PATH"
 
 # ---------- optional local tools ----------
+# 安装器检测到 ~/.nvm/nvm.sh 时会自动取消下一行注释；手动安装或已有文件时请自行取消。
 # source "$HOME/.nvm/nvm.sh"
 # [[ -r "$HOME/.local/bin/env" ]] && source "$HOME/.local/bin/env"
 # [[ -r "$HOME/.openclaw/completions/openclaw.zsh" ]] && source "$HOME/.openclaw/completions/openclaw.zsh"
