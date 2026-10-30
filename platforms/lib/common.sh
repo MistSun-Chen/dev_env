@@ -18,6 +18,13 @@ dev_env_warn() {
   fi
 }
 
+# Validate a tmux version before using it in a filesystem path.
+# Accepts 3.8, 3.8a, 3.8.1, etc.; rejects slashes and "..".
+dev_env_validate_tmux_version() {
+  local version="$1"
+  [[ "$version" =~ ^[0-9]+([.][0-9]+)*[a-z]?$ ]]
+}
+
 # Portable canonical path. macOS readlink(1) has no reliable -f.
 dev_env_canonical_path() {
   # Avoid the name "path": in zsh it is tied to the PATH array and would

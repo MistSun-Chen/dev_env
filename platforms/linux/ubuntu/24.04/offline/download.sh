@@ -203,7 +203,7 @@ mapfile -t DOWNLOAD_PKGS < <(
 # 避免构建机上的 curl 依赖影响离线包内容。
 log "确认下载与构建工具..."
 run_sudo env DEBIAN_FRONTEND=noninteractive apt-get "${APT_OPTS[@]}" install -y --no-install-recommends \
-  ca-certificates curl git gcc libc6-dev unzip nodejs
+  ca-certificates curl git gcc libc6-dev make bison libncurses-dev pkg-config file binutils unzip nodejs
 
 # ---------- Neovim / fzf ----------
 
@@ -252,6 +252,12 @@ download_verified \
   "$OUT_DIR/$NERD_FONT_ASSET" \
   "$NERD_FONT_SHA256"
 
+log "构建自包含 tmux ${TMUX_VERSION} ..."
+TMUX_BUILD_DIR="$TMP_DIR/tmux-build"
+bash "$PLATFORM_DIR/scripts/build-tmux.sh" --output "$TMUX_BUILD_DIR"
+install -m 755 "$TMUX_BUILD_DIR/tmux" "$OUT_DIR/tmux-bin"
+cp -a "$TMUX_BUILD_DIR/build-info.txt" "$OUT_DIR/tmux-build-info.txt"
+
 # ---------- 配置与离线安装脚本 ----------
 
 log "复制 Neovim/tmux/shell 配置和离线安装脚本..."
@@ -285,6 +291,7 @@ arch=${NVIM_ARCH}
 neovim=${NVIM_VERSION}
 fzf=${FZF_VERSION}
 tree_sitter=${TREE_SITTER_VERSION}
+tmux=${TMUX_VERSION}
 starship=${STARSHIP_VERSION}
 nerd_font=${NERD_FONT_VERSION}
 apt_packages=${APT_PACKAGES_OFFLINE}

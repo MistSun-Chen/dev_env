@@ -11,7 +11,8 @@ bash platforms/macos/install.sh
 要求：
 
 - macOS
-- Homebrew（用于 `ripgrep`、`fd`、`git`、`tmux`）
+- Homebrew（用于 `ripgrep`、`fd`、`git`、`node`）
+- Xcode Command Line Tools（默认构建 tmux 3.8）
 - 能访问 GitHub
 
 安装内容：
@@ -20,7 +21,7 @@ bash platforms/macos/install.sh
 |---|---|---|
 | Neovim 0.12.3 | 官方 macOS tarball | `~/.local/opt/nvim-0.12.3`，链接到 `~/.local/bin/nvim` |
 | fzf 0.74.5 | 官方 macOS tarball | `~/.local/opt/fzf-0.74.5`，链接到 `~/.local/bin/fzf` |
-| tmux | Homebrew（缺失时） | `--pinned-tmux` 可改为固定 3.8 自包含构建 |
+| tmux 3.8 | 自包含源码构建（默认） | `~/.local/opt/tmux-3.8`；`--brew-tmux` 改用 Homebrew >=3.8 |
 | Starship 1.27.0 | 官方 macOS tarball | `~/.local/opt/starship-1.27.0` |
 | Meslo Nerd Font 3.5.1 | Nerd Fonts release | 四个样式安装到 `~/Library/Fonts` |
 | ripgrep | Homebrew（缺失时） | `brew install ripgrep` |
@@ -52,11 +53,19 @@ bash platforms/macos/install.sh --skip-config
 bash platforms/macos/install.sh --skip-shell
 ```
 
-固定 tmux 版本：
+tmux 默认构建为固定的 3.8 自包含版本，在线安装和离线包使用同一版本：
 
 ```sh
-bash platforms/macos/install.sh --pinned-tmux
+bash platforms/macos/install.sh
 ```
+
+想改用 Homebrew 的 tmux（要求 >= 3.8）：
+
+```sh
+bash platforms/macos/install.sh --brew-tmux
+```
+
+`--pinned-tmux` 保留为兼容参数，等同于默认行为。
 
 ## 离线安装
 
@@ -101,3 +110,4 @@ tree-sitter --version
 - Apple Silicon 的 Homebrew 前缀通常是 `/opt/homebrew`；Intel 通常是 `/usr/local`。
 - `~/.local/bin` 需要在 PATH 中；脚本会检查并提示。
 - 如果系统里已有 `/usr/local/bin/nvim`，它可能比 `~/.local/bin` 更早被解析；脚本会跳过已满足版本要求的 Neovim，并打印实际版本。
+- 正在运行的 tmux server 不会自动切换版本；新开 server 才会使用 3.8。不要 kill server，按需退出旧 session 后重启。

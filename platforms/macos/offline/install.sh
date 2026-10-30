@@ -77,6 +77,12 @@ esac
 [[ -f "$BUNDLE_DIR/manifest.txt" ]] || die "找不到 manifest.txt；请确认整个离线包已拷贝。"
 BUNDLE_ARCH="$(awk -F= '$1 == "arch" { print $2 }' "$BUNDLE_DIR/manifest.txt")"
 [[ "$BUNDLE_ARCH" == "$ARCH" ]] || die "离线包架构是 ${BUNDLE_ARCH:-unknown}，当前机器是 ${ARCH}。"
+# The manifest is authoritative for what was actually packaged.
+BUNDLE_TMUX_VERSION="$(awk -F= '$1 == "tmux" { print $2 }' "$BUNDLE_DIR/manifest.txt")"
+[[ -n "$BUNDLE_TMUX_VERSION" ]] || die "manifest.txt 缺少 tmux 版本。"
+dev_env_validate_tmux_version "$BUNDLE_TMUX_VERSION" \
+  || die "manifest.txt 的 tmux 版本不合法: ${BUNDLE_TMUX_VERSION}"
+TMUX_VERSION="$BUNDLE_TMUX_VERSION"
 
 log "校验离线包完整性..."
 (
@@ -228,7 +234,10 @@ log "版本检查："
 "$LOCAL_BIN/rg" --version | head -n 1
 "$LOCAL_BIN/fd" --version
 "$LOCAL_BIN/tree-sitter" --version
-"$LOCAL_BIN/tmux" -V
+TMUX_INSTALLED="$("$LOCAL_BIN/tmux" -V 2>/dev/null | awk '{print $2}')"
+[[ "$TMUX_INSTALLED" == "$TMUX_VERSION" ]] \
+  || die "离线包 tmux 版本是 ${TMUX_INSTALLED:-unknown}，期望 ${TMUX_VERSION}。"
+log "tmux ${TMUX_INSTALLED}"
 zsh --version
 "$LOCAL_BIN/starship" --version
 if command -v git >/dev/null 2>&1; then

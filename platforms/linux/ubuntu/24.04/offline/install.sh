@@ -121,6 +121,12 @@ esac
 [[ -f "$BUNDLE_DIR/manifest.txt" ]] || die "找不到 manifest.txt；请确认整个离线包已拷贝。"
 BUNDLE_ARCH="$(awk -F= '$1 == "arch" { print $2 }' "$BUNDLE_DIR/manifest.txt")"
 [[ "$BUNDLE_ARCH" == "$NVIM_ARCH" ]] || die "离线包架构是 ${BUNDLE_ARCH:-unknown}，当前机器是 ${NVIM_ARCH}。"
+# The manifest is authoritative for what was actually packaged.
+BUNDLE_TMUX_VERSION="$(awk -F= '$1 == "tmux" { print $2 }' "$BUNDLE_DIR/manifest.txt")"
+[[ -n "$BUNDLE_TMUX_VERSION" ]] || die "manifest.txt 缺少 tmux 版本。"
+dev_env_validate_tmux_version "$BUNDLE_TMUX_VERSION" \
+  || die "manifest.txt 的 tmux 版本不合法: ${BUNDLE_TMUX_VERSION}"
+TMUX_VERSION="$BUNDLE_TMUX_VERSION"
 
 FZF_ASSET="fzf-${FZF_VERSION}-linux_${FZF_ARCH}.tar.gz"
 NVIM_ASSET="nvim-linux-${NVIM_ARCH}.tar.gz"
@@ -129,6 +135,8 @@ NVIM_ASSET="nvim-linux-${NVIM_ARCH}.tar.gz"
 [[ -f "$BUNDLE_DIR/$TREE_SITTER_ASSET" ]] || die "缺少 $TREE_SITTER_ASSET"
 [[ -f "$BUNDLE_DIR/$STARSHIP_ASSET" ]] || die "缺少 $STARSHIP_ASSET"
 [[ -f "$BUNDLE_DIR/$NERD_FONT_ASSET" ]] || die "缺少 $NERD_FONT_ASSET"
+[[ -f "$BUNDLE_DIR/tmux-bin" ]] || die "缺少 tmux-bin"
+[[ -f "$BUNDLE_DIR/tmux-build-info.txt" ]] || die "缺少 tmux-build-info.txt"
 [[ -d "$BUNDLE_DIR/debs" ]] || die "缺少 debs/ 目录"
 [[ -d "$BUNDLE_DIR/nvim" ]] || die "缺少 nvim/ 配置目录"
 [[ -d "$BUNDLE_DIR/tmux" ]] || die "缺少 tmux/ 配置目录"
@@ -189,6 +197,19 @@ install -d "$TS_PREFIX"
 unzip -q -o "$BUNDLE_DIR/$TREE_SITTER_ASSET" -d "$TS_PREFIX"
 chmod +x "$TS_PREFIX/tree-sitter"
 ln -sfn "$TS_PREFIX/tree-sitter" "$LOCAL_BIN/tree-sitter"
+
+log "安装 tmux $TMUX_VERSION ..."
+TMUX_PREFIX="$LOCAL_OPT/tmux-${TMUX_VERSION}"
+rm -rf "$TMUX_PREFIX"
+install -d "$TMUX_PREFIX/bin"
+install -m 755 "$BUNDLE_DIR/tmux-bin" "$TMUX_PREFIX/bin/tmux"
+ln -sfn "$TMUX_PREFIX/bin/tmux" "$LOCAL_BIN/tmux"
+TMUX_INSTALLED="$("$LOCAL_BIN/tmux" -V 2>/dev/null | awk '{print $2}')"
+[[ "$TMUX_INSTALLED" == "$TMUX_VERSION" ]] \
+  || die "离线包 tmux 版本是 ${TMUX_INSTALLED:-unknown}，期望 ${TMUX_VERSION}。"
+if [[ -x /usr/bin/tmux ]]; then
+  warn "系统仍存在 /usr/bin/tmux ($(/usr/bin/tmux -V 2>/dev/null))；dev_env 使用 $LOCAL_BIN/tmux，不自动卸载系统包。"
+fi
 
 # Ubuntu 的 fd 包提供 fdfind
 if ! command -v fd >/dev/null 2>&1 && command -v fdfind >/dev/null 2>&1; then
@@ -276,7 +297,7 @@ elif [[ -x "$LOCAL_BIN/fd" ]]; then
 fi
 git --version
 "$LOCAL_BIN/tree-sitter" --version
-tmux -V
+"$LOCAL_BIN/tmux" -V
 zsh --version
 "$LOCAL_BIN/starship" --version
 

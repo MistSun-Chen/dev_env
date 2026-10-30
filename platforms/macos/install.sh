@@ -4,7 +4,8 @@
 #
 # 安装内容：
 #   - Neovim 0.12.x、fzf、tree-sitter、Starship（官方 tarball，用户目录安装）
-#   - ripgrep、fd、git、tmux（Homebrew，仅在缺失时安装；可 --pinned-tmux）
+#   - tmux 3.8（默认自包含源码构建；--brew-tmux 改用 Homebrew）
+#   - ripgrep、fd、git、node（Homebrew，仅在缺失时安装）
 #   - Meslo Nerd Font
 #   - 把 dev_env/nvim、dev_env/tmux、dev_env/shell 链接到用户配置目录
 #
@@ -16,7 +17,7 @@ set -euo pipefail
 
 SKIP_CONFIG=0
 SKIP_SHELL=0
-PINNED_TMUX=0
+PINNED_TMUX=1
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=versions.env
@@ -40,6 +41,21 @@ log()  { printf '\033[1;32m[dev_env]\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m[dev_env]\033[0m %s\n' "$*" >&2; }
 die()  { printf '\033[1;31m[dev_env]\033[0m %s\n' "$*" >&2; exit 1; }
 
+# Return 0 when version $1 >= $2. Ignore suffixes such as 3.5a.
+version_ge() {
+  local a="${1%%[!0-9.]*}"
+  local b="${2%%[!0-9.]*}"
+  awk -v a="$a" -v b="$b" 'BEGIN {
+    n = split(a, av, ".")
+    m = split(b, bv, ".")
+    for (i = 1; i <= n || i <= m; i++) {
+      if ((av[i] + 0) > (bv[i] + 0)) exit 0
+      if ((av[i] + 0) < (bv[i] + 0)) exit 1
+    }
+    exit 0
+  }'
+}
+
 usage() {
   cat <<'EOF'
 用法: install.sh [选项]
@@ -47,12 +63,14 @@ usage() {
 选项:
   --skip-config   只安装工具，不链接 Neovim/tmux/shell 配置
   --skip-shell    只跳过 shell 配置链接
-  --pinned-tmux   用固定版本源码构建自包含 tmux（需要 Xcode CLT）
+  --brew-tmux     用 Homebrew 安装 tmux（要求 >= 3.8）
+  --pinned-tmux   用固定版本源码构建自包含 tmux（默认行为，需要 Xcode CLT）
   -h, --help      显示帮助
 
 要求:
   - macOS
-  - 已安装 Homebrew（用于 ripgrep / fd / git / tmux）
+  - 已安装 Homebrew（用于 ripgrep / fd / git / node）
+  - 默认 tmux 构建需要 Xcode Command Line Tools
 EOF
 }
 
@@ -71,6 +89,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --skip-shell)
       SKIP_SHELL=1
+      shift
+      ;;
+    --brew-tmux)
+      PINNED_TMUX=0
       shift
       ;;
     --pinned-tmux)
@@ -255,9 +277,21 @@ tmux_current_version() {
   tmux -V 2>/dev/null | awk '{print $2}'
 }
 
+brew_tmux_version() {
+  local bin
+  bin="$(brew --prefix tmux 2>/dev/null)/bin/tmux"
+  [[ -x "$bin" ]] || return 1
+  "$bin" -V 2>/dev/null | awk '{print $2}'
+}
+
 install_pinned_tmux() {
+  local installed
   local out
-  local prefix="$LOCAL_OPT/tmux-${TMUX_VERSION}"
+  local prefix
+
+  dev_env_validate_tmux_version "$TMUX_VERSION" \
+    || die "tmux 版本不合法: ${TMUX_VERSION}"
+  prefix="$LOCAL_OPT/tmux-${TMUX_VERSION}"
 
   if [[ -z "$TMP_DIR" ]]; then
     TMP_DIR="$(mktemp -d)"
@@ -271,7 +305,42 @@ install_pinned_tmux() {
   install -d "$prefix/bin"
   install -m 755 "$out/tmux" "$prefix/bin/tmux"
   ln -sfn "$prefix/bin/tmux" "$LOCAL_BIN/tmux"
-  log "tmux 已安装: $LOCAL_BIN/tmux"
+  installed="$("$LOCAL_BIN/tmux" -V 2>/dev/null | awk '{print $2}')"
+  [[ "$installed" == "$TMUX_VERSION" ]] \
+    || die "自包含 tmux 版本是 ${installed:-unknown}，期望 ${TMUX_VERSION}。"
+  log "tmux 已安装: $LOCAL_BIN/tmux (${installed})"
+}
+
+ensure_brew_tmux() {
+  local brew_version
+
+  # Resolve Homebrew's tmux explicitly. Checking PATH here would let a
+  # dev_env-pinned ~/.local/bin/tmux masquerade as a successful --brew-tmux
+  # run and keep shadowing the Homebrew binary.
+  brew_version="$(brew_tmux_version || true)"
+
+  if [[ -x "$LOCAL_BIN/tmux" ]]; then
+    die "${LOCAL_BIN}/tmux 会遮蔽 Homebrew tmux；请使用默认的 pinned 构建（去掉 --brew-tmux），或先删除该链接。"
+  fi
+
+  if [[ -n "$brew_version" ]] && version_ge "$brew_version" "$TMUX_VERSION"; then
+    log "Homebrew tmux 已是 ${brew_version}（>= ${TMUX_VERSION}），跳过。"
+    return 0
+  fi
+
+  if brew list --versions tmux >/dev/null 2>&1; then
+    log "brew upgrade tmux ..."
+    brew upgrade tmux
+  else
+    log "brew install tmux ..."
+    brew install tmux
+  fi
+  hash -r
+  brew_version="$(brew_tmux_version || true)"
+  if [[ -z "$brew_version" ]] || ! version_ge "$brew_version" "$TMUX_VERSION"; then
+    die "Homebrew tmux 版本是 ${brew_version:-unknown}，低于 ${TMUX_VERSION}；请使用默认的 pinned 构建。"
+  fi
+  log "tmux 已安装: $(brew --prefix tmux)/bin/tmux (${brew_version})"
 }
 
 if [[ "$PINNED_TMUX" -eq 1 ]]; then
@@ -282,7 +351,7 @@ if [[ "$PINNED_TMUX" -eq 1 ]]; then
     install_pinned_tmux
   fi
 else
-  ensure_brew_tool tmux tmux
+  ensure_brew_tmux
 fi
 
 # ---------- Starship / Nerd Font ----------
@@ -391,11 +460,24 @@ if [[ "$SKIP_CONFIG" -eq 0 ]]; then
     bash "$NVIM_CONFIG_SRC/scripts/build-latex-parser.sh"
 fi
 
-TMUX_BIN="$LOCAL_BIN/tmux"
+if [[ "$PINNED_TMUX" -eq 1 ]]; then
+  TMUX_BIN="$LOCAL_BIN/tmux"
+else
+  TMUX_BIN="$(brew --prefix tmux 2>/dev/null)/bin/tmux"
+fi
 if [[ ! -x "$TMUX_BIN" ]]; then
   TMUX_BIN="$(command -v tmux || true)"
 fi
 [[ -n "$TMUX_BIN" ]] || die "找不到 tmux 可执行文件。"
+
+TMUX_CURRENT="$("$TMUX_BIN" -V 2>/dev/null | awk '{print $2}')"
+if [[ "$PINNED_TMUX" -eq 1 ]]; then
+  [[ "$TMUX_CURRENT" == "$TMUX_VERSION" ]] \
+    || die "tmux 版本是 ${TMUX_CURRENT:-unknown}，期望 ${TMUX_VERSION}。"
+else
+  version_ge "$TMUX_CURRENT" "$TMUX_VERSION" \
+    || die "tmux 版本是 ${TMUX_CURRENT:-unknown}，低于 ${TMUX_VERSION}。"
+fi
 
 STARSHIP_BIN="$LOCAL_BIN/starship"
 if [[ ! -x "$STARSHIP_BIN" ]]; then

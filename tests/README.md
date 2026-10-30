@@ -4,19 +4,21 @@
 
 这里放可重复执行的安装测试。当前覆盖 Ubuntu 24.04：
 
-- `ubuntu-24.04-online.sh`：在 Docker 里跑联网安装，并验证 Neovim、tmux、zsh、Starship、插件与 latex parser
-- `ubuntu-24.04-offline.sh`：先在 Docker 里生成离线包，再在 `--network none` 的容器里离线安装；检查稳定配置副本，并验证 `--skip-config` 不删除已有插件/parser
+- `ubuntu-24.04-online.sh`：在 Docker 里跑联网安装，并验证 Neovim、tmux 3.8、zsh、Starship、插件与 latex parser
+- `ubuntu-24.04-offline.sh`：先在 Docker 里生成离线包（含自包含 tmux 3.8），再在 `--network none` 的容器里离线安装；检查稳定配置副本，并验证 `--skip-config` 不删除已有插件/parser
 - `nvim-plugins-smoke.sh`：在本机临时 XDG 目录中安装 lazy.nvim 插件、检查配色、Markdown 目录和 latex parser
 - `tmux-config-smoke.sh`：用独立 socket 验证 tmux 选项和键位，不碰默认 server
 - `shell-config-smoke.sh`：临时 HOME/ZDOTDIR 验证 zsh 配置、alias、local override 和 Starship
 - `theme-assets-smoke.sh`：验证 iTerm2/Terminal/Linux/VS Code 配色文件和调色板
 - `macos-offline-installer-safety-smoke.sh`：用合成离线包验证稳定配置副本和 `--skip-config` 不删除插件/parser（无需网络）
-- `macos-tmux-build-smoke.sh`：macOS 慢测试，构建并检查自包含 tmux 二进制（需 `DEV_ENV_RUN_SLOW_TESTS=1`）
+- `macos-tmux-build-smoke.sh`：macOS 慢测试，构建 3.8、检查自包含 tmux 二进制，并用构建结果运行 tmux 配置 smoke（需 `DEV_ENV_RUN_SLOW_TESTS=1`）
 
 ## 前置条件
 
 - 已安装 Docker，并且 daemon 正在运行
 - 能访问 Ubuntu 软件源和 GitHub
+- 需要代理时设置 `DOCKER_PROXY`；如果 apt 需要绕过代理，可再设置 `DOCKER_NO_PROXY=ports.ubuntu.com,archive.ubuntu.com,security.ubuntu.com`
+- 需要换 apt 镜像时设置 `DOCKER_APT_MIRROR`（x86_64 用 `.../ubuntu`，arm64 用 `.../ubuntu-ports`）
 
 如果 Docker 容器需要走宿主机代理，设置 `DOCKER_PROXY`：
 
