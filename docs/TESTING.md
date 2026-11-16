@@ -226,6 +226,14 @@ esac
 - 本机全新登录 shell 验证通过：`claude 2.1.308`、`nvm v22.17.1`、`STARSHIP_CONFIG` 指向 dev_env 配置、PATH 第一项为 `~/.local/bin`；
 - `tests/tmux-config-smoke.sh`、`shellcheck platforms/lib/common.sh tests/shell-config-smoke.sh` 通过。
 
+2026-11-16 tmux 关闭残留鼠标复制入口：
+
+- `tmux/tmux.conf` 增加 `unbind -T root MouseDrag1Pane`、`DoubleClick1Pane`、`TripleClick1Pane`；此前只移除了 copy-mode-vi 复制键和 `MouseDragEnd1Pane`，拖选仍会进入 copy mode，双击/三击仍会写入 tmux 缓冲区；
+- 保留 `WheelUpPane`/`WheelDownPane` 的滚动入口；
+- `tests/tmux-config-smoke.sh` 增加断言：三个 root 鼠标复制入口不存在，滚轮入口仍存在，单击转发未被移除；
+- 这也会停止向 Neovim 等启用鼠标的应用转发拖选/双击/三击；单击和滚轮不受影响；
+- 复制/粘贴功能仍留待单独章节处理。
+
 ## 4. Neovim 插件与预览测试
 
 ### 4.1 临时环境安装插件
