@@ -419,7 +419,7 @@ catppuccin-mocha
 启动 Neovim 后检查：
 
 ```vim
-:set number? relativenumber? ignorecase? smartcase? mouse? shortmess?
+:set number? relativenumber? ignorecase? smartcase? mouse? shortmess? undofile?
 :Lazy
 :checkhealth markview
 ```
@@ -427,6 +427,7 @@ catppuccin-mocha
 - `number`、`relativenumber`、`ignorecase`、`smartcase` 应为开启
 - `mouse` 应为 `a`
 - `shortmess` 应包含 `I`
+- `undofile` 应为开启；修改文件并保存后关闭 Neovim，重新打开同一文件按 `u`，仍能撤销上一次会话的修改
 - normal / insert 模式按方向键，应出现 `Use h/l/k/j` 提示
 - 按 `Q` 不应当被禁用；它保留 Neovim 默认行为
 - 按 `<leader>et` 应打开/关闭左侧文件树，并定位当前文件
