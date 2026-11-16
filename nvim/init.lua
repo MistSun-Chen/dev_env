@@ -23,6 +23,9 @@ vim.opt.smartcase = true
 -- 关闭启动时的 intro 信息
 vim.opt.shortmess:append('I')
 
+-- 持久化撤销历史：关闭文件后仍可撤销，撤销文件默认存放在 stdpath('state')/undo
+vim.opt.undofile = true
+
 -- 鼠标在所有模式可用（Neovim 默认是 nvi；a = 所有模式）
 vim.opt.mouse = 'a'
 

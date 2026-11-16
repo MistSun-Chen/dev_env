@@ -119,4 +119,15 @@ for key in v V C-v y Space Enter MouseDragEnd1Pane; do
   fi
 done
 
+# Mouse drag/double/triple click must not enter copy mode or copy to a buffer.
+for key in MouseDrag1Pane DoubleClick1Pane TripleClick1Pane; do
+  if "$TMUX_BIN" -L "$SOCK" list-keys -T root "$key" 2>/dev/null | grep -q .; then
+    die "root 鼠标复制入口未移除: $key"
+  fi
+done
+"$TMUX_BIN" -L "$SOCK" list-keys -T root WheelUpPane | grep -q "copy-mode" \
+  || die "鼠标滚轮滚动入口不应被移除"
+"$TMUX_BIN" -L "$SOCK" list-keys -T root MouseDown1Pane | grep -q "send-keys -M" \
+  || die "鼠标单击转发不应被移除"
+
 log "通过"
