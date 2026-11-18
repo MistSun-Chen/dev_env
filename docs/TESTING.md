@@ -249,6 +249,7 @@ esac
 - `tests/nvim-plugins-smoke.sh` 和四个平台安装器的 Neovim smoke check 增加 `has('clipboard') == 1` 与 `clipboard == ''` 断言；
 - Ubuntu 24.04 在线/离线 Docker 测试增加同样的 Neovim 断言和 tmux 选项断言；
 - `<leader>y` 在本地 macOS、Linux GUI 和 SSH/无 GUI 环境下都可用；SSH + tmux + OSC 52 下 `<leader>p` 不再读取 tmux 旧 buffer，改为提示终端粘贴。
+- tmux 3.8 私有 socket + `script` PTY 验证：`set-clipboard on`、`allow-passthrough off` 时，pane 内原始 OSC 52 仍转发到客户端 PTY（捕获到 `]52;c;VEVTVA==`）；`allow-passthrough` 不是 Neovim OSC 52 的必要条件。
 
 2026-11-18 x86_64 Ubuntu 24.04 远程离线安装验证：
 
