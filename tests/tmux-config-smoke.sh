@@ -99,7 +99,7 @@ assert_contains "$("$TMUX_BIN" -L "$SOCK" list-keys -T prefix z)" "resize-pane -
 assert_contains "$("$TMUX_BIN" -L "$SOCK" list-keys -T prefix r)" "XDG_CONFIG_HOME" "r reload path"
 assert_eq "$("$TMUX_BIN" -L "$SOCK" show-options -gv set-clipboard)" "on" "set-clipboard"
 assert_eq "$("$TMUX_BIN" -L "$SOCK" show-options -gv allow-passthrough)" "off" "allow-passthrough"
-assert_contains "$("$TMUX_BIN" -L "$SOCK" show-options -gv terminal-features)" "clipboard" "terminal-features clipboard"
+assert_contains "$("$TMUX_BIN" -L "$SOCK" show-options -gv terminal-features)" "*:clipboard" "terminal-features clipboard"
 
 # Reload through the same shell command used by C-b r, with custom XDG.
 assert_eq "$("$TMUX_BIN" -L "$SOCK" show-options -gv @dev-env-smoke-reloaded)" "0" "local override"
