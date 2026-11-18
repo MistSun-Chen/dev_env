@@ -166,9 +166,10 @@ run_sudo env DEBIAN_FRONTEND=noninteractive dpkg --force-confold --configure -a 
   warn "dpkg --configure -a 返回非零；可能来自与本安装无关的包，继续验证 dev_env 依赖。"
 
 for pkg in $APT_PACKAGES_OFFLINE; do
-  pkg_status="$(dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null || true)"
-  if [[ "$pkg_status" != "install ok installed" ]]; then
-    die "apt 包未正确安装: $pkg（状态: ${pkg_status:-missing}）"
+  # 每行一个状态：hold 包是 `hold ok installed`，multi-arch 包可能有多行。
+  pkg_status="$(dpkg-query -W -f='${Status}\n' "$pkg" 2>/dev/null || true)"
+  if ! printf '%s\n' "$pkg_status" | grep -qxE '(install|hold) ok installed'; then
+    die "apt 包未正确安装: $pkg（状态: $(printf '%s' "$pkg_status" | tr '\n' ' ')）"
   fi
 done
 log "apt 包安装完成。"
