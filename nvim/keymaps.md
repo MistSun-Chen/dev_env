@@ -60,6 +60,7 @@
 - `<leader>p`：从系统剪贴板粘贴；visual 模式下会替换选区。
 - 普通 `y`、`d`、`c`、`p` 仍只使用 Neovim 内部寄存器，不会覆盖系统剪贴板。
 - 复制的是 buffer 文本，不含行号、gitsigns 标记或 markview 装饰。
+- Linux 需要 `xclip`（X11）或 `wl-clipboard`（Wayland）；provider 不可用时映射会提示，不会报错。
 
 ## 终端
 

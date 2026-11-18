@@ -9,8 +9,17 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- 系统剪贴板映射：只有这里显式使用 + 寄存器，普通 y/d/c/p 不碰系统剪贴板。
-vim.keymap.set({ 'n', 'v' }, '<leader>y', '"+y', { desc = '复制到系统剪贴板' })
-vim.keymap.set({ 'n', 'v' }, '<leader>p', '"+p', { desc = '从系统剪贴板粘贴' })
+-- Linux 需要 xclip（X11）或 wl-clipboard（Wayland）；provider 不可用时只提示。
+local clipboard_ok = vim.fn.has('clipboard') == 1
+local function clipboard_unavailable()
+  vim.notify('系统剪贴板不可用：请安装 xclip 或 wl-clipboard', vim.log.levels.WARN)
+end
+vim.keymap.set({ 'n', 'v' }, '<leader>y', clipboard_ok and '"+y' or clipboard_unavailable, {
+  desc = clipboard_ok and '复制到系统剪贴板' or '复制到系统剪贴板（不可用）',
+})
+vim.keymap.set({ 'n', 'v' }, '<leader>p', clipboard_ok and '"+p' or clipboard_unavailable, {
+  desc = clipboard_ok and '从系统剪贴板粘贴' or '从系统剪贴板粘贴（不可用）',
+})
 
 -- 显示绝对行号；配合 relativenumber 形成“当前行绝对、其他行相对”的混合行号
 vim.opt.number = true

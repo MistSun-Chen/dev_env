@@ -354,7 +354,7 @@ nvim --headless "+lua print(vim.o.number, vim.o.relativenumber, vim.o.ignorecase
 期望：
 
 ```text
-true	true	true	true	mouse=[]	true
+true true true true mouse=[] true
 ```
 
 交互：
