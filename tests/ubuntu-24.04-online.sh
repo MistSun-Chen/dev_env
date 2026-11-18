@@ -57,7 +57,7 @@ docker run --rm \
     test "$(/root/.local/bin/tmux -L dev-env-ci show-options -gv mouse)" = off
     test "$(/root/.local/bin/tmux -L dev-env-ci show-options -gv set-clipboard)" = on
     test "$(/root/.local/bin/tmux -L dev-env-ci show-options -gv allow-passthrough)" = off
-    /root/.local/bin/tmux -L dev-env-ci show-options -gv terminal-features | grep -q '\*:clipboard'
+    /root/.local/bin/tmux -L dev-env-ci show-options -gv terminal-features | grep -qxF "*:clipboard"
     /root/.local/bin/tmux -L dev-env-ci list-keys -T prefix h | grep -q "select-pane -L"
     /root/.local/bin/tmux -L dev-env-ci list-keys -T prefix r | grep -q "XDG_CONFIG_HOME"
     /root/.local/bin/tmux -L dev-env-ci send-keys -t smoke "exit" Enter
