@@ -77,7 +77,7 @@ DOCKER_PROXY=http://host.docker.internal:7897 bash tests/ubuntu-24.04-offline.sh
 | 运行中的 tmux 仍保留旧选项 | 旧值可能来自已加载的 server；用 `set-option -u` 或重载配置，不要 kill server |
 | Homebrew tmux 仍停留在 3.5a | tap/formula 可能滞后；macOS 在线安装默认构建 pinned 3.8，不要依赖 `brew upgrade tmux` |
 | Ubuntu apt 的 tmux 仍是 3.4 | 安装器改为源码构建 3.8 到 `~/.local/opt/tmux-3.8`；不要把 apt tmux 当运行时 |
-| 运行中的 tmux server 仍是旧版本 | 不 kill；3.8 client attach 到 3.4 server 可能报 `open terminal failed: not a terminal`，此时用 `/usr/bin/tmux attach -t <session>`，退出旧 session 后新 server 才使用 3.8 |
+| 运行中的 tmux server 仍是旧版本 | 不 kill；3.8 client attach 到旧 server 可能报 `open terminal failed: not a terminal`。Ubuntu 3.4 用 `/usr/bin/tmux attach`；macOS 用启动旧 server 的 Homebrew/旧 opt 二进制；退出旧 session 后新 server 才使用 3.8 |
 | Option+方向键输出 `3D`/`3C` | iTerm 发送 CSI `1;3D`/`1;3C`；在 `shell/options.zsh` 绑定，同时覆盖 `1;5D/C` 和 `^[b/^[f` |
 | zsh 插件加载顺序错误 | syntax-highlighting 必须最后 source；autosuggestions 在它之前 |
 | 新终端 `claude: command not found` | 新建或与模板逐字节一致的 `.zshrc.local` 会自动启用检测到的 nvm；其它已有文件不会改，需手动取消 `source "$HOME/.nvm/nvm.sh"` 注释 |

@@ -74,10 +74,11 @@ bash platforms/macos/install.sh --brew-tmux
 
 离线安装包会带自包含 tmux 3.8 二进制；macOS 和 Ubuntu 都不再使用 Homebrew/apt 的 tmux 3.4。
 
-安装器不会 kill 正在运行的 tmux server。如果旧 server 是 3.4，3.8 client 执行
-`attach` 可能报 `open terminal failed: not a terminal`；用 `/usr/bin/tmux attach -t <session>`
-进入旧 session，等旧 session 退出后再使用 3.8。不要 kill server；旧 session 还需要
-attach 时也不要卸载 `/usr/bin/tmux`，否则会失去同版本 client。
+安装器不会 kill 正在运行的 tmux server。3.8 client `attach` 到旧 server 可能报
+`open terminal failed: not a terminal`：Ubuntu 的 3.4 server 用 `/usr/bin/tmux attach -t <session>`；
+macOS 的旧 Homebrew/旧 opt server 用启动它的那个 tmux 二进制 attach。等旧 session 退出后再
+使用 3.8。不要 kill server；旧 session 还需要 attach 时，Ubuntu 不要卸载 `/usr/bin/tmux`，
+macOS 不要 `brew uninstall tmux`。
 
 链接新配置后，执行：
 

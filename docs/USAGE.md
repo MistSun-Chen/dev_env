@@ -106,7 +106,7 @@ bash platforms/macos/install.sh --brew-tmux
 
 `--pinned-tmux` 保留为兼容参数，等同于默认行为。
 
-安装后新开的 tmux server 使用 3.8；已在运行的 server 保持旧版本，退出旧 session 后重启即可，不要 kill server。旧 server 是 3.4 时，3.8 client 执行 `attach` 可能报 `open terminal failed: not a terminal`；用 `/usr/bin/tmux attach -t <session>` 进入旧 session，或等旧 session 退出后再用 3.8。
+安装后新开的 tmux server 使用 3.8；已在运行的 server 保持旧版本，退出旧 session 后重启即可，不要 kill server。旧 server 是 Homebrew 3.5a 等旧版本时，3.8 client 执行 `attach` 可能报 `open terminal failed: not a terminal`；用启动旧 server 的 tmux 二进制 attach（例如旧 Homebrew 路径 `$(brew --prefix tmux)/bin/tmux`，或旧的 `~/.local/opt/tmux-<ver>/bin/tmux`），旧 session 结束前不要 `brew uninstall tmux`。macOS 没有 `/usr/bin/tmux`，不要照搬 Ubuntu 的命令。
 
 ### 2.3 安装脚本做了什么
 
