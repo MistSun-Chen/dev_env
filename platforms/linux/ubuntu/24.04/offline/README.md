@@ -116,6 +116,7 @@ ${XDG_DATA_HOME:-$HOME/.local/share}/dev_env/config/
 - **架构必须一致**：apt deb 和 Neovim/fzf tarball 都是架构相关的；在 arm64 上下载的包不能装到 x86_64。
 - **Ubuntu 版本必须是 24.04**：deb 依赖是按 24.04 的软件源下载的。
 - 离线安装用 `dpkg --force-confold -i` + `dpkg --force-confold --configure -a`，不执行 `apt-get update`，不会访问网络；`--force-confold` 保留目标机已有 conffile，避免无人值守安装时停在交互提示。
+- 目标机已有与本安装无关的坏包时，`dpkg --configure -a` 可能返回非零；安装器只警告，并逐个验证离线包所需的包状态为 `install ok installed`。
 - 已有 `~/.config/nvim`、`~/.config/tmux/tmux.conf`、`~/.zshrc` 会先备份。
 - 离线包不会安装 fzf 的 shell 集成，只安装二进制；Neovim 使用不需要 shell 集成。
 - 离线包不包含 language server、Node/npm、`clangd` 或 C/C++ 编译器。离线机器上如果想要 Python/Bash/C/C++ LSP，需要另外准备这些包；否则 Neovim 仍可启动，只是对应语言的 LSP 不工作。可用 `bash nvim/scripts/check-lsp.sh` 查看缺失项。

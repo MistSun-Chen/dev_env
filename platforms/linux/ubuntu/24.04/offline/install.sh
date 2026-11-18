@@ -160,11 +160,15 @@ log "安装 ${#DEB_FILES[@]} 个 deb 包（离线）..."
 # 依赖顺序可能让第一次 dpkg -i 返回非零；随后用 dpkg --configure -a 收尾。
 # --force-confold 保留目标机已有的 conffile，避免无人值守安装时停在交互提示。
 run_sudo env DEBIAN_FRONTEND=noninteractive dpkg --force-confold -i "${DEB_FILES[@]}" || true
-run_sudo env DEBIAN_FRONTEND=noninteractive dpkg --force-confold --configure -a
+# 目标机可能已有与本安装无关的坏包（例如 nsight-systems）；dpkg --configure -a
+# 会因此返回非零，但不能让它中止 dev_env 安装。下面逐个确认本离线包需要的包。
+run_sudo env DEBIAN_FRONTEND=noninteractive dpkg --force-confold --configure -a || \
+  warn "dpkg --configure -a 返回非零；可能来自与本安装无关的包，继续验证 dev_env 依赖。"
 
 for pkg in $APT_PACKAGES_OFFLINE; do
-  if ! dpkg -s "$pkg" >/dev/null 2>&1; then
-    die "apt 包未正确安装: $pkg"
+  pkg_status="$(dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null || true)"
+  if [[ "$pkg_status" != "install ok installed" ]]; then
+    die "apt 包未正确安装: $pkg（状态: ${pkg_status:-missing}）"
   fi
 done
 log "apt 包安装完成。"
