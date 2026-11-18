@@ -60,8 +60,9 @@
 - `<leader>p`：从系统剪贴板粘贴；visual 模式下会替换选区。
 - 普通 `y`、`d`、`c`、`p` 仍只使用 Neovim 内部寄存器，不会覆盖系统剪贴板。
 - 复制的是 buffer 文本，不含行号、gitsigns 标记或 markview 装饰。
-- provider 选择：macOS 使用 `pbcopy`/`pbpaste`；Linux 优先 `xclip`/`xsel`（X11）或 `wl-copy`（Wayland）。
-- SSH/无 GUI 或缺少原生 provider 时自动回退到 OSC 52；终端需要允许 OSC 52，tmux 需要转发该序列（dev_env 已设置 `set-clipboard on` 和 `allow-passthrough on`）。
+- provider 选择：SSH/远程 Linux 统一使用 OSC 52；本地 macOS 使用 `pbcopy`/`pbpaste`；本地 Linux GUI 优先 `xclip`/`xsel`（X11）或 `wl-copy`（Wayland）。
+- 终端需要允许 OSC 52，tmux 需要转发该序列（dev_env 已设置 `set-clipboard on` 和 `allow-passthrough on`）。
+- 支持的终端、终端替换要求和已知限制见 [`../docs/CLIPBOARD.md`](../docs/CLIPBOARD.md)。MobaXterm/PuTTY 不支持 OSC 52；Windows Terminal、WezTerm、Alacritty（写）、iTerm2 等可用。
 - provider 完全不可用时映射会提示，不会报错。
 
 ## 终端

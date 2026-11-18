@@ -9,18 +9,21 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- 系统剪贴板映射：只有这里显式使用 + 寄存器，普通 y/d/c/p 不碰系统剪贴板。
--- 优先使用系统原生 provider（macOS 的 pbcopy/pbpaste，Linux 的 xclip/xsel/wl-copy）。
--- Linux 在 SSH/无 GUI 或缺少原生工具时回退到 OSC 52，让远程 Neovim 也能把文本
--- 送到本地终端剪贴板；tmux 配置负责转发 OSC 52。
+-- 策略：
+--   - SSH/远程 Linux 统一使用 OSC 52，不依赖 xclip/X11；
+--   - 本地 macOS 继续用 pbcopy/pbpaste；
+--   - 本地 Linux GUI 有原生工具（xclip/xsel/wl-copy）时优先原生，否则 OSC 52。
+-- tmux 配置负责把 OSC 52 转发给外层终端；终端支持列表见 docs/CLIPBOARD.md。
 --
 -- 注意：必须在设置 vim.g.clipboard 之前避免调用 has('clipboard')，否则 Neovim
 -- 会把“没有 provider”的状态缓存下来，之后再设置 osc52 也不会生效。
 local is_linux = vim.fn.has('linux') == 1
+local is_ssh = (vim.env.SSH_TTY or '') ~= '' or (vim.env.SSH_CONNECTION or '') ~= ''
 local has_gui = (vim.env.DISPLAY or '') ~= '' or (vim.env.WAYLAND_DISPLAY or '') ~= ''
 local has_native_tool = vim.fn.executable('xclip') == 1
   or vim.fn.executable('xsel') == 1
   or vim.fn.executable('wl-copy') == 1
-if is_linux and (not has_gui or not has_native_tool) then
+if is_linux and (is_ssh or not has_gui or not has_native_tool) then
   vim.g.clipboard = 'osc52'
 end
 

@@ -242,7 +242,7 @@ esac
 
 2026-11-18 剪贴板 provider 跨环境一致：
 
-- `nvim/init.lua` 在 Linux 无 GUI/无原生工具时回退 `vim.g.clipboard='osc52'`；macOS 仍用 `pbcopy`/`pbpaste`；
+- `nvim/init.lua` 在 SSH/远程 Linux 下强制 `vim.g.clipboard='osc52'`（即使安装了 xclip）；本地 macOS 仍用 `pbcopy`/`pbpaste`；本地 Linux GUI 优先原生 provider；
 - 显式设置 `vim.opt.clipboard=''`，普通 `y/d/c/p` 不进入系统剪贴板；
 - `tmux/tmux.conf` 增加 OSC 52 传输：`set -g set-clipboard on`、`set -g allow-passthrough on`；仍不接管鼠标、不定义 copy-mode 键；
 - `tests/tmux-config-smoke.sh` 断言这两个选项为 `on`；
@@ -261,6 +261,15 @@ esac
 - 目标机已有 `nsight-systems` 包处于 `install ok unpacked`，`dpkg --configure -a` 返回非零；安装器改为警告并只验证 dev_env 需要的包后通过；
 - 本机 iTerm2 3.7.7 `AllowClipboardAccess=1`，OSC52 实测写入并恢复剪贴板通过；
 - 本机 bundle 路径：`platforms/linux/ubuntu/24.04/offline/dist/x86_64-20261118/`（tar 约 112M）。
+
+2026-11-18 终端与剪贴板策略收敛：
+
+- 新增 `docs/CLIPBOARD.md`，记录 OSC 52 策略、支持终端、替换终端要求和已知限制；
+- SSH/远程 Linux 统一 OSC 52；本地 macOS 继续 `pbcopy`/`pbpaste`；本地 Linux GUI 优先原生 provider；
+- 支持：Windows Terminal（写）、WezTerm、Alacritty（写）、iTerm2、Kitty、Ghostty、foot；
+- 不支持：MobaXterm、PuTTY、macOS Terminal.app、GNOME Terminal；
+- 远程临时安装的 `xclip` 和 apt 修复不属于 dev_env 的 SSH 方案，仅用于当时的 MobaXterm/X11 兼容验证；
+- Windows Terminal 的 OSC 52 只写不读；本地→远程粘贴使用终端粘贴快捷键。
 
 ## 4. Neovim 插件与预览测试
 

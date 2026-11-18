@@ -681,7 +681,7 @@ chsh -s "$(command -v zsh)"
 - 键位：`C-b h/j/k/l` 切 pane，`C-b H/J/K/L` 调分割线，`C-b z` 最大化，
   `C-b Tab` 上一个 window。
 - 鼠标：tmux 不接管鼠标（`mouse off`），拖选由终端处理。
-- 剪贴板：tmux 只转发 OSC 52（`set-clipboard on`、`allow-passthrough on`），不定义 copy-mode 键位；Neovim 在 SSH/无 GUI 时用 OSC 52 回退 `<leader>y`/`<leader>p`。
+- 剪贴板：SSH/远程 Linux 统一 OSC 52；tmux 只转发 OSC 52（`set-clipboard on`、`allow-passthrough on`），不定义 copy-mode 键位；终端支持列表和替换要求见 [`CLIPBOARD.md`](./CLIPBOARD.md)。
 - 配置：`tmux/README.md`。
 - 本地覆盖：`~/.tmux.local.conf`（默认不存在）。
 
@@ -710,6 +710,7 @@ chsh -s "$(command -v zsh)"
 ## 11. 相关文档
 
 - 测试方法：[`TESTING.md`](./TESTING.md)
+- 剪贴板与终端支持：[`CLIPBOARD.md`](./CLIPBOARD.md)
 - Neovim 配置：[`../nvim/README.md`](../nvim/README.md)
 - tmux 配置：[`../tmux/README.md`](../tmux/README.md)
 - shell 配置：[`../shell/README.md`](../shell/README.md)

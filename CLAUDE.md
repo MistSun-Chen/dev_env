@@ -45,7 +45,9 @@ DOCKER_PROXY=http://host.docker.internal:7897 bash tests/ubuntu-24.04-offline.sh
 - 用户没有 PageUp/PageDown：tmux 不接管鼠标（`mouse off`），拖选和滚动交给终端；tmux 配置里不保留 copy-mode/滚动设置。
 - 剪贴板传输是例外：tmux 允许 `set-clipboard on` / `allow-passthrough on` 以转发 OSC 52；不要重新引入鼠标捕获或 copy-mode 键位。
 - Neovim 同样关闭鼠标（`mouse=''`）；系统剪贴板只用 `<leader>y` / `<leader>p`，不要开启 `clipboard=unnamedplus`。
-- Neovim 在 Linux 无 GUI/无原生工具时允许回退 `vim.g.clipboard='osc52'`，保证 SSH 下 `<leader>y`/`<leader>p` 与本地一致；不要在设置 provider 之前调用 `has('clipboard')`。
+- SSH/远程 Linux 统一使用 OSC 52；本地 macOS 继续用 `pbcopy`/`pbpaste`；本地 Linux GUI 优先原生 provider。不要把 xclip/X11 作为 dev_env 的 SSH 方案。
+- 终端必须支持 OSC 52 写；支持列表、终端替换要求和限制见 [`docs/CLIPBOARD.md`](./docs/CLIPBOARD.md)。MobaXterm/PuTTY 不支持 OSC 52。
+- 不要在设置 provider 之前调用 `has('clipboard')`，否则 Neovim 会缓存“无 provider”状态，之后设置 `osc52` 也不生效。
 - shell 是 zsh + Starship；不引入 Oh My Zsh、Zinit、TPM。syntax-highlighting 必须最后加载。
 - `~/.zshrc.local` 是机器相关配置和密钥的唯一入口；仓库里只放占位示例。
 - 不自动 `chsh`，不自动修改 iTerm2/Terminal/GNOME 等终端偏好；iTerm 配色 profile 已明确不需要。
@@ -95,7 +97,7 @@ DOCKER_PROXY=http://host.docker.internal:7897 bash tests/ubuntu-24.04-offline.sh
 | 旧 OMZ 的 `tmux` alias 覆盖命令 | 调试/重载用绝对路径或 `command tmux`，不要依赖旧 shell 的 alias |
 | `local path=...` 在 zsh 里把 PATH 清空 | zsh 的 `path` 数组绑定 `PATH`；bash helper 用 `source_path`/`target_path` 等名字 |
 | 自定义 `XDG_CONFIG_HOME` 下 tmux 重载失败 | 不要在配置里硬编码 `~/.config`；重载路径优先用 `XDG_CONFIG_HOME` |
-| 复制/粘贴需求又出现 | 当前只允许 OSC 52 provider 回退和 tmux 传输选项；不要恢复鼠标捕获、copy-mode 绑定或 `clipboard=unnamedplus` |
+| 复制/粘贴需求又出现 | SSH/远程统一 OSC 52，本地保留原生 provider；不要恢复鼠标捕获、copy-mode 绑定、`clipboard=unnamedplus` 或把 xclip/X11 当作 SSH 方案 |
 
 ## AI collaboration (2026)
 
