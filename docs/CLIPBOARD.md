@@ -8,10 +8,10 @@
 
 - SSH/远程 Linux：无条件使用 OSC 52，不依赖 `xclip`/X11/Wayland；
 - 本地 macOS：继续使用 `pbcopy`/`pbpaste`；
-- 本地 Linux GUI：有 `xclip`/`xsel`/`wl-copy` 时优先原生 provider，否则回退 OSC 52。
+- 本地 Linux GUI：X11 有 `xclip`/`xsel`，或 Wayland 有 `wl-copy` + `wl-paste` 时优先原生 provider，否则回退 OSC 52。
 
-`nvim/init.lua` 通过 `SSH_TTY` / `SSH_CONNECTION` 判断是否处于 SSH 会话；SSH 下设置
-`vim.g.clipboard = 'osc52'`。这不影响普通 `y/d/c/p`：只有 `<leader>y` / `<leader>p`
+`nvim/init.lua` 通过 `SSH_TTY` / `SSH_CONNECTION` 判断是否处于 SSH 会话；SSH 到 Linux
+时设置 `vim.g.clipboard = 'osc52'`。这不影响普通 `y/d/c/p`：只有 `<leader>y` / `<leader>p`
 显式使用 `+` 寄存器，`clipboard=unnamedplus` 始终关闭。
 
 ## 2. 支持的终端
@@ -70,9 +70,8 @@ tmux set -g allow-passthrough on
 
 1. 用 Windows Terminal 打开 PowerShell/命令提示符，运行 `ssh wychen@10.39.54.93`。
 2. 不要开启 X11 forwarding；`echo $DISPLAY` 应为空，这样 Neovim 会走 OSC 52。
-3. 如果复制无效，检查：
-   - Settings → Profiles → Defaults → Advanced → **Allow applications to manipulate the selection data**；
-   - `settings.json` 中 `"compatibility.allowOSC52": true`。
+3. 如果复制无效，检查 `settings.json` 中是否保留 `"compatibility.allowOSC52": true`
+   （设置页里对应的剪贴板/OSC 52 兼容项；不同 Windows Terminal 版本措辞可能不同）。
 4. Windows Terminal 的 OSC 52 是**只写**：复制到 Windows 可以；从 Windows 粘贴到远程
    Neovim 请用终端粘贴快捷键（通常 Ctrl+Shift+V）进入 insert 模式。
 

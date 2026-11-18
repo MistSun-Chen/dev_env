@@ -12,18 +12,20 @@ vim.g.maplocalleader = ' '
 -- 策略：
 --   - SSH/远程 Linux 统一使用 OSC 52，不依赖 xclip/X11；
 --   - 本地 macOS 继续用 pbcopy/pbpaste；
---   - 本地 Linux GUI 有原生工具（xclip/xsel/wl-copy）时优先原生，否则 OSC 52。
+--   - 本地 Linux GUI 在 X11 有 xclip/xsel、Wayland 有 wl-copy+wl-paste 时优先原生，否则 OSC 52。
 -- tmux 配置负责把 OSC 52 转发给外层终端；终端支持列表见 docs/CLIPBOARD.md。
 --
 -- 注意：必须在设置 vim.g.clipboard 之前避免调用 has('clipboard')，否则 Neovim
 -- 会把“没有 provider”的状态缓存下来，之后再设置 osc52 也不会生效。
 local is_linux = vim.fn.has('linux') == 1
 local is_ssh = (vim.env.SSH_TTY or '') ~= '' or (vim.env.SSH_CONNECTION or '') ~= ''
-local has_gui = (vim.env.DISPLAY or '') ~= '' or (vim.env.WAYLAND_DISPLAY or '') ~= ''
-local has_native_tool = vim.fn.executable('xclip') == 1
-  or vim.fn.executable('xsel') == 1
-  or vim.fn.executable('wl-copy') == 1
-if is_linux and (is_ssh or not has_gui or not has_native_tool) then
+local has_x11 = (vim.env.DISPLAY or '') ~= ''
+local has_wayland = (vim.env.WAYLAND_DISPLAY or '') ~= ''
+local has_x11_tool = vim.fn.executable('xclip') == 1 or vim.fn.executable('xsel') == 1
+local has_wayland_tool = vim.fn.executable('wl-copy') == 1 and vim.fn.executable('wl-paste') == 1
+local has_native_tool = (has_x11 and has_x11_tool) or (has_wayland and has_wayland_tool)
+-- 只有显示服务器和对应工具都匹配时才使用原生 provider；否则回退 OSC 52。
+if is_linux and (is_ssh or not (has_x11 or has_wayland) or not has_native_tool) then
   vim.g.clipboard = 'osc52'
 end
 
