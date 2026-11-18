@@ -250,6 +250,18 @@ esac
 - Ubuntu 24.04 在线/离线 Docker 测试增加同样的 Neovim 断言和 tmux 选项断言；
 - 这样 `<leader>y`/`<leader>p` 在本地 macOS、Linux GUI 和 SSH/无 GUI 环境下行为一致。
 
+2026-11-18 x86_64 Ubuntu 24.04 远程离线安装验证：
+
+- 本机 Docker 缺 Rosetta，amd64 容器停在 `Created`；改为在远程 x86_64 Docker 生成 bundle，再回传本机保存；
+- bundle：`arch=x86_64`、约 141M、`SHA256SUMS` 3282/3282 OK、tmux 3.8、Neovim 0.12.3、12 个插件、预编译 `latex.so`；
+- 远程 `offline/install.sh` 通过：Neovim 0.12.3、tmux 3.8、zsh 5.9、Starship 1.27.0、rg 14.1.0、fd 9.0.0；
+- 现有 tmux 3.4 server 未重启，3 个 session 保留；新 pane 的 `default-shell` 设为 `/usr/bin/zsh`；
+- Neovim OSC52 回退生效：`has('clipboard')=1`、`g=osc52`、`clipboard=[]`、`<leader>y/p -> "+y/"+p`；
+- 系统 `/usr/local/bin/nvim` 0.12.1、`/usr/bin/tmux` 3.4 保留；
+- 目标机已有 `nsight-systems` 包处于 `install ok unpacked`，`dpkg --configure -a` 返回非零；安装器改为警告并只验证 dev_env 需要的包后通过；
+- 本机 iTerm2 3.7.7 `AllowClipboardAccess=1`，OSC52 实测写入并恢复剪贴板通过；
+- 本机 bundle 路径：`platforms/linux/ubuntu/24.04/offline/dist/x86_64-20261118/`（tar 约 112M）。
+
 ## 4. Neovim 插件与预览测试
 
 ### 4.1 临时环境安装插件
