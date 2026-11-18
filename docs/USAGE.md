@@ -68,7 +68,12 @@ bash platforms/linux/ubuntu/24.04/install.sh --allow-root --skip-config
 
 Ubuntu 24.04 默认源码构建 tmux 3.8，不使用 apt 的 tmux 3.4。安装后新开的 tmux server 使用 3.8；已在运行的旧 server 不会自动切换，退出旧 session 后重启即可，不要 kill server。
 
-如果机器以前装过系统的 tmux，`/usr/bin/tmux` 3.4 不会被自动卸载；`~/.local/bin/tmux` 在 PATH 中优先。确认不需要系统包后再手动执行 `sudo apt remove tmux`。
+如果旧 server 是 3.4，用 `~/.local/bin/tmux`（3.8）执行 `attach` 可能报
+`open terminal failed: not a terminal`；这不是 SSH/TTY 问题，而是旧 server 不认识
+新 client 的终端 fd 传递。先用 `/usr/bin/tmux attach -t <session>` 进入旧 session，
+不要 kill server。
+
+如果机器以前装过系统的 tmux，`/usr/bin/tmux` 3.4 不会被自动卸载；`~/.local/bin/tmux` 在 PATH 中优先。旧 3.4 session 还需要 attach 时先不要卸载 `/usr/bin/tmux`，否则会失去同版本 client；确认旧 session 都结束后再手动执行 `sudo apt remove tmux`。
 
 ### 2.2 macOS
 
@@ -101,7 +106,7 @@ bash platforms/macos/install.sh --brew-tmux
 
 `--pinned-tmux` 保留为兼容参数，等同于默认行为。
 
-安装后新开的 tmux server 使用 3.8；已在运行的 server 保持旧版本，退出旧 session 后重启即可，不要 kill server。
+安装后新开的 tmux server 使用 3.8；已在运行的 server 保持旧版本，退出旧 session 后重启即可，不要 kill server。旧 server 是 Homebrew 3.5a 等旧版本时，3.8 client 执行 `attach` 可能报 `open terminal failed: not a terminal`；用启动旧 server 的 tmux 二进制 attach（例如旧 Homebrew 路径 `$(brew --prefix tmux)/bin/tmux`，或旧的 `~/.local/opt/tmux-<ver>/bin/tmux`），旧 session 结束前不要 `brew uninstall tmux`。macOS 没有 `/usr/bin/tmux`，不要照搬 Ubuntu 的命令。
 
 ### 2.3 安装脚本做了什么
 
@@ -487,14 +492,16 @@ git --version
 验证配置：
 
 ```sh
-nvim --headless "+lua print(vim.o.number, vim.o.relativenumber, vim.o.ignorecase, vim.o.smartcase, 'mouse=[' .. vim.o.mouse .. ']', vim.o.shortmess:find('I') ~= nil)" +qa
+nvim --headless "+lua print(vim.o.number, vim.o.relativenumber, vim.o.ignorecase, vim.o.smartcase, 'mouse=[' .. vim.o.mouse .. ']', 'clipboard=[' .. vim.o.clipboard .. ']', 'has_clipboard=' .. vim.fn.has('clipboard'), vim.o.shortmess:find('I') ~= nil)" +qa
 ```
 
 期望：
 
 ```text
-true true true true mouse=[] true
+true true true true mouse=[] clipboard=[] has_clipboard=1 true
 ```
+
+`has_clipboard=1` 在 macOS 来自 `pbcopy`/`pbpaste`；在 SSH/无 GUI 的 Linux 上来自 OSC 52 回退。
 
 验证插件与公式 parser：
 
@@ -518,12 +525,16 @@ ls -l ~/.config/tmux/tmux.conf ~/.zshrc ~/.config/starship.toml
 zsh -n ~/.zshrc
 tmux -L dev-env-check -f ~/.config/tmux/tmux.conf new-session -d -s check
 tmux -L dev-env-check show-options -gv mouse
+tmux -L dev-env-check show-options -gv set-clipboard
+tmux -L dev-env-check show-options -gv allow-passthrough
+tmux -L dev-env-check show-options -gv terminal-features
 tmux -L dev-env-check list-keys -T prefix h
 tmux -L dev-env-check send-keys -t check exit Enter
 ```
 
-`mouse` 应为 `off`，`h` 对应 `select-pane -L`。测试使用独立 socket，
-不要对默认 tmux server 执行 `kill-server`。
+`mouse` 应为 `off`，`set-clipboard` 应为 `on`，`allow-passthrough` 应为 `off`，
+`terminal-features` 应包含 `clipboard`，`h` 对应 `select-pane -L`。测试使用独立
+socket，不要对默认 tmux server 执行 `kill-server`。
 
 ## 6. PATH
 
@@ -677,6 +688,7 @@ chsh -s "$(command -v zsh)"
 - 键位：`C-b h/j/k/l` 切 pane，`C-b H/J/K/L` 调分割线，`C-b z` 最大化，
   `C-b Tab` 上一个 window。
 - 鼠标：tmux 不接管鼠标（`mouse off`），拖选由终端处理。
+- 剪贴板：SSH/远程 Linux 统一 OSC 52；tmux 只转发 OSC 52 写（`set-clipboard on`、`terminal-features ',*:clipboard'`，`allow-passthrough off`），不定义 copy-mode 键位；SSH + tmux 下 `<leader>p` 提示使用终端粘贴；终端支持列表和替换要求见 [`CLIPBOARD.md`](./CLIPBOARD.md)。
 - 配置：`tmux/README.md`。
 - 本地覆盖：`~/.tmux.local.conf`（默认不存在）。
 
@@ -705,6 +717,7 @@ chsh -s "$(command -v zsh)"
 ## 11. 相关文档
 
 - 测试方法：[`TESTING.md`](./TESTING.md)
+- 剪贴板与终端支持：[`CLIPBOARD.md`](./CLIPBOARD.md)
 - Neovim 配置：[`../nvim/README.md`](../nvim/README.md)
 - tmux 配置：[`../tmux/README.md`](../tmux/README.md)
 - shell 配置：[`../shell/README.md`](../shell/README.md)

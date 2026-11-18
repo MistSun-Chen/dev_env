@@ -43,8 +43,12 @@ DOCKER_PROXY=http://host.docker.internal:7897 bash tests/ubuntu-24.04-offline.sh
 - tmux 从 0 设计，保留 `C-b`；`C-b h/j/k/l` 切 pane，`C-b H/J/K/L` 调分割线，`C-b z` 最大化，`C-b Tab` 上一个 window。
 - macOS 和 Ubuntu 24.04 的在线/离线安装默认使用固定 3.8 自包含构建；macOS 的 `--brew-tmux` 仅在 Homebrew tmux >=3.8 时使用。不要再安装或依赖 apt 的 tmux 3.4。
 - 用户没有 PageUp/PageDown：tmux 不接管鼠标（`mouse off`），拖选和滚动交给终端；tmux 配置里不保留 copy-mode/滚动设置。
-- tmux 复制/粘贴是明确的后续章节；当前不要重新引入鼠标捕获、copy-mode 配置、`pbcopy`、OSC52 或 `set-clipboard`。
+- 剪贴板传输是例外：tmux 用 `set-clipboard on` + `terminal-features ',*:clipboard'` 转发 OSC 52；`allow-passthrough` 保持 `off`，它只影响 DCS passthrough。不要重新引入鼠标捕获或 copy-mode 键位。
+- tmux 3.7+ 的 `get-clipboard` 默认 `buffer`；SSH + tmux + OSC 52 下不要让 `<leader>p` 读取，否则会粘贴 tmux 旧 buffer 或等待超时；提示使用终端粘贴。
 - Neovim 同样关闭鼠标（`mouse=''`）；系统剪贴板只用 `<leader>y` / `<leader>p`，不要开启 `clipboard=unnamedplus`。
+- SSH/远程 Linux 统一使用 OSC 52；本地 macOS 继续用 `pbcopy`/`pbpaste`；本地 Linux GUI 优先原生 provider。不要把 xclip/X11 作为 dev_env 的 SSH 方案。
+- 终端必须支持 OSC 52 写；支持列表、终端替换要求和限制见 [`docs/CLIPBOARD.md`](./docs/CLIPBOARD.md)。MobaXterm/PuTTY 不支持 OSC 52。
+- 不要在设置 provider 之前调用 `has('clipboard')`，否则 Neovim 会缓存“无 provider”状态，之后设置 `osc52` 也不生效。
 - shell 是 zsh + Starship；不引入 Oh My Zsh、Zinit、TPM。syntax-highlighting 必须最后加载。
 - `~/.zshrc.local` 是机器相关配置和密钥的唯一入口；仓库里只放占位示例。
 - 不自动 `chsh`，不自动修改 iTerm2/Terminal/GNOME 等终端偏好；iTerm 配色 profile 已明确不需要。
@@ -73,7 +77,7 @@ DOCKER_PROXY=http://host.docker.internal:7897 bash tests/ubuntu-24.04-offline.sh
 | 运行中的 tmux 仍保留旧选项 | 旧值可能来自已加载的 server；用 `set-option -u` 或重载配置，不要 kill server |
 | Homebrew tmux 仍停留在 3.5a | tap/formula 可能滞后；macOS 在线安装默认构建 pinned 3.8，不要依赖 `brew upgrade tmux` |
 | Ubuntu apt 的 tmux 仍是 3.4 | 安装器改为源码构建 3.8 到 `~/.local/opt/tmux-3.8`；不要把 apt tmux 当运行时 |
-| 运行中的 tmux server 仍是旧版本 | 不 kill；已运行的 server 保持旧二进制，退出旧 session 后新 server 才使用 3.8 |
+| 运行中的 tmux server 仍是旧版本 | 不 kill；3.8 client attach 到旧 server 可能报 `open terminal failed: not a terminal`。Ubuntu 3.4 用 `/usr/bin/tmux attach`；macOS 用启动旧 server 的 Homebrew/旧 opt 二进制；退出旧 session 后新 server 才使用 3.8 |
 | Option+方向键输出 `3D`/`3C` | iTerm 发送 CSI `1;3D`/`1;3C`；在 `shell/options.zsh` 绑定，同时覆盖 `1;5D/C` 和 `^[b/^[f` |
 | zsh 插件加载顺序错误 | syntax-highlighting 必须最后 source；autosuggestions 在它之前 |
 | 新终端 `claude: command not found` | 新建或与模板逐字节一致的 `.zshrc.local` 会自动启用检测到的 nvm；其它已有文件不会改，需手动取消 `source "$HOME/.nvm/nvm.sh"` 注释 |
@@ -94,7 +98,7 @@ DOCKER_PROXY=http://host.docker.internal:7897 bash tests/ubuntu-24.04-offline.sh
 | 旧 OMZ 的 `tmux` alias 覆盖命令 | 调试/重载用绝对路径或 `command tmux`，不要依赖旧 shell 的 alias |
 | `local path=...` 在 zsh 里把 PATH 清空 | zsh 的 `path` 数组绑定 `PATH`；bash helper 用 `source_path`/`target_path` 等名字 |
 | 自定义 `XDG_CONFIG_HOME` 下 tmux 重载失败 | 不要在配置里硬编码 `~/.config`；重载路径优先用 `XDG_CONFIG_HOME` |
-| 复制/粘贴需求又出现 | 先建独立章节；不要偷偷恢复旧 copy-mode 绑定或 `set-clipboard` |
+| 复制/粘贴需求又出现 | SSH/远程统一 OSC 52，本地保留原生 provider；不要恢复鼠标捕获、copy-mode 绑定、`clipboard=unnamedplus` 或把 xclip/X11 当作 SSH 方案。tmux 内 `<leader>p` 会读到 `get-clipboard=buffer` 的旧 buffer，应提示终端粘贴 |
 
 ## AI collaboration (2026)
 

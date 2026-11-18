@@ -74,7 +74,7 @@ docker run --rm --network none \
     bash /bundle/install.sh --allow-root
     CONFIG_ROOT=/root/.local/share/dev_env/config
     PATH="/root/.local/bin:$PATH" /root/.local/bin/nvim --headless \
-      "+lua if vim.o.number ~= true or vim.g.colors_name ~= \"catppuccin-mocha\" then error(\"config smoke failed\") end" +qa
+      "+lua if vim.o.number ~= true or vim.o.mouse ~= '' or vim.fn.has('clipboard') ~= 1 or vim.o.clipboard ~= '' or vim.g.colors_name ~= 'catppuccin-mocha' then vim.api.nvim_err_writeln('config smoke failed'); vim.cmd('cquit 1') end" +qa
     /root/.local/bin/tmux -V
     test "$(/root/.local/bin/tmux -V)" = "tmux 3.8"
     /usr/bin/zsh --version
@@ -93,6 +93,9 @@ docker run --rm --network none \
     /root/.local/bin/tmux -L dev-env-ci new-session -d -s smoke
     test "$(/root/.local/bin/tmux -L dev-env-ci show-options -gv prefix)" = C-b
     test "$(/root/.local/bin/tmux -L dev-env-ci show-options -gv mouse)" = off
+    test "$(/root/.local/bin/tmux -L dev-env-ci show-options -gv set-clipboard)" = on
+    test "$(/root/.local/bin/tmux -L dev-env-ci show-options -gv allow-passthrough)" = off
+    /root/.local/bin/tmux -L dev-env-ci show-options -gv terminal-features | grep -qxF "*:clipboard"
     /root/.local/bin/tmux -L dev-env-ci list-keys -T prefix H | grep -q "resize-pane -L 5"
     /root/.local/bin/tmux -L dev-env-ci list-keys -T prefix r | grep -q "XDG_CONFIG_HOME"
     /root/.local/bin/tmux -L dev-env-ci send-keys -t smoke "exit" Enter

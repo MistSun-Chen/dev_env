@@ -240,6 +240,39 @@ esac
 - 删除 `tmux.conf` 中 copy-mode、滚动、复制/粘贴相关的全部配置，恢复 tmux 默认绑定；
 - `tests/tmux-config-smoke.sh` 只断言 `mouse=off` 和既有键位，不再检查 copy-mode 入口。
 
+2026-11-18 剪贴板 provider 跨环境一致：
+
+- `nvim/init.lua` 在 SSH/远程 Linux 下强制 `vim.g.clipboard='osc52'`（即使安装了 xclip）；本地 macOS 仍用 `pbcopy`/`pbpaste`；本地 Linux GUI 优先原生 provider；
+- 显式设置 `vim.opt.clipboard=''`，普通 `y/d/c/p` 不进入系统剪贴板；
+- `tmux/tmux.conf` 增加 OSC 52 写传输：`set -g set-clipboard on`、`set -as terminal-features ',*:clipboard'`，并保持 `allow-passthrough off`；仍不接管鼠标、不定义 copy-mode 键；
+- `tests/tmux-config-smoke.sh` 断言 `set-clipboard=on`、`allow-passthrough=off` 和 terminal-features 包含 `clipboard`；
+- `tests/nvim-plugins-smoke.sh` 和四个平台安装器的 Neovim smoke check 增加 `has('clipboard') == 1` 与 `clipboard == ''` 断言；
+- Ubuntu 24.04 在线/离线 Docker 测试增加同样的 Neovim 断言和 tmux 选项断言；
+- `<leader>y` 在本地 macOS、Linux GUI 和 SSH/无 GUI 环境下都可用；SSH + tmux + OSC 52 下 `<leader>p` 不再读取 tmux 旧 buffer，改为提示终端粘贴。
+- tmux 3.8 私有 socket + `script` PTY 验证：`set-clipboard on`、`allow-passthrough off` 时，pane 内原始 OSC 52 仍转发到客户端 PTY（捕获到 `]52;c;VEVTVA==`）；`allow-passthrough` 不是 Neovim OSC 52 的必要条件。
+
+2026-11-18 x86_64 Ubuntu 24.04 远程离线安装验证：
+
+- 本机 Docker 缺 Rosetta，amd64 容器停在 `Created`；改为在远程 x86_64 Docker 生成 bundle，再回传本机保存；
+- bundle：`arch=x86_64`、约 141M、`SHA256SUMS` 3282/3282 OK、tmux 3.8、Neovim 0.12.3、12 个插件、预编译 `latex.so`；
+- 远程 `offline/install.sh` 通过：Neovim 0.12.3、tmux 3.8、zsh 5.9、Starship 1.27.0、rg 14.1.0、fd 9.0.0；
+- 现有 tmux 3.4 server 未重启，3 个 session 保留；新 pane 的 `default-shell` 设为 `/usr/bin/zsh`；
+- 3.8 client `attach` 到 3.4 server 会报 `open terminal failed: not a terminal`（旧 server 不识别新 client 的终端 fd 传递）；用 `/usr/bin/tmux attach -t <session>` 进入旧 session，不能 kill server；
+- Neovim OSC52 回退生效：`has('clipboard')=1`、`g=osc52`、`clipboard=[]`、`<leader>y/p -> "+y/"+p`；
+- 系统 `/usr/local/bin/nvim` 0.12.1、`/usr/bin/tmux` 3.4 保留；
+- 目标机已有 `nsight-systems` 包处于 `install ok unpacked`，`dpkg --configure -a` 返回非零；安装器改为警告并只验证 dev_env 需要的包后通过；
+- 本机 iTerm2 3.7.7 `AllowClipboardAccess=1`，OSC52 实测写入并恢复剪贴板通过；
+- 本机 bundle 路径：`platforms/linux/ubuntu/24.04/offline/dist/x86_64-20261118/`（tar 约 112M）。
+
+2026-11-18 终端与剪贴板策略收敛：
+
+- 新增 `docs/CLIPBOARD.md`，记录 OSC 52 策略、支持终端、替换终端要求和已知限制；
+- SSH/远程 Linux 统一 OSC 52；本地 macOS 继续 `pbcopy`/`pbpaste`；本地 Linux GUI 优先原生 provider；
+- 支持：Windows Terminal（写）、WezTerm、Alacritty（写）、iTerm2、Kitty、Ghostty、foot；
+- 不支持：MobaXterm、PuTTY、macOS Terminal.app、GNOME Terminal；
+- 远程临时安装的 `xclip` 和 apt 修复不属于 dev_env 的 SSH 方案，仅用于当时的 MobaXterm/X11 兼容验证；
+- Windows Terminal 的 OSC 52 只写不读；本地→远程粘贴使用终端粘贴快捷键。
+
 ## 4. Neovim 插件与预览测试
 
 ### 4.1 临时环境安装插件
@@ -323,7 +356,7 @@ bash tests/theme-assets-smoke.sh
 bash tests/macos-offline-installer-safety-smoke.sh
 ```
 
-- tmux 测试使用唯一 socket 和自定义 `XDG_CONFIG_HOME`（不传 `-f`），断言配置发现、`prefix=C-b`、`mouse=off`、`h/j/k/l`、`H/J/K/L`、`Tab`、`r` 的 XDG 重载路径。
+- tmux 测试使用唯一 socket 和自定义 `XDG_CONFIG_HOME`（不传 `-f`），断言配置发现、`prefix=C-b`、`mouse=off`、`set-clipboard=on`、`allow-passthrough=off`、terminal-features 包含 `clipboard`、`h/j/k/l`、`H/J/K/L`、`Tab`、`r` 的 XDG 重载路径。
 - shell 测试使用临时 `HOME`，断言 `.zshrc` 软链接、`~/.zshrc.local` 权限 600、alias、PATH 和 Starship。
 - 主题测试校验 iTerm2/Terminal/Linux/VS Code 配色文件和 Catppuccin 调色板。
 - `macos-offline-installer-safety-smoke.sh` 用合成离线包和临时 HOME 验证：配置链接指向稳定副本，`--skip-config` 不删除已有插件/parser；不需要网络。
@@ -348,13 +381,13 @@ tree-sitter --version
 配置：
 
 ```sh
-nvim --headless "+lua print(vim.o.number, vim.o.relativenumber, vim.o.ignorecase, vim.o.smartcase, 'mouse=[' .. vim.o.mouse .. ']', vim.o.shortmess:find('I') ~= nil)" +qa
+nvim --headless "+lua print(vim.o.number, vim.o.relativenumber, vim.o.ignorecase, vim.o.smartcase, 'mouse=[' .. vim.o.mouse .. ']', 'clipboard=[' .. vim.o.clipboard .. ']', 'has_clipboard=' .. vim.fn.has('clipboard'), vim.o.shortmess:find('I') ~= nil)" +qa
 ```
 
 期望：
 
 ```text
-true true true true mouse=[] true
+true true true true mouse=[] clipboard=[] has_clipboard=1 true
 ```
 
 交互：

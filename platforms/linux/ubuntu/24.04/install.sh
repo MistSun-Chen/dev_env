@@ -519,7 +519,7 @@ if [[ "$SKIP_CONFIG" -eq 0 ]]; then
     XDG_CONFIG_HOME="$XDG_CONFIG_HOME" \
     XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}" \
     "$NVIM_BIN" --headless \
-    "+lua if vim.o.number ~= true or vim.o.relativenumber ~= true or vim.o.mouse ~= '' or vim.g.colors_name ~= 'catppuccin-mocha' then vim.api.nvim_err_writeln('Neovim config smoke test failed'); vim.cmd('cquit 1') end" \
+    "+lua if vim.o.number ~= true or vim.o.relativenumber ~= true or vim.o.mouse ~= '' or vim.fn.has('clipboard') ~= 1 or vim.o.clipboard ~= '' or vim.g.colors_name ~= 'catppuccin-mocha' then vim.api.nvim_err_writeln('Neovim config smoke test failed'); vim.cmd('cquit 1') end" \
     +qa; then
     die "Neovim 配置加载失败，请检查 ${NVIM_CONFIG_DST}。"
   fi

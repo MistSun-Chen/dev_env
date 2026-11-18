@@ -42,6 +42,14 @@
 | Neovim | `C-u`/`C-d`、`C-f`、`gg`/`G`；tmux 里不要依赖 `C-b` 翻页（会被 prefix 截获） |
 | shell 历史 | `C-p`/`C-n`、`C-r` |
 
+## 剪贴板传输
+
+dev_env 只开启 OSC 52 写传输：`set-clipboard on`、`terminal-features ',*:clipboard'`，并保持 `allow-passthrough off`；不接管鼠标，也不定义 copy-mode 键位。
+
+Neovim 在 SSH/无 GUI、没有原生剪贴板 provider 时，`<leader>y` 通过 OSC 52 把文本送到本地终端剪贴板；本地 macOS 仍优先使用 `pbcopy`/`pbpaste`。
+
+tmux 3.7+ 的 `get-clipboard` 默认 `buffer`，会把读请求答成 tmux 最新 buffer；因此 dev_env 在 SSH + tmux + OSC 52 下不执行 `<leader>p` 读取，只提示使用终端粘贴（Windows Terminal 常用 Ctrl+Shift+V）。
+
 ## 主题
 
 状态栏、边框和消息使用 Catppuccin Mocha 配色，不依赖 Nerd Font。
@@ -66,7 +74,13 @@ bash platforms/macos/install.sh --brew-tmux
 
 离线安装包会带自包含 tmux 3.8 二进制；macOS 和 Ubuntu 都不再使用 Homebrew/apt 的 tmux 3.4。
 
-安装器不会 kill 正在运行的 tmux server。链接新配置后，执行：
+安装器不会 kill 正在运行的 tmux server。3.8 client `attach` 到旧 server 可能报
+`open terminal failed: not a terminal`：Ubuntu 的 3.4 server 用 `/usr/bin/tmux attach -t <session>`；
+macOS 的旧 Homebrew/旧 opt server 用启动它的那个 tmux 二进制 attach。等旧 session 退出后再
+使用 3.8。不要 kill server；旧 session 还需要 attach 时，Ubuntu 不要卸载 `/usr/bin/tmux`，
+macOS 不要 `brew uninstall tmux`。
+
+链接新配置后，执行：
 
 ```sh
 tmux source-file "${XDG_CONFIG_HOME:-$HOME/.config}/tmux/tmux.conf"

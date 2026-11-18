@@ -68,6 +68,11 @@ assert_contains() {
   [[ "$got" == *"$want"* ]] || die "$label: '$got' does not contain '$want'"
 }
 
+assert_line() {
+  local got="$1" want="$2" label="$3"
+  printf '%s\n' "$got" | grep -qxF -- "$want" || die "$label: missing line '$want'"
+}
+
 # Deliberately do not pass -f: this also verifies tmux discovers the config
 # through a custom XDG_CONFIG_HOME.
 printf 'set -g @dev-env-smoke-reloaded 0\n' > "$TMP_HOME/.tmux.local.conf"
@@ -97,8 +102,9 @@ assert_contains "$("$TMUX_BIN" -L "$SOCK" list-keys -T prefix '-')" "split-windo
 assert_contains "$("$TMUX_BIN" -L "$SOCK" list-keys -T prefix c)" "new-window" "c"
 assert_contains "$("$TMUX_BIN" -L "$SOCK" list-keys -T prefix z)" "resize-pane -Z" "z"
 assert_contains "$("$TMUX_BIN" -L "$SOCK" list-keys -T prefix r)" "XDG_CONFIG_HOME" "r reload path"
-[[ "$("$TMUX_BIN" -L "$SOCK" show-options -gv set-clipboard)" != "on" ]] \
-  || die "set-clipboard 不应由 dev_env 开启"
+assert_eq "$("$TMUX_BIN" -L "$SOCK" show-options -gv set-clipboard)" "on" "set-clipboard"
+assert_eq "$("$TMUX_BIN" -L "$SOCK" show-options -gv allow-passthrough)" "off" "allow-passthrough"
+assert_line "$("$TMUX_BIN" -L "$SOCK" show-options -gv terminal-features)" "*:clipboard" "terminal-features clipboard"
 
 # Reload through the same shell command used by C-b r, with custom XDG.
 assert_eq "$("$TMUX_BIN" -L "$SOCK" show-options -gv @dev-env-smoke-reloaded)" "0" "local override"
