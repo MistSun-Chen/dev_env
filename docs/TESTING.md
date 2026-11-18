@@ -234,6 +234,12 @@ esac
 - 这也会停止向 Neovim 等启用鼠标的应用转发拖选/双击/三击；单击和滚轮不受影响；
 - 复制/粘贴功能仍留待单独章节处理。
 
+2026-11-17 tmux 移除 copy/paste 与滚动配置：
+
+- `set -g mouse off`，普通拖选直接使用终端原生选择；
+- 删除 `tmux.conf` 中 copy-mode、滚动、复制/粘贴相关的全部配置，恢复 tmux 默认绑定；
+- `tests/tmux-config-smoke.sh` 只断言 `mouse=off` 和既有键位，不再检查 copy-mode 入口。
+
 ## 4. Neovim 插件与预览测试
 
 ### 4.1 临时环境安装插件
@@ -317,7 +323,7 @@ bash tests/theme-assets-smoke.sh
 bash tests/macos-offline-installer-safety-smoke.sh
 ```
 
-- tmux 测试使用唯一 socket 和自定义 `XDG_CONFIG_HOME`（不传 `-f`），断言配置发现、`prefix=C-b`、`mouse=on`、`h/j/k/l`、`H/J/K/L`、`Tab`、`r` 的 XDG 重载路径和滚动入口 `u`；复制/粘贴配置暂不测试。
+- tmux 测试使用唯一 socket 和自定义 `XDG_CONFIG_HOME`（不传 `-f`），断言配置发现、`prefix=C-b`、`mouse=off`、`h/j/k/l`、`H/J/K/L`、`Tab`、`r` 的 XDG 重载路径。
 - shell 测试使用临时 `HOME`，断言 `.zshrc` 软链接、`~/.zshrc.local` 权限 600、alias、PATH 和 Starship。
 - 主题测试校验 iTerm2/Terminal/Linux/VS Code 配色文件和 Catppuccin 调色板。
 - `macos-offline-installer-safety-smoke.sh` 用合成离线包和临时 HOME 验证：配置链接指向稳定副本，`--skip-config` 不删除已有插件/parser；不需要网络。
@@ -342,13 +348,13 @@ tree-sitter --version
 配置：
 
 ```sh
-nvim --headless "+lua print(vim.o.number, vim.o.relativenumber, vim.o.ignorecase, vim.o.smartcase, vim.o.mouse, vim.o.shortmess:find('I') ~= nil)" +qa
+nvim --headless "+lua print(vim.o.number, vim.o.relativenumber, vim.o.ignorecase, vim.o.smartcase, 'mouse=[' .. vim.o.mouse .. ']', vim.o.shortmess:find('I') ~= nil)" +qa
 ```
 
 期望：
 
 ```text
-true	true	true	true	a	true
+true true true true mouse=[] true
 ```
 
 交互：

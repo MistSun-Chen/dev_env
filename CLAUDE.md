@@ -42,8 +42,9 @@ DOCKER_PROXY=http://host.docker.internal:7897 bash tests/ubuntu-24.04-offline.sh
 - 目标平台：macOS（Apple Silicon/Intel）和 Ubuntu 24.04；两者都要联网 + 离线安装。
 - tmux 从 0 设计，保留 `C-b`；`C-b h/j/k/l` 切 pane，`C-b H/J/K/L` 调分割线，`C-b z` 最大化，`C-b Tab` 上一个 window。
 - macOS 和 Ubuntu 24.04 的在线/离线安装默认使用固定 3.8 自包含构建；macOS 的 `--brew-tmux` 仅在 Homebrew tmux >=3.8 时使用。不要再安装或依赖 apt 的 tmux 3.4。
-- 用户没有 PageUp/PageDown：滚动用鼠标、`C-b u`、`C-b [`，copy-mode 内用 `C-u/C-d`、`C-b/C-f`、`g/G`。
-- tmux 复制/粘贴是明确的后续章节；当前只保留滚动入口，不要重新引入选择/复制、`pbcopy`、OSC52 或 `set-clipboard`。
+- 用户没有 PageUp/PageDown：tmux 不接管鼠标（`mouse off`），拖选和滚动交给终端；tmux 配置里不保留 copy-mode/滚动设置。
+- tmux 复制/粘贴是明确的后续章节；当前不要重新引入鼠标捕获、copy-mode 配置、`pbcopy`、OSC52 或 `set-clipboard`。
+- Neovim 同样关闭鼠标（`mouse=''`）；系统剪贴板只用 `<leader>y` / `<leader>p`，不要开启 `clipboard=unnamedplus`。
 - shell 是 zsh + Starship；不引入 Oh My Zsh、Zinit、TPM。syntax-highlighting 必须最后加载。
 - `~/.zshrc.local` 是机器相关配置和密钥的唯一入口；仓库里只放占位示例。
 - 不自动 `chsh`，不自动修改 iTerm2/Terminal/GNOME 等终端偏好；iTerm 配色 profile 已明确不需要。

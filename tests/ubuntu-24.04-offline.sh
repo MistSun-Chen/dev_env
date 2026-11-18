@@ -92,7 +92,7 @@ docker run --rm --network none \
     # No -f: verify config discovery, not just explicit loading.
     /root/.local/bin/tmux -L dev-env-ci new-session -d -s smoke
     test "$(/root/.local/bin/tmux -L dev-env-ci show-options -gv prefix)" = C-b
-    test "$(/root/.local/bin/tmux -L dev-env-ci show-options -gv mouse)" = on
+    test "$(/root/.local/bin/tmux -L dev-env-ci show-options -gv mouse)" = off
     /root/.local/bin/tmux -L dev-env-ci list-keys -T prefix H | grep -q "resize-pane -L 5"
     /root/.local/bin/tmux -L dev-env-ci list-keys -T prefix r | grep -q "XDG_CONFIG_HOME"
     /root/.local/bin/tmux -L dev-env-ci send-keys -t smoke "exit" Enter

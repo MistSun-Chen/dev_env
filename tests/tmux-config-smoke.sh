@@ -75,11 +75,9 @@ HOME="$TMP_HOME" XDG_CONFIG_HOME="$TMP_XDG" \
   "$TMUX_BIN" -L "$SOCK" new-session -d -s smoke
 
 assert_eq "$("$TMUX_BIN" -L "$SOCK" show-options -gv prefix)" "C-b" "prefix"
-assert_eq "$("$TMUX_BIN" -L "$SOCK" show-options -gv mouse)" "on" "mouse"
-assert_eq "$("$TMUX_BIN" -L "$SOCK" show-options -gv history-limit)" "100000" "history-limit"
+assert_eq "$("$TMUX_BIN" -L "$SOCK" show-options -gv mouse)" "off" "mouse"
 assert_eq "$("$TMUX_BIN" -L "$SOCK" show-options -gv focus-events)" "on" "focus-events"
 assert_eq "$("$TMUX_BIN" -L "$SOCK" show-options -sgv escape-time)" "10" "escape-time"
-assert_eq "$("$TMUX_BIN" -L "$SOCK" show-options -gwv mode-keys)" "vi" "mode-keys"
 assert_contains "$("$TMUX_BIN" -L "$SOCK" show-options -gv status-style)" "#1e1e2e" "status-style"
 
 assert_contains "$("$TMUX_BIN" -L "$SOCK" list-keys -T prefix h)" "select-pane -L" "h"
@@ -98,8 +96,6 @@ assert_contains "$("$TMUX_BIN" -L "$SOCK" list-keys -T prefix '|')" "split-windo
 assert_contains "$("$TMUX_BIN" -L "$SOCK" list-keys -T prefix '-')" "split-window -v" "-"
 assert_contains "$("$TMUX_BIN" -L "$SOCK" list-keys -T prefix c)" "new-window" "c"
 assert_contains "$("$TMUX_BIN" -L "$SOCK" list-keys -T prefix z)" "resize-pane -Z" "z"
-assert_contains "$("$TMUX_BIN" -L "$SOCK" list-keys -T prefix '[')" "copy-mode" "["
-assert_contains "$("$TMUX_BIN" -L "$SOCK" list-keys -T prefix u)" "copy-mode -u" "u"
 assert_contains "$("$TMUX_BIN" -L "$SOCK" list-keys -T prefix r)" "XDG_CONFIG_HOME" "r reload path"
 [[ "$("$TMUX_BIN" -L "$SOCK" show-options -gv set-clipboard)" != "on" ]] \
   || die "set-clipboard 不应由 dev_env 开启"
@@ -112,22 +108,5 @@ HOME="$TMP_HOME" XDG_CONFIG_HOME="$TMP_XDG" \
   'tmux source-file "${XDG_CONFIG_HOME:-$HOME/.config}/tmux/tmux.conf"'
 sleep 0.3
 assert_eq "$("$TMUX_BIN" -L "$SOCK" show-options -gv @dev-env-smoke-reloaded)" "1" "reload with XDG"
-
-for key in v V C-v y Space Enter MouseDragEnd1Pane; do
-  if "$TMUX_BIN" -L "$SOCK" list-keys -T copy-mode-vi "$key" 2>/dev/null | grep -q .; then
-    die "copy-mode-vi 复制键未移除: $key"
-  fi
-done
-
-# Mouse drag/double/triple click must not enter copy mode or copy to a buffer.
-for key in MouseDrag1Pane DoubleClick1Pane TripleClick1Pane; do
-  if "$TMUX_BIN" -L "$SOCK" list-keys -T root "$key" 2>/dev/null | grep -q .; then
-    die "root 鼠标复制入口未移除: $key"
-  fi
-done
-"$TMUX_BIN" -L "$SOCK" list-keys -T root WheelUpPane | grep -q "copy-mode" \
-  || die "鼠标滚轮滚动入口不应被移除"
-"$TMUX_BIN" -L "$SOCK" list-keys -T root MouseDown1Pane | grep -q "send-keys -M" \
-  || die "鼠标单击转发不应被移除"
 
 log "通过"

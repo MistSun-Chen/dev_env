@@ -54,7 +54,7 @@ docker run --rm \
     # No -f: verify tmux discovers ~/.config/tmux/tmux.conf on Ubuntu 24.04.
     /root/.local/bin/tmux -L dev-env-ci new-session -d -s smoke
     test "$(/root/.local/bin/tmux -L dev-env-ci show-options -gv prefix)" = C-b
-    test "$(/root/.local/bin/tmux -L dev-env-ci show-options -gv mouse)" = on
+    test "$(/root/.local/bin/tmux -L dev-env-ci show-options -gv mouse)" = off
     /root/.local/bin/tmux -L dev-env-ci list-keys -T prefix h | grep -q "select-pane -L"
     /root/.local/bin/tmux -L dev-env-ci list-keys -T prefix r | grep -q "XDG_CONFIG_HOME"
     /root/.local/bin/tmux -L dev-env-ci send-keys -t smoke "exit" Enter

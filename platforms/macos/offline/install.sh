@@ -250,7 +250,7 @@ if [[ "$SKIP_CONFIG" -eq 0 ]]; then
     XDG_CONFIG_HOME="$XDG_CONFIG_HOME" \
     XDG_DATA_HOME="$DATA_HOME" \
     "$LOCAL_BIN/nvim" --headless \
-    "+lua if vim.o.number ~= true or vim.o.relativenumber ~= true or vim.o.mouse ~= 'a' or vim.g.colors_name ~= 'catppuccin-mocha' then error('Neovim config smoke test failed') end" \
+    "+lua if vim.o.number ~= true or vim.o.relativenumber ~= true or vim.o.mouse ~= '' or vim.g.colors_name ~= 'catppuccin-mocha' then vim.api.nvim_err_writeln('Neovim config smoke test failed'); vim.cmd('cquit 1') end" \
     +qa; then
     die "Neovim 配置加载失败；请检查 $XDG_CONFIG_HOME/nvim。"
   fi

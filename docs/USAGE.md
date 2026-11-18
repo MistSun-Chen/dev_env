@@ -487,13 +487,13 @@ git --version
 验证配置：
 
 ```sh
-nvim --headless "+lua print(vim.o.number, vim.o.relativenumber, vim.o.ignorecase, vim.o.smartcase, vim.o.mouse, vim.o.shortmess:find('I') ~= nil)" +qa
+nvim --headless "+lua print(vim.o.number, vim.o.relativenumber, vim.o.ignorecase, vim.o.smartcase, 'mouse=[' .. vim.o.mouse .. ']', vim.o.shortmess:find('I') ~= nil)" +qa
 ```
 
 期望：
 
 ```text
-true true true true a true
+true true true true mouse=[] true
 ```
 
 验证插件与公式 parser：
@@ -522,7 +522,7 @@ tmux -L dev-env-check list-keys -T prefix h
 tmux -L dev-env-check send-keys -t check exit Enter
 ```
 
-`mouse` 应为 `on`，`h` 对应 `select-pane -L`。测试使用独立 socket，
+`mouse` 应为 `off`，`h` 对应 `select-pane -L`。测试使用独立 socket，
 不要对默认 tmux server 执行 `kill-server`。
 
 ## 6. PATH
@@ -676,9 +676,7 @@ chsh -s "$(command -v zsh)"
 
 - 键位：`C-b h/j/k/l` 切 pane，`C-b H/J/K/L` 调分割线，`C-b z` 最大化，
   `C-b Tab` 上一个 window。
-- 没有 PgUp/PgDn：目前用鼠标/触控板滚动，或 `C-b [` 后的 `C-u/C-d`、`C-b u`。
-- 复制/粘贴暂不配置：选择/复制快捷键和鼠标拖选/双击/三击入口均已移除，只保留滚动；后续单独章节统一处理。
-  代价是 Neovim 等应用也收不到拖选/双击/三击，单击和滚轮不受影响。
+- 鼠标：tmux 不接管鼠标（`mouse off`），拖选由终端处理。
 - 配置：`tmux/README.md`。
 - 本地覆盖：`~/.tmux.local.conf`（默认不存在）。
 

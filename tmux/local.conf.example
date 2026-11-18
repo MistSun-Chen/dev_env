@@ -11,5 +11,3 @@
 # 示例：额外快捷键
 # bind C-s split-window -h -c "#{pane_current_path}"
 # bind C-v split-window -v -c "#{pane_current_path}"
-
-# 复制/粘贴相关配置暂不在本阶段提供；后续单独章节统一处理。
