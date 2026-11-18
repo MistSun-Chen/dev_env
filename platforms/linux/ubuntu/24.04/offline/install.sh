@@ -157,9 +157,10 @@ mapfile -t DEB_FILES < <(find "$BUNDLE_DIR/debs" -maxdepth 1 -name '*.deb' -prin
 [[ "${#DEB_FILES[@]}" -gt 0 ]] || die "debs/ 中没有 .deb 文件。"
 
 log "安装 ${#DEB_FILES[@]} 个 deb 包（离线）..."
-# 依赖顺序可能让第一次 dpkg -i 返回非零；随后用 dpkg --configure -a 收尾
-run_sudo env DEBIAN_FRONTEND=noninteractive dpkg -i "${DEB_FILES[@]}" || true
-run_sudo env DEBIAN_FRONTEND=noninteractive dpkg --configure -a
+# 依赖顺序可能让第一次 dpkg -i 返回非零；随后用 dpkg --configure -a 收尾。
+# --force-confold 保留目标机已有的 conffile，避免无人值守安装时停在交互提示。
+run_sudo env DEBIAN_FRONTEND=noninteractive dpkg --force-confold -i "${DEB_FILES[@]}" || true
+run_sudo env DEBIAN_FRONTEND=noninteractive dpkg --force-confold --configure -a
 
 for pkg in $APT_PACKAGES_OFFLINE; do
   if ! dpkg -s "$pkg" >/dev/null 2>&1; then
