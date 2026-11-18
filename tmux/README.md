@@ -44,9 +44,11 @@
 
 ## 剪贴板传输
 
-dev_env 只开启 OSC 52 传输（`set-clipboard on`、`allow-passthrough on`），不接管鼠标，也不定义 copy-mode 键位。
+dev_env 只开启 OSC 52 写传输：`set-clipboard on`、`terminal-features ',*:clipboard'`，并保持 `allow-passthrough off`；不接管鼠标，也不定义 copy-mode 键位。
 
-Neovim 在 SSH/无 GUI、没有原生剪贴板 provider 时，`<leader>y`/`<leader>p` 通过 OSC 52 把文本送到本地终端剪贴板；本地 macOS 仍优先使用 `pbcopy`/`pbpaste`。
+Neovim 在 SSH/无 GUI、没有原生剪贴板 provider 时，`<leader>y` 通过 OSC 52 把文本送到本地终端剪贴板；本地 macOS 仍优先使用 `pbcopy`/`pbpaste`。
+
+tmux 3.7+ 的 `get-clipboard` 默认 `buffer`，会把读请求答成 tmux 最新 buffer；因此 dev_env 在 SSH + tmux + OSC 52 下不执行 `<leader>p` 读取，只提示使用终端粘贴（Windows Terminal 常用 Ctrl+Shift+V）。
 
 ## 主题
 
@@ -72,7 +74,12 @@ bash platforms/macos/install.sh --brew-tmux
 
 离线安装包会带自包含 tmux 3.8 二进制；macOS 和 Ubuntu 都不再使用 Homebrew/apt 的 tmux 3.4。
 
-安装器不会 kill 正在运行的 tmux server。链接新配置后，执行：
+安装器不会 kill 正在运行的 tmux server。如果旧 server 是 3.4，3.8 client 执行
+`attach` 可能报 `open terminal failed: not a terminal`；用 `/usr/bin/tmux attach -t <session>`
+进入旧 session，等旧 session 退出后再使用 3.8。不要 kill server；旧 session 还需要
+attach 时也不要卸载 `/usr/bin/tmux`，否则会失去同版本 client。
+
+链接新配置后，执行：
 
 ```sh
 tmux source-file "${XDG_CONFIG_HOME:-$HOME/.config}/tmux/tmux.conf"

@@ -33,15 +33,44 @@ end
 vim.opt.clipboard = ''
 
 local clipboard_ok = vim.fn.has('clipboard') == 1
+local uses_osc52 = vim.g.clipboard == 'osc52'
+local in_tmux = (vim.env.TMUX or '') ~= ''
 local function clipboard_unavailable()
   vim.notify('系统剪贴板不可用：请安装 xclip/wl-clipboard，或使用支持 OSC 52 的终端', vim.log.levels.WARN)
+end
+local function clipboard_paste()
+  if not clipboard_ok then
+    clipboard_unavailable()
+    return ''
+  end
+  -- tmux 3.7+ 的 get-clipboard 默认会把读请求答成 tmux 最新 buffer；
+  -- 旧 server 则可能不回答并让 Neovim 等待。两者都不是本地系统剪贴板。
+  if uses_osc52 and in_tmux then
+    vim.notify('tmux 内无法可靠读取本地剪贴板：请使用终端粘贴快捷键（如 Ctrl+Shift+V）', vim.log.levels.WARN)
+    return ''
+  end
+  return '"+p'
+end
+local paste_desc = '从系统剪贴板粘贴'
+if not clipboard_ok then
+  paste_desc = '从系统剪贴板粘贴（不可用）'
+elseif uses_osc52 and in_tmux then
+  paste_desc = '从系统剪贴板粘贴（tmux 内用终端粘贴）'
 end
 vim.keymap.set({ 'n', 'v' }, '<leader>y', clipboard_ok and '"+y' or clipboard_unavailable, {
   desc = clipboard_ok and '复制到系统剪贴板' or '复制到系统剪贴板（不可用）',
 })
-vim.keymap.set({ 'n', 'v' }, '<leader>p', clipboard_ok and '"+p' or clipboard_unavailable, {
-  desc = clipboard_ok and '从系统剪贴板粘贴' or '从系统剪贴板粘贴（不可用）',
+vim.keymap.set({ 'n', 'v' }, '<leader>p', clipboard_paste, {
+  expr = true,
+  desc = paste_desc,
 })
+
+-- VTE（GNOME Terminal 等）不实现 OSC 52；本地无原生工具时给出一次提示。
+if uses_osc52 and (vim.env.VTE_VERSION or '') ~= '' then
+  vim.schedule(function()
+    vim.notify('当前 VTE 终端不支持 OSC 52：请换用支持的终端，或在本地安装 xclip/wl-clipboard', vim.log.levels.WARN)
+  end)
+end
 
 -- 显示绝对行号；配合 relativenumber 形成“当前行绝对、其他行相对”的混合行号
 vim.opt.number = true

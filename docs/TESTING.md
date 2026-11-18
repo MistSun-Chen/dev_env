@@ -244,11 +244,11 @@ esac
 
 - `nvim/init.lua` 在 SSH/远程 Linux 下强制 `vim.g.clipboard='osc52'`（即使安装了 xclip）；本地 macOS 仍用 `pbcopy`/`pbpaste`；本地 Linux GUI 优先原生 provider；
 - 显式设置 `vim.opt.clipboard=''`，普通 `y/d/c/p` 不进入系统剪贴板；
-- `tmux/tmux.conf` 增加 OSC 52 传输：`set -g set-clipboard on`、`set -g allow-passthrough on`；仍不接管鼠标、不定义 copy-mode 键；
-- `tests/tmux-config-smoke.sh` 断言这两个选项为 `on`；
+- `tmux/tmux.conf` 增加 OSC 52 写传输：`set -g set-clipboard on`、`set -as terminal-features ',*:clipboard'`，并保持 `allow-passthrough off`；仍不接管鼠标、不定义 copy-mode 键；
+- `tests/tmux-config-smoke.sh` 断言 `set-clipboard=on`、`allow-passthrough=off` 和 terminal-features 包含 `clipboard`；
 - `tests/nvim-plugins-smoke.sh` 和四个平台安装器的 Neovim smoke check 增加 `has('clipboard') == 1` 与 `clipboard == ''` 断言；
 - Ubuntu 24.04 在线/离线 Docker 测试增加同样的 Neovim 断言和 tmux 选项断言；
-- 这样 `<leader>y`/`<leader>p` 在本地 macOS、Linux GUI 和 SSH/无 GUI 环境下行为一致。
+- `<leader>y` 在本地 macOS、Linux GUI 和 SSH/无 GUI 环境下都可用；SSH + tmux + OSC 52 下 `<leader>p` 不再读取 tmux 旧 buffer，改为提示终端粘贴。
 
 2026-11-18 x86_64 Ubuntu 24.04 远程离线安装验证：
 
@@ -256,6 +256,7 @@ esac
 - bundle：`arch=x86_64`、约 141M、`SHA256SUMS` 3282/3282 OK、tmux 3.8、Neovim 0.12.3、12 个插件、预编译 `latex.so`；
 - 远程 `offline/install.sh` 通过：Neovim 0.12.3、tmux 3.8、zsh 5.9、Starship 1.27.0、rg 14.1.0、fd 9.0.0；
 - 现有 tmux 3.4 server 未重启，3 个 session 保留；新 pane 的 `default-shell` 设为 `/usr/bin/zsh`；
+- 3.8 client `attach` 到 3.4 server 会报 `open terminal failed: not a terminal`（旧 server 不识别新 client 的终端 fd 传递）；用 `/usr/bin/tmux attach -t <session>` 进入旧 session，不能 kill server；
 - Neovim OSC52 回退生效：`has('clipboard')=1`、`g=osc52`、`clipboard=[]`、`<leader>y/p -> "+y/"+p`；
 - 系统 `/usr/local/bin/nvim` 0.12.1、`/usr/bin/tmux` 3.4 保留；
 - 目标机已有 `nsight-systems` 包处于 `install ok unpacked`，`dpkg --configure -a` 返回非零；安装器改为警告并只验证 dev_env 需要的包后通过；
@@ -354,7 +355,7 @@ bash tests/theme-assets-smoke.sh
 bash tests/macos-offline-installer-safety-smoke.sh
 ```
 
-- tmux 测试使用唯一 socket 和自定义 `XDG_CONFIG_HOME`（不传 `-f`），断言配置发现、`prefix=C-b`、`mouse=off`、`set-clipboard=on`、`allow-passthrough=on`、`h/j/k/l`、`H/J/K/L`、`Tab`、`r` 的 XDG 重载路径。
+- tmux 测试使用唯一 socket 和自定义 `XDG_CONFIG_HOME`（不传 `-f`），断言配置发现、`prefix=C-b`、`mouse=off`、`set-clipboard=on`、`allow-passthrough=off`、terminal-features 包含 `clipboard`、`h/j/k/l`、`H/J/K/L`、`Tab`、`r` 的 XDG 重载路径。
 - shell 测试使用临时 `HOME`，断言 `.zshrc` 软链接、`~/.zshrc.local` 权限 600、alias、PATH 和 Starship。
 - 主题测试校验 iTerm2/Terminal/Linux/VS Code 配色文件和 Catppuccin 调色板。
 - `macos-offline-installer-safety-smoke.sh` 用合成离线包和临时 HOME 验证：配置链接指向稳定副本，`--skip-config` 不删除已有插件/parser；不需要网络。

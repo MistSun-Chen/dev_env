@@ -9,7 +9,7 @@
 - 智能大小写搜索：全小写忽略大小写，含大写字母时区分大小写
 - 启动时关闭 intro 信息
 - 鼠标关闭（`mouse=''`）：拖选交给终端原生选择，避免复制时带入行号/git 标记
-- 系统剪贴板：`<leader>y` / `<leader>p` 显式使用 `+`；SSH/远程 Linux 统一 OSC 52，本地 macOS 继续用 `pbcopy`/`pbpaste`
+- 系统剪贴板：`<leader>y` / `<leader>p` 显式使用 `+`；SSH/远程 Linux 统一 OSC 52，本地 macOS 继续用 `pbcopy`/`pbpaste`；SSH + tmux 下 `<leader>p` 只提示使用终端粘贴，避免读到 tmux 旧 buffer
 - 普通 `y/d/c/p` 仍只使用 Neovim 内部寄存器，不开启 `clipboard=unnamedplus`
 - 支持的终端和替换终端要求见 [`../docs/CLIPBOARD.md`](../docs/CLIPBOARD.md)
 - normal / insert 模式禁用方向键，提示改用 `hjkl`
