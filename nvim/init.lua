@@ -8,6 +8,10 @@
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
+-- 系统剪贴板映射：只有这里显式使用 + 寄存器，普通 y/d/c/p 不碰系统剪贴板。
+vim.keymap.set({ 'n', 'v' }, '<leader>y', '"+y', { desc = '复制到系统剪贴板' })
+vim.keymap.set({ 'n', 'v' }, '<leader>p', '"+p', { desc = '从系统剪贴板粘贴' })
+
 -- 显示绝对行号；配合 relativenumber 形成“当前行绝对、其他行相对”的混合行号
 vim.opt.number = true
 
@@ -26,8 +30,9 @@ vim.opt.shortmess:append('I')
 -- 持久化撤销历史：关闭文件后仍可撤销，撤销文件默认存放在 stdpath('state')/undo
 vim.opt.undofile = true
 
--- 鼠标在所有模式可用（Neovim 默认是 nvi；a = 所有模式）
-vim.opt.mouse = 'a'
+-- 关闭 Neovim 的鼠标处理，让终端原生拖选和 Cmd+C 生效；tmux 同样 mouse off。
+-- 代价：Neovim 内不能用鼠标点击/滚轮；需要时用键盘，或临时在终端用绕过修饰键。
+vim.opt.mouse = ''
 
 -- 开启 24-bit 颜色；绝大多数现代终端支持。若颜色异常，检查终端 true color 设置。
 vim.opt.termguicolors = true

@@ -425,7 +425,7 @@ catppuccin-mocha
 ```
 
 - `number`、`relativenumber`、`ignorecase`、`smartcase` 应为开启
-- `mouse` 应为 `a`
+- `mouse` 应为空（鼠标关闭，拖选交给终端原生选择）
 - `shortmess` 应包含 `I`
 - `undofile` 应为开启；修改文件并保存后关闭 Neovim，重新打开同一文件按 `u`，仍能撤销上一次会话的修改
 - normal / insert 模式按方向键，应出现 `Use h/l/k/j` 提示

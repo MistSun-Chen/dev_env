@@ -15,10 +15,12 @@
 
 ## 自定义映射
 
-命名规则：`f` = find、`b` = buffer、`e` = explorer、`g` = git、`l` = lsp、`s` = search/replace、`m` = markdown、`t` = terminal/theme；第二个字母表示对象或动作。
+命名规则：`f` = find、`b` = buffer、`e` = explorer、`g` = git、`l` = lsp、`s` = search/replace、`m` = markdown、`t` = terminal/theme；`y` = yank、`p` = paste（系统剪贴板动作）；第二个字母表示对象或动作。
 
 | 分类 | 模式 | 键位 | 缩写详写 | 功能 |
 |---|---|---|---|---|
+| 剪贴板 | n / v | `<leader>y` | yank to clipboard | 复制到系统剪贴板；normal 下后接 motion |
+| 剪贴板 | n / v | `<leader>p` | paste from clipboard | 从系统剪贴板粘贴 |
 | 文件 | n | `<leader>ff` | find file | 查找文件 |
 | 文件 | n | `<leader>fr` | find recent | 最近文件 |
 | 文本搜索 | n | `<leader>fg` | find grep | 全局搜索；可输入 `query -- glob` 限定文件 |
@@ -51,6 +53,13 @@
 | 界面 | n | `<leader>tc` | theme change | 切换 Catppuccin 配色 |
 | 界面 | n | `<leader>?` | which-key buffer | 查看当前 buffer 的全部键位 |
 | 编辑习惯 | n / i | `←` `↓` `↑` `→` | 无 | 禁用方向键，提示改用 hjkl |
+
+## 系统剪贴板
+
+- `<leader>y`：复制到系统剪贴板；normal 模式下是 operator，例如 `<leader>yiw`、`<leader>yy`。
+- `<leader>p`：从系统剪贴板粘贴；visual 模式下会替换选区。
+- 普通 `y`、`d`、`c`、`p` 仍只使用 Neovim 内部寄存器，不会覆盖系统剪贴板。
+- 复制的是 buffer 文本，不含行号、gitsigns 标记或 markview 装饰。
 
 ## 终端
 
