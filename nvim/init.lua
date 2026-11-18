@@ -9,10 +9,27 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- 系统剪贴板映射：只有这里显式使用 + 寄存器，普通 y/d/c/p 不碰系统剪贴板。
--- Linux 需要 xclip（X11）或 wl-clipboard（Wayland）；provider 不可用时只提示。
+-- 优先使用系统原生 provider（macOS 的 pbcopy/pbpaste，Linux 的 xclip/xsel/wl-copy）。
+-- Linux 在 SSH/无 GUI 或缺少原生工具时回退到 OSC 52，让远程 Neovim 也能把文本
+-- 送到本地终端剪贴板；tmux 配置负责转发 OSC 52。
+--
+-- 注意：必须在设置 vim.g.clipboard 之前避免调用 has('clipboard')，否则 Neovim
+-- 会把“没有 provider”的状态缓存下来，之后再设置 osc52 也不会生效。
+local is_linux = vim.fn.has('linux') == 1
+local has_gui = (vim.env.DISPLAY or '') ~= '' or (vim.env.WAYLAND_DISPLAY or '') ~= ''
+local has_native_tool = vim.fn.executable('xclip') == 1
+  or vim.fn.executable('xsel') == 1
+  or vim.fn.executable('wl-copy') == 1
+if is_linux and (not has_gui or not has_native_tool) then
+  vim.g.clipboard = 'osc52'
+end
+
+-- 显式关闭 unnamedplus：普通 y/d/c/p 只使用 Neovim 内部寄存器。
+vim.opt.clipboard = ''
+
 local clipboard_ok = vim.fn.has('clipboard') == 1
 local function clipboard_unavailable()
-  vim.notify('系统剪贴板不可用：请安装 xclip 或 wl-clipboard', vim.log.levels.WARN)
+  vim.notify('系统剪贴板不可用：请安装 xclip/wl-clipboard，或使用支持 OSC 52 的终端', vim.log.levels.WARN)
 end
 vim.keymap.set({ 'n', 'v' }, '<leader>y', clipboard_ok and '"+y' or clipboard_unavailable, {
   desc = clipboard_ok and '复制到系统剪贴板' or '复制到系统剪贴板（不可用）',

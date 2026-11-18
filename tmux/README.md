@@ -42,6 +42,12 @@
 | Neovim | `C-u`/`C-d`、`C-f`、`gg`/`G`；tmux 里不要依赖 `C-b` 翻页（会被 prefix 截获） |
 | shell 历史 | `C-p`/`C-n`、`C-r` |
 
+## 剪贴板传输
+
+dev_env 只开启 OSC 52 传输（`set-clipboard on`、`allow-passthrough on`），不接管鼠标，也不定义 copy-mode 键位。
+
+Neovim 在 SSH/无 GUI、没有原生剪贴板 provider 时，`<leader>y`/`<leader>p` 通过 OSC 52 把文本送到本地终端剪贴板；本地 macOS 仍优先使用 `pbcopy`/`pbpaste`。
+
 ## 主题
 
 状态栏、边框和消息使用 Catppuccin Mocha 配色，不依赖 Nerd Font。

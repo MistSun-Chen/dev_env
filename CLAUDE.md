@@ -43,8 +43,9 @@ DOCKER_PROXY=http://host.docker.internal:7897 bash tests/ubuntu-24.04-offline.sh
 - tmux 从 0 设计，保留 `C-b`；`C-b h/j/k/l` 切 pane，`C-b H/J/K/L` 调分割线，`C-b z` 最大化，`C-b Tab` 上一个 window。
 - macOS 和 Ubuntu 24.04 的在线/离线安装默认使用固定 3.8 自包含构建；macOS 的 `--brew-tmux` 仅在 Homebrew tmux >=3.8 时使用。不要再安装或依赖 apt 的 tmux 3.4。
 - 用户没有 PageUp/PageDown：tmux 不接管鼠标（`mouse off`），拖选和滚动交给终端；tmux 配置里不保留 copy-mode/滚动设置。
-- tmux 复制/粘贴是明确的后续章节；当前不要重新引入鼠标捕获、copy-mode 配置、`pbcopy`、OSC52 或 `set-clipboard`。
+- 剪贴板传输是例外：tmux 允许 `set-clipboard on` / `allow-passthrough on` 以转发 OSC 52；不要重新引入鼠标捕获或 copy-mode 键位。
 - Neovim 同样关闭鼠标（`mouse=''`）；系统剪贴板只用 `<leader>y` / `<leader>p`，不要开启 `clipboard=unnamedplus`。
+- Neovim 在 Linux 无 GUI/无原生工具时允许回退 `vim.g.clipboard='osc52'`，保证 SSH 下 `<leader>y`/`<leader>p` 与本地一致；不要在设置 provider 之前调用 `has('clipboard')`。
 - shell 是 zsh + Starship；不引入 Oh My Zsh、Zinit、TPM。syntax-highlighting 必须最后加载。
 - `~/.zshrc.local` 是机器相关配置和密钥的唯一入口；仓库里只放占位示例。
 - 不自动 `chsh`，不自动修改 iTerm2/Terminal/GNOME 等终端偏好；iTerm 配色 profile 已明确不需要。
@@ -94,7 +95,7 @@ DOCKER_PROXY=http://host.docker.internal:7897 bash tests/ubuntu-24.04-offline.sh
 | 旧 OMZ 的 `tmux` alias 覆盖命令 | 调试/重载用绝对路径或 `command tmux`，不要依赖旧 shell 的 alias |
 | `local path=...` 在 zsh 里把 PATH 清空 | zsh 的 `path` 数组绑定 `PATH`；bash helper 用 `source_path`/`target_path` 等名字 |
 | 自定义 `XDG_CONFIG_HOME` 下 tmux 重载失败 | 不要在配置里硬编码 `~/.config`；重载路径优先用 `XDG_CONFIG_HOME` |
-| 复制/粘贴需求又出现 | 先建独立章节；不要偷偷恢复旧 copy-mode 绑定或 `set-clipboard` |
+| 复制/粘贴需求又出现 | 当前只允许 OSC 52 provider 回退和 tmux 传输选项；不要恢复鼠标捕获、copy-mode 绑定或 `clipboard=unnamedplus` |
 
 ## AI collaboration (2026)
 

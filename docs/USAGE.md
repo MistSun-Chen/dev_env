@@ -487,14 +487,16 @@ git --version
 验证配置：
 
 ```sh
-nvim --headless "+lua print(vim.o.number, vim.o.relativenumber, vim.o.ignorecase, vim.o.smartcase, 'mouse=[' .. vim.o.mouse .. ']', vim.o.shortmess:find('I') ~= nil)" +qa
+nvim --headless "+lua print(vim.o.number, vim.o.relativenumber, vim.o.ignorecase, vim.o.smartcase, 'mouse=[' .. vim.o.mouse .. ']', 'clipboard=[' .. vim.o.clipboard .. ']', 'has_clipboard=' .. vim.fn.has('clipboard'), vim.o.shortmess:find('I') ~= nil)" +qa
 ```
 
 期望：
 
 ```text
-true true true true mouse=[] true
+true true true true mouse=[] clipboard=[] has_clipboard=1 true
 ```
+
+`has_clipboard=1` 在 macOS 来自 `pbcopy`/`pbpaste`；在 SSH/无 GUI 的 Linux 上来自 OSC 52 回退。
 
 验证插件与公式 parser：
 
@@ -518,12 +520,14 @@ ls -l ~/.config/tmux/tmux.conf ~/.zshrc ~/.config/starship.toml
 zsh -n ~/.zshrc
 tmux -L dev-env-check -f ~/.config/tmux/tmux.conf new-session -d -s check
 tmux -L dev-env-check show-options -gv mouse
+tmux -L dev-env-check show-options -gv set-clipboard
+tmux -L dev-env-check show-options -gv allow-passthrough
 tmux -L dev-env-check list-keys -T prefix h
 tmux -L dev-env-check send-keys -t check exit Enter
 ```
 
-`mouse` 应为 `off`，`h` 对应 `select-pane -L`。测试使用独立 socket，
-不要对默认 tmux server 执行 `kill-server`。
+`mouse` 应为 `off`，`set-clipboard` 和 `allow-passthrough` 应为 `on`，`h` 对应
+`select-pane -L`。测试使用独立 socket，不要对默认 tmux server 执行 `kill-server`。
 
 ## 6. PATH
 
@@ -677,6 +681,7 @@ chsh -s "$(command -v zsh)"
 - 键位：`C-b h/j/k/l` 切 pane，`C-b H/J/K/L` 调分割线，`C-b z` 最大化，
   `C-b Tab` 上一个 window。
 - 鼠标：tmux 不接管鼠标（`mouse off`），拖选由终端处理。
+- 剪贴板：tmux 只转发 OSC 52（`set-clipboard on`、`allow-passthrough on`），不定义 copy-mode 键位；Neovim 在 SSH/无 GUI 时用 OSC 52 回退 `<leader>y`/`<leader>p`。
 - 配置：`tmux/README.md`。
 - 本地覆盖：`~/.tmux.local.conf`（默认不存在）。
 

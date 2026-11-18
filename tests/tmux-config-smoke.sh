@@ -97,8 +97,8 @@ assert_contains "$("$TMUX_BIN" -L "$SOCK" list-keys -T prefix '-')" "split-windo
 assert_contains "$("$TMUX_BIN" -L "$SOCK" list-keys -T prefix c)" "new-window" "c"
 assert_contains "$("$TMUX_BIN" -L "$SOCK" list-keys -T prefix z)" "resize-pane -Z" "z"
 assert_contains "$("$TMUX_BIN" -L "$SOCK" list-keys -T prefix r)" "XDG_CONFIG_HOME" "r reload path"
-[[ "$("$TMUX_BIN" -L "$SOCK" show-options -gv set-clipboard)" != "on" ]] \
-  || die "set-clipboard 不应由 dev_env 开启"
+assert_eq "$("$TMUX_BIN" -L "$SOCK" show-options -gv set-clipboard)" "on" "set-clipboard"
+assert_eq "$("$TMUX_BIN" -L "$SOCK" show-options -gv allow-passthrough)" "on" "allow-passthrough"
 
 # Reload through the same shell command used by C-b r, with custom XDG.
 assert_eq "$("$TMUX_BIN" -L "$SOCK" show-options -gv @dev-env-smoke-reloaded)" "0" "local override"

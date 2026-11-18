@@ -240,6 +240,16 @@ esac
 - 删除 `tmux.conf` 中 copy-mode、滚动、复制/粘贴相关的全部配置，恢复 tmux 默认绑定；
 - `tests/tmux-config-smoke.sh` 只断言 `mouse=off` 和既有键位，不再检查 copy-mode 入口。
 
+2026-11-18 剪贴板 provider 跨环境一致：
+
+- `nvim/init.lua` 在 Linux 无 GUI/无原生工具时回退 `vim.g.clipboard='osc52'`；macOS 仍用 `pbcopy`/`pbpaste`；
+- 显式设置 `vim.opt.clipboard=''`，普通 `y/d/c/p` 不进入系统剪贴板；
+- `tmux/tmux.conf` 增加 OSC 52 传输：`set -g set-clipboard on`、`set -g allow-passthrough on`；仍不接管鼠标、不定义 copy-mode 键；
+- `tests/tmux-config-smoke.sh` 断言这两个选项为 `on`；
+- `tests/nvim-plugins-smoke.sh` 和四个平台安装器的 Neovim smoke check 增加 `has('clipboard') == 1` 与 `clipboard == ''` 断言；
+- Ubuntu 24.04 在线/离线 Docker 测试增加同样的 Neovim 断言和 tmux 选项断言；
+- 这样 `<leader>y`/`<leader>p` 在本地 macOS、Linux GUI 和 SSH/无 GUI 环境下行为一致。
+
 ## 4. Neovim 插件与预览测试
 
 ### 4.1 临时环境安装插件
@@ -323,7 +333,7 @@ bash tests/theme-assets-smoke.sh
 bash tests/macos-offline-installer-safety-smoke.sh
 ```
 
-- tmux 测试使用唯一 socket 和自定义 `XDG_CONFIG_HOME`（不传 `-f`），断言配置发现、`prefix=C-b`、`mouse=off`、`h/j/k/l`、`H/J/K/L`、`Tab`、`r` 的 XDG 重载路径。
+- tmux 测试使用唯一 socket 和自定义 `XDG_CONFIG_HOME`（不传 `-f`），断言配置发现、`prefix=C-b`、`mouse=off`、`set-clipboard=on`、`allow-passthrough=on`、`h/j/k/l`、`H/J/K/L`、`Tab`、`r` 的 XDG 重载路径。
 - shell 测试使用临时 `HOME`，断言 `.zshrc` 软链接、`~/.zshrc.local` 权限 600、alias、PATH 和 Starship。
 - 主题测试校验 iTerm2/Terminal/Linux/VS Code 配色文件和 Catppuccin 调色板。
 - `macos-offline-installer-safety-smoke.sh` 用合成离线包和临时 HOME 验证：配置链接指向稳定副本，`--skip-config` 不删除已有插件/parser；不需要网络。
@@ -348,13 +358,13 @@ tree-sitter --version
 配置：
 
 ```sh
-nvim --headless "+lua print(vim.o.number, vim.o.relativenumber, vim.o.ignorecase, vim.o.smartcase, 'mouse=[' .. vim.o.mouse .. ']', vim.o.shortmess:find('I') ~= nil)" +qa
+nvim --headless "+lua print(vim.o.number, vim.o.relativenumber, vim.o.ignorecase, vim.o.smartcase, 'mouse=[' .. vim.o.mouse .. ']', 'clipboard=[' .. vim.o.clipboard .. ']', 'has_clipboard=' .. vim.fn.has('clipboard'), vim.o.shortmess:find('I') ~= nil)" +qa
 ```
 
 期望：
 
 ```text
-true true true true mouse=[] true
+true true true true mouse=[] clipboard=[] has_clipboard=1 true
 ```
 
 交互：
