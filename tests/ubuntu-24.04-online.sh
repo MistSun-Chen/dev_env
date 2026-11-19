@@ -6,6 +6,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# Override to use an image with ca-certificates when DOCKER_APT_MIRROR is HTTPS.
+DOCKER_IMAGE="${DOCKER_IMAGE:-ubuntu:24.04}"
 
 DOCKER_ENV=()
 if [[ -n "${DOCKER_PROXY:-}" ]]; then
@@ -31,7 +33,7 @@ echo "[test] Ubuntu 24.04 联网安装"
 docker run --rm \
   ${DOCKER_ENV[@]+"${DOCKER_ENV[@]}"} \
   -v "$REPO_ROOT:/work:ro" \
-  ubuntu:24.04 \
+  "$DOCKER_IMAGE" \
   bash -lc '
     set -euo pipefail
     if [[ -n "${DOCKER_APT_MIRROR:-}" ]]; then
@@ -40,7 +42,7 @@ docker run --rm \
     cp -a /work /tmp/work
     bash /tmp/work/platforms/linux/ubuntu/24.04/install.sh --allow-root
     PATH="/root/.local/bin:$PATH" /root/.local/bin/nvim --headless \
-      "+lua if vim.o.number ~= true or vim.o.mouse ~= '' or vim.fn.has('clipboard') ~= 1 or vim.o.clipboard ~= '' or vim.g.colors_name ~= 'catppuccin-mocha' then vim.api.nvim_err_writeln('config smoke failed'); vim.cmd('cquit 1') end" +qa
+      "+lua if vim.o.number ~= true or vim.o.mouse ~= \"\" or vim.fn.has(\"clipboard\") ~= 1 or vim.o.clipboard ~= \"\" or vim.g.colors_name ~= \"catppuccin-mocha\" then vim.api.nvim_err_writeln(\"config smoke failed\"); vim.cmd(\"cquit 1\") end" +qa
     /root/.local/bin/tmux -V
     test "$(/root/.local/bin/tmux -V)" = "tmux 3.8"
     /usr/bin/zsh --version
