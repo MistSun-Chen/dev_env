@@ -18,7 +18,7 @@
 - 已安装 Docker，并且 daemon 正在运行
 - 能访问 Ubuntu 软件源和 GitHub
 - 需要代理时设置 `DOCKER_PROXY`；如果 apt 需要绕过代理，可再设置 `DOCKER_NO_PROXY=ports.ubuntu.com,archive.ubuntu.com,security.ubuntu.com`
-- 需要换 apt 镜像时设置 `DOCKER_APT_MIRROR`（x86_64 用 `.../ubuntu`，arm64 用 `.../ubuntu-ports`）
+- 需要换 apt 镜像时设置 `DOCKER_APT_MIRROR`（x86_64 用 `.../ubuntu`，arm64 用 `.../ubuntu-ports`）；HTTPS 镜像要求基础镜像已有 `ca-certificates`，可用 `DOCKER_IMAGE`/`DOCKER_BUILDER_IMAGE` 指定带 CA 的镜像
 
 如果 Docker 容器需要走宿主机代理，设置 `DOCKER_PROXY`：
 
@@ -28,6 +28,33 @@ export DOCKER_PROXY=http://host.docker.internal:7897
 
 > `host.docker.internal` 是 Docker Desktop（macOS/Windows）访问宿主机的地址。
 > Linux 上如果 Docker 不支持这个域名，可以改用宿主机在 Docker bridge 上的地址，或让容器直接联网。
+
+## Docker Desktop / 网络排查
+
+### 容器启动挂起
+
+如果 `docker run` 停在 `Created`，或 `docker start` 超时，先重启 Docker Desktop；仍失败时可临时直连 Docker Desktop 的 VM socket：
+
+```sh
+export DOCKER_HOST="unix://$HOME/Library/Containers/com.docker.docker/Data/docker.raw.sock"
+```
+
+这是本机绕过手段，不是测试默认配置。raw socket 可能不共享 `/tmp`、`/var/folders`；离线测试已把 bundle 放在 `${XDG_CACHE_HOME:-$HOME/.cache}`。
+
+### amd64 与 CA
+
+```sh
+export DOCKER_DEFAULT_PLATFORM=linux/amd64
+export DOCKER_APT_MIRROR=https://mirrors.aliyun.com/ubuntu
+# 仅当镜像已安装 ca-certificates 时设置；默认仍是 ubuntu:24.04
+export DOCKER_IMAGE=dev-env-ubuntu:24.04-ca
+export DOCKER_BUILDER_IMAGE=dev-env-ubuntu:24.04-ca
+```
+
+- 在线测试使用 `DOCKER_IMAGE`；
+- 离线测试的构建容器使用 `DOCKER_BUILDER_IMAGE`，目标容器使用 `DOCKER_IMAGE`（默认干净 `ubuntu:24.04`）；
+- 不要在仓库或 CI 中通过 `Acquire::https::Verify-Peer "false"` 绕过 CA；
+- 更完整的排查说明见 [`../docs/TESTING.md`](../docs/TESTING.md) 的“Docker Desktop 与网络排查”。
 
 ## 联网安装测试
 

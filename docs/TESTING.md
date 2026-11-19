@@ -59,7 +59,44 @@ bash tests/ubuntu-24.04-offline.sh
 
 离线包约 140–150 MB（含 apt deb、插件、parser、tmux 3.8 二进制、Starship 和字体），生成和安装需要几分钟。
 
-### 2.4 实测记录
+### 2.4 Docker Desktop 与网络排查
+
+**容器启动挂起。** 如果 `docker run` 停在 `Created`，或 `docker start` 超时，先重启 Docker Desktop。仍失败时，可临时直连 Docker Desktop 的 VM socket：
+
+```sh
+export DOCKER_HOST="unix://$HOME/Library/Containers/com.docker.docker/Data/docker.raw.sock"
+```
+
+这是本机绕过手段，不是测试默认配置；该路径属于 Docker Desktop 内部实现，升级后可能变化。raw socket 会绕过部分文件共享：`/tmp`、`/var/folders` 下的目录可能不会回写宿主。`tests/ubuntu-24.04-offline.sh` 已把 bundle 放在 `${XDG_CACHE_HOME:-$HOME/.cache}`，raw socket 下可用；不要把 bundle 改回 `mktemp -d` 的默认路径。
+
+**架构。** Apple Silicon 上验证 x86_64 远程目标：
+
+```sh
+export DOCKER_DEFAULT_PLATFORM=linux/amd64
+```
+
+**apt 镜像与 CA。** `DOCKER_APT_MIRROR` 可指向 `http://` 或 `https://`；x86_64 用 `.../ubuntu`，arm64 用 `.../ubuntu-ports`。`ubuntu:24.04` 最小镜像通常没有 `ca-certificates`，HTTPS 镜像会在 `apt-get update` 阶段报 `No system certificates available`。可选：
+
+- 使用可访问的 HTTP 镜像；
+- 准备一个已安装 `ca-certificates` 的 Ubuntu 24.04 镜像，并用 `DOCKER_IMAGE`（联网测试/离线目标）或 `DOCKER_BUILDER_IMAGE`（离线包构建）指定；
+- 仅本机排查时临时关闭 TLS 校验；不要把 `Acquire::https::Verify-Peer "false"` 提交进仓库或 CI。
+
+在能访问 Ubuntu 源的环境构建带 CA 的测试镜像：
+
+```sh
+docker build -t dev-env-ubuntu:24.04-ca - <<'EOF'
+FROM ubuntu:24.04
+RUN apt-get update \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+EOF
+```
+
+如果构建机也只能通过 HTTPS 镜像访问，先用可用的 HTTP 源或代理完成这次构建；不要通过关闭校验来生成镜像。
+
+**代理。** 容器需要走宿主代理时设置 `DOCKER_PROXY`；如果 apt 镜像应直连，用 `DOCKER_NO_PROXY` 包含镜像域名。代理只监听 `127.0.0.1` 时，容器内的 `host.docker.internal` 可能不可达；优先使用可直连镜像，或让代理监听 Docker bridge 可达的地址。
+
+### 2.5 实测记录
 
 2026-10-20 在 Apple Silicon Mac（Docker Desktop，arm64 容器）上，使用当时的 `vim.pack` 方案：
 
@@ -73,6 +110,16 @@ bash tests/ubuntu-24.04-offline.sh
 - 添加配色后的隔离 smoke test 再次运行时，在临时环境 clone lazy.nvim 阶段遇到 GitHub 443 连接失败，未完成；这是网络问题，不是配置错误；
 - `nvim/scripts/stage-plugins.sh` 在临时目录生成 lazy.nvim 根目录、lockfile 和 `latex.so`，并用 `--check` 在无插件安装步骤下加载成功；
 - `tests/ubuntu-24.04-offline.sh` 本次未完成：联网容器在 `apt-get update` 拉取 Ubuntu `universe` 索引时连接失败（`Connection failed`），尚未进入插件 staging 阶段，属于网络问题，待网络恢复后重跑。
+
+2026-11-19 本机 amd64 Docker 在线/离线回归：
+
+- 本机 Docker Desktop 默认 socket 启动容器挂起（`docker start` 超时），改用 `docker.raw.sock`；这是本机环境问题，仓库测试脚本未硬编码该 socket；
+- 使用 `DOCKER_DEFAULT_PLATFORM=linux/amd64`，与远程 x86_64 目标一致；
+- 直连 Ubuntu ports 镜像很慢/失败，改用阿里云 HTTPS 镜像；`ubuntu:24.04` 无 CA，本地测试临时使用带 CA 配置的镜像。仓库默认仍是 `ubuntu:24.04` 且保持 TLS 校验，CA 需求通过 `DOCKER_IMAGE` / `DOCKER_BUILDER_IMAGE` 解决；
+- `tests/ubuntu-24.04-online.sh` 通过（exit 0）：Neovim 0.12.3、tmux 3.8、zsh 5.9、Starship 1.27.0、fzf 0.74.5、rg 14.1.0、fd 9.0.0、tree-sitter 0.27.1；配置/插件/parser/tmux 断言通过；
+- `tests/ubuntu-24.04-offline.sh` 通过（exit 0）：bundle 139 MB x86_64；`--network none` 干净 `ubuntu:24.04` 安装成功，版本/配置/`--skip-config` 断言通过；
+- 测试脚本修复：Lua 冒烟命令的引号（外层单引号吞掉 `''`）；离线 bundle 目录从 `mktemp -d` 的 `/var/folders` 改到 `${XDG_CACHE_HOME:-$HOME/.cache}`，避免 Docker Desktop 无法回写；
+- 新增 `DOCKER_IMAGE` / `DOCKER_BUILDER_IMAGE` 覆盖入口，便于使用带 CA 的镜像；默认仍为 `ubuntu:24.04`。
 
 ## 3. macOS（本机）
 

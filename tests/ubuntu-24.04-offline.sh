@@ -10,7 +10,15 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-BUNDLE_DIR="$(mktemp -d)"
+# The builder may need ca-certificates when DOCKER_APT_MIRROR is HTTPS; the
+# target stays a clean ubuntu:24.04 by default to validate offline install.
+DOCKER_IMAGE="${DOCKER_IMAGE:-ubuntu:24.04}"
+DOCKER_BUILDER_IMAGE="${DOCKER_BUILDER_IMAGE:-ubuntu:24.04}"
+BUNDLE_CACHE="${XDG_CACHE_HOME:-$HOME/.cache}"
+mkdir -p "$BUNDLE_CACHE"
+# On macOS, Docker Desktop does not reliably bind-mount mktemp's /var/folders
+# path back to the host; keep the bundle under the user's home instead.
+BUNDLE_DIR="$(mktemp -d "$BUNDLE_CACHE/dev-env-bundle.XXXXXX")"
 
 cleanup() {
   rm -rf "$BUNDLE_DIR"
@@ -42,7 +50,7 @@ docker run --rm \
   ${DOCKER_ENV[@]+"${DOCKER_ENV[@]}"} \
   -v "$REPO_ROOT:/work:ro" \
   -v "$BUNDLE_DIR:/bundle" \
-  ubuntu:24.04 \
+  "$DOCKER_BUILDER_IMAGE" \
   bash -lc '
     set -euo pipefail
     if [[ -n "${DOCKER_APT_MIRROR:-}" ]]; then
@@ -68,13 +76,13 @@ compgen -G "$BUNDLE_DIR/debs/zsh*.deb" >/dev/null || { echo "缺少 zsh deb" >&2
 echo "[test] 2/2 在无网络容器中安装"
 docker run --rm --network none \
   -v "$BUNDLE_DIR:/bundle:ro" \
-  ubuntu:24.04 \
+  "$DOCKER_IMAGE" \
   bash -lc '
     set -euo pipefail
     bash /bundle/install.sh --allow-root
     CONFIG_ROOT=/root/.local/share/dev_env/config
     PATH="/root/.local/bin:$PATH" /root/.local/bin/nvim --headless \
-      "+lua if vim.o.number ~= true or vim.o.mouse ~= '' or vim.fn.has('clipboard') ~= 1 or vim.o.clipboard ~= '' or vim.g.colors_name ~= 'catppuccin-mocha' then vim.api.nvim_err_writeln('config smoke failed'); vim.cmd('cquit 1') end" +qa
+      "+lua if vim.o.number ~= true or vim.o.mouse ~= \"\" or vim.fn.has(\"clipboard\") ~= 1 or vim.o.clipboard ~= \"\" or vim.g.colors_name ~= \"catppuccin-mocha\" then vim.api.nvim_err_writeln(\"config smoke failed\"); vim.cmd(\"cquit 1\") end" +qa
     /root/.local/bin/tmux -V
     test "$(/root/.local/bin/tmux -V)" = "tmux 3.8"
     /usr/bin/zsh --version
