@@ -71,6 +71,8 @@ done
 ls "$BUNDLE_DIR"/Meslo.tar.xz >/dev/null || { echo "缺少 Meslo.tar.xz" >&2; exit 1; }
 [[ -f "$BUNDLE_DIR/tmux-bin" ]] || { echo "缺少 tmux-bin" >&2; exit 1; }
 [[ -f "$BUNDLE_DIR/tmux-build-info.txt" ]] || { echo "缺少 tmux-build-info.txt" >&2; exit 1; }
+[[ -f "$BUNDLE_DIR/shell/vendor/2clip/2clip.sh" ]] || { echo "缺少 2clip" >&2; exit 1; }
+compgen -G "$BUNDLE_DIR/mermaid-ascii_Linux_*.tar.gz" >/dev/null || { echo "缺少 mermaid-ascii" >&2; exit 1; }
 compgen -G "$BUNDLE_DIR/debs/zsh*.deb" >/dev/null || { echo "缺少 zsh deb" >&2; exit 1; }
 
 echo "[test] 2/2 在无网络容器中安装"
@@ -80,6 +82,11 @@ docker run --rm --network none \
   bash -lc '
     set -euo pipefail
     bash /bundle/install.sh --allow-root
+    test -x /root/.local/bin/2clip
+    test -x /root/.local/bin/mermaid-ascii
+    /root/.local/bin/mermaid-ascii --help >/dev/null
+    expected_osc="$(printf "\033]52;c;"; printf "hello" | base64 | tr -d "\n"; printf "\a")"
+    test "$(printf "hello" | /root/.local/bin/2clip)" = "$expected_osc"
     CONFIG_ROOT=/root/.local/share/dev_env/config
     PATH="/root/.local/bin:$PATH" /root/.local/bin/nvim --headless \
       "+lua if vim.o.number ~= true or vim.o.mouse ~= \"\" or vim.fn.has(\"clipboard\") ~= 1 or vim.o.clipboard ~= \"\" or vim.g.colors_name ~= \"catppuccin-mocha\" then vim.api.nvim_err_writeln(\"config smoke failed\"); vim.cmd(\"cquit 1\") end" +qa
@@ -115,6 +122,8 @@ docker run --rm --network none \
     bash /bundle/install.sh --allow-root --skip-config
     test -f /root/.local/share/nvim/lazy/fzf-lua/.dev_env-keep
     grep -q keep /root/.local/share/nvim/site/parser/latex.so
+    test -x /root/.local/bin/mermaid-ascii
+    test -x /root/.local/bin/2clip
   '
 
 echo "[test] 通过"

@@ -74,6 +74,7 @@ platforms/
 - `fzf`
 - `git`（`lazy.nvim` 引导和插件安装需要）
 - `tree-sitter` CLI（编译 latex parser）
+- `mermaid-ascii`（Neovim normal 模式 Mermaid ASCII 预览，在线/离线安装器都会安装）
 - Node.js（仅编译 latex parser 时需要，不是 Neovim 运行时依赖）
 
 平台差异主要体现在安装方式和可执行文件命名：

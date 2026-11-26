@@ -14,7 +14,7 @@
 | `plugins.zsh` | 纯 zsh 的 autosuggestions / syntax-highlighting |
 | `starship.toml` | Catppuccin Mocha Powerline prompt |
 | `zshrc.local.example` | 机器相关配置模板 |
-| `vendor/` | 固定版本的纯 zsh 插件源码 |
+| `vendor/` | 固定版本的纯 zsh 插件源码和 2clip 脚本 |
 | `terminal/` | 终端配色 profile |
 | `fonts/` | Nerd Font 版本和离线说明 |
 
@@ -62,8 +62,11 @@ bash platforms/linux/ubuntu/24.04/install.sh
    - 检测到 `~/.nvm/nvm.sh` 时自动启用 nvm，安装后新终端可直接使用 nvm 管理的 `claude`；
    - 检测到本机代理端口时只更新注释中的端口，不自动开启代理；
    - 已有文件保持不动；只有与当前模板逐字节一致时，才会先备份再自动补全可检测项；
-4. 安装 Starship、Nerd Font，并复制终端配色资源；
+4. 安装 Starship、Nerd Font、`2clip`，并复制终端配色资源；
 5. 不修改 `~/.zprofile`、`~/.zshenv`、`~/.profile`。
+
+`2clip` 是工具，使用 `--skip-config` 或 `--skip-shell` 时仍会安装到
+`~/.local/bin/2clip`。
 
 Ubuntu 不会自动 `chsh`。需要默认使用 zsh 时手动执行：
 
@@ -82,6 +85,26 @@ chsh -s "$(command -v zsh)"
 - `ta`、`ts`、`tl`、`td`：tmux attach/new/list/detach
 - `..`、`...`、`....`、`mkcd`、`reload`、`path`
 
+## 复制到系统剪贴板：2clip
+
+安装器把 `vendor/2clip/2clip.sh` 安装为 `~/.local/bin/2clip`。它通过 OSC 52
+写入最外层终端；本地 iTerm2 / Windows Terminal 和 SSH 会话都可用。
+
+```sh
+printf '%s' 'hello' | 2clip
+realpath src/foo.c | 2clip
+basename src/foo.c | 2clip
+2clip -c 'realpath src/foo.c'
+```
+
+- 参数或 stdin 原样复制；命令输出和文件内容自身的换行会保留。
+- `2clip` 把 OSC 52 写到 stdout，必须直接运行在终端里；不要
+  `2clip file > /dev/null`。
+- 终端必须支持 OSC 52；PuTTY/MobaXterm 自带终端不支持。
+- `2clip -c` 内部使用 `eval`，不要传入不可信文本；路径有空格或特殊字符时要正确引用，优先用管道。
+- `2clip` 始终走 OSC 52，不再为本地 macOS 回退到 `pbcopy`；Neovim 的剪贴板
+  策略不受影响。
+
 ## 主题
 
 - Prompt：Starship Catppuccin Mocha Powerline；需要 Nerd Font。配置来自 Starship v1.27.0
@@ -89,8 +112,9 @@ chsh -s "$(command -v zsh)"
 - 终端背景/ANSI 配色：见 [`terminal/README.md`](./terminal/README.md)。
 - tmux 状态栏：见 [`../tmux/tmux.conf`](../tmux/tmux.conf)。
 
-终端 profile 不会自动导入，因为 iTerm2/Terminal/GNOME/Kitty 等终端的导入
-方式不同；安装器只复制文件并给出说明，避免覆盖现有配置。
+除 Ghostty 外，终端 profile 不会自动导入，因为 iTerm2/Terminal/GNOME/Kitty 等终端的
+导入方式不同；安装器只复制文件并给出说明，避免覆盖现有配置。Ghostty 的配置是纯文本，
+由安装器把 `terminal/ghostty/config` 链接到 `~/.config/ghostty/config`。
 
 ## 测试
 

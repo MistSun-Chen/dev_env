@@ -40,7 +40,16 @@ docker run --rm \
       sed -i "s|http://ports.ubuntu.com/ubuntu-ports|${DOCKER_APT_MIRROR}|g; s|http://archive.ubuntu.com/ubuntu|${DOCKER_APT_MIRROR}|g; s|http://security.ubuntu.com/ubuntu|${DOCKER_APT_MIRROR}|g" /etc/apt/sources.list.d/ubuntu.sources
     fi
     cp -a /work /tmp/work
-    bash /tmp/work/platforms/linux/ubuntu/24.04/install.sh --allow-root
+    bash /tmp/work/platforms/linux/ubuntu/24.04/install.sh --allow-root --lsp python,bash
+    test -x /root/.local/bin/2clip
+    test -x /root/.local/bin/mermaid-ascii
+    /root/.local/bin/mermaid-ascii --help >/dev/null
+    expected_osc="$(printf "\033]52;c;"; printf "hello" | base64 | tr -d "\n"; printf "\a")"
+    test "$(printf "hello" | /root/.local/bin/2clip)" = "$expected_osc"
+    test -x /root/.local/bin/pyright-langserver
+    test -x /root/.local/bin/bash-language-server
+    /root/.local/opt/pyright-1.1.414/node_modules/.bin/pyright --version | grep -q "1.1.414"
+    test "$(/root/.local/bin/bash-language-server --version)" = "5.6.0"
     PATH="/root/.local/bin:$PATH" /root/.local/bin/nvim --headless \
       "+lua if vim.o.number ~= true or vim.o.mouse ~= \"\" or vim.fn.has(\"clipboard\") ~= 1 or vim.o.clipboard ~= \"\" or vim.g.colors_name ~= \"catppuccin-mocha\" then vim.api.nvim_err_writeln(\"config smoke failed\"); vim.cmd(\"cquit 1\") end" +qa
     /root/.local/bin/tmux -V

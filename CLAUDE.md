@@ -43,10 +43,12 @@ DOCKER_PROXY=http://host.docker.internal:7897 bash tests/ubuntu-24.04-offline.sh
 - tmux 从 0 设计，保留 `C-b`；`C-b h/j/k/l` 切 pane，`C-b H/J/K/L` 调分割线，`C-b z` 最大化，`C-b Tab` 上一个 window。
 - macOS 和 Ubuntu 24.04 的在线/离线安装默认使用固定 3.8 自包含构建；macOS 的 `--brew-tmux` 仅在 Homebrew tmux >=3.8 时使用。不要再安装或依赖 apt 的 tmux 3.4。
 - 用户没有 PageUp/PageDown：tmux 不接管鼠标（`mouse off`），拖选和滚动交给终端；tmux 配置里不保留 copy-mode/滚动设置。
-- 剪贴板传输是例外：tmux 用 `set-clipboard on` + `terminal-features ',*:clipboard'` 转发 OSC 52；`allow-passthrough` 保持 `off`，它只影响 DCS passthrough。不要重新引入鼠标捕获或 copy-mode 键位。
+- 剪贴板传输是例外：tmux 用 `set-clipboard on` + `terminal-features ',*:clipboard'` 转发 OSC 52。`allow-passthrough` 保持 `off`，不使用 Kitty 图片直通；不要重新引入鼠标捕获或 copy-mode 键位。
 - tmux 3.7+ 的 `get-clipboard` 默认 `buffer`；SSH + tmux + OSC 52 下不要让 `<leader>p` 读取，否则会粘贴 tmux 旧 buffer 或等待超时；提示使用终端粘贴。
 - Neovim 同样关闭鼠标（`mouse=''`）；系统剪贴板只用 `<leader>y` / `<leader>p`，不要开启 `clipboard=unnamedplus`。
-- SSH/远程 Linux 统一使用 OSC 52；本地 macOS 继续用 `pbcopy`/`pbpaste`；本地 Linux GUI 优先原生 provider。不要把 xclip/X11 作为 dev_env 的 SSH 方案。
+- Neovim：SSH/远程 Linux 统一使用 OSC 52；本地 macOS 继续用 `pbcopy`/`pbpaste`；本地 Linux GUI 优先原生 provider。不要把 xclip/X11 作为 dev_env 的 SSH 方案。
+- Shell 统一使用 `2clip`（`shell/vendor/2clip`，安装到 `~/.local/bin/2clip`），始终走 OSC 52；不要再加自定义 `clip`/`yp` 函数。
+- 在线安装器默认安装 `python,cpp,bash` LSP（`--lsp` 选择，`none` 跳过），由 `nvim/scripts/install-lsp.sh` 幂等安装；离线包目前不包含 LSP server。
 - 终端必须支持 OSC 52 写；支持列表、终端替换要求和限制见 [`docs/CLIPBOARD.md`](./docs/CLIPBOARD.md)。MobaXterm/PuTTY 不支持 OSC 52。
 - 不要在设置 provider 之前调用 `has('clipboard')`，否则 Neovim 会缓存“无 provider”状态，之后设置 `osc52` 也不生效。
 - shell 是 zsh + Starship；不引入 Oh My Zsh、Zinit、TPM。syntax-highlighting 必须最后加载。
@@ -124,3 +126,16 @@ DOCKER_PROXY=http://host.docker.internal:7897 bash tests/ubuntu-24.04-offline.sh
 - <https://code.claude.com/docs/en/hooks-guide>
 - <https://code.claude.com/docs/en/security>
 - <https://code.claude.com/docs/en/code-review-local>
+
+
+End EVERY answer with a "## 80/20" section, placed last, with
+a line (---) above it. Bottom line only, nothing new.
+Show a line only when it has real content:
+
+✅ Result: always. One line.
+👉 Next: only if I must do something. Numbered, action in bold.
+❓ Decide: only if the choice is mine.
+⚠️ Watch out: only a real risk.
+🔀 Git: only if a repo changed.
+
+Bold the key actions, so the bold text alone is the answer.

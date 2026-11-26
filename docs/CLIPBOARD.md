@@ -10,9 +10,15 @@
 - 本地 macOS：继续使用 `pbcopy`/`pbpaste`；
 - 本地 Linux GUI：X11 有 `xclip`/`xsel`，或 Wayland 有 `wl-copy` + `wl-paste` 时优先原生 provider，否则回退 OSC 52。
 
+以上三条是 Neovim 的 provider 策略；shell 的 `2clip` 例外，始终使用 OSC 52。
+
 `nvim/init.lua` 通过 `SSH_TTY` / `SSH_CONNECTION` 判断是否处于 SSH 会话；SSH 到 Linux
 时设置 `vim.g.clipboard = 'osc52'`。这不影响普通 `y/d/c/p`：只有 `<leader>y` / `<leader>p`
 显式使用 `+` 寄存器，`clipboard=unnamedplus` 始终关闭。
+
+Shell 统一使用 `2clip`（安装到 `~/.local/bin/2clip`）：它总是把内容通过 OSC 52
+写到最外层终端，本地 macOS 和 SSH 会话相同。Neovim 的策略不受影响：本地 macOS
+仍用 `pbcopy`/`pbpaste`，SSH/远程 Linux 用 OSC 52。
 
 ## 2. 支持的终端
 
@@ -65,7 +71,8 @@ set -as terminal-features ',*:clipboard'
 ```
 
 `allow-passthrough` 只影响 DCS passthrough，不是 Neovim 原始 OSC 52 的必要条件；
-保持关闭可以减少应用绕过 tmux 的路径。运行中的旧 tmux server 可以热设置，不需要 kill：
+dev_env 保持关闭，减少应用绕过 tmux 的路径。运行中的旧 tmux server 可以热设置，
+不需要 kill：
 
 ```sh
 tmux set -g set-clipboard on
@@ -78,7 +85,7 @@ Windows Terminal 不支持。不要依赖默认的 `buffer` 做“从本地剪�
 
 ## 5. Windows Terminal 设置
 
-1. 用 Windows Terminal 打开 PowerShell/命令提示符，运行 `ssh wychen@10.39.54.93`。
+1. 用 Windows Terminal 打开 PowerShell/命令提示符，运行 `ssh user@<host>`。
 2. 不需要开启 X11 forwarding；SSH 到 Linux 时会强制使用 OSC 52，无论 `$DISPLAY` 是否为空。
 3. 如果复制无效，检查 Windows Terminal（1.22+）profile 的 `compatibility` 对象中是否
    保留 `"allowOSC52": true`：

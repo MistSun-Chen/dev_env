@@ -78,13 +78,13 @@ local servers = {
     name = 'pyright',
     executable = 'pyright-langserver',
     filetypes = { 'python' },
-    hint = '先安装 Node.js，再按 nvim/README.md 安装 pyright',
+    hint = '运行在线安装器 --lsp python，或按 nvim/README.md 安装 pyright',
   },
   {
     name = 'bashls',
     executable = 'bash-language-server',
     filetypes = { 'bash', 'sh' },
-    hint = '先安装 Node.js，再按 nvim/README.md 安装 bash-language-server',
+    hint = '运行在线安装器 --lsp bash，或按 nvim/README.md 安装 bash-language-server',
   },
   {
     name = 'clangd',

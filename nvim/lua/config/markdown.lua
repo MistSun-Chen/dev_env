@@ -58,18 +58,70 @@ if not configured then
   pcall(markview.setup, {})
 end
 
--- markview 的表格渲染在 wrap=true 时会跳过宽表（插件已知限制），官方也推荐 Markdown 使用 nowrap。
--- 只关闭 Markdown 窗口的自动换行；长行用横向滚动查看，表格才能正常渲染。
+-- Markdown 默认软换行：长段落不会因为横向滚动（leftcol 变大）丢掉行首。
+--
+-- 取舍：
+--   - wrap=true 时 markview 会放弃渲染"原始宽度 >= 窗口 90%"的宽表格，这类表格
+--     回退成原始 Markdown 文本（仍可读）；普通表格不受影响。
+--   - wrap=false 时表格总能渲染，但长行要横向滚动；而且只要窗口滚动过，
+--     markview 就会跳过表格渲染（插件内部 leftcol 保护），表格反而会消失。
+--
+-- 所以默认选 wrap=true，宽表格需要看渲染效果时用 <leader>mw 临时关掉换行。
+-- 注意：markview 在 wrap 模式下会自行模拟换行缩进并临时关闭 breakindent，
+-- 这里不再设置 breakindent，避免两边冲突。
+local md_win_saved = {} -- winid -> 原始 wrap/linebreak
+
+local function apply_markdown_window(win)
+  if not md_win_saved[win] then
+    md_win_saved[win] = {
+      wrap = vim.wo[win].wrap,
+      linebreak = vim.wo[win].linebreak,
+    }
+  end
+  vim.wo[win].wrap = true
+  vim.wo[win].linebreak = true
+end
+
+local function restore_markdown_window(win)
+  local saved = md_win_saved[win]
+  if saved and vim.api.nvim_win_is_valid(win) then
+    vim.wo[win].wrap = saved.wrap
+    vim.wo[win].linebreak = saved.linebreak
+  end
+  md_win_saved[win] = nil
+end
+
 vim.api.nvim_create_autocmd({ 'FileType', 'BufWinEnter' }, {
   callback = function(args)
+    if vim.bo[args.buf].filetype ~= 'markdown' then
+      restore_markdown_window(vim.api.nvim_get_current_win())
+      return
+    end
+    for _, win in ipairs(vim.fn.win_findbuf(args.buf)) do
+      apply_markdown_window(win)
+    end
+  end,
+})
+
+-- 同一窗口切换到非 Markdown buffer 时，恢复原来的 wrap/linebreak。
+vim.api.nvim_create_autocmd('BufWinLeave', {
+  callback = function(args)
     if vim.bo[args.buf].filetype == 'markdown' then
-      vim.wo.wrap = false
+      restore_markdown_window(vim.api.nvim_get_current_win())
     end
   end,
 })
 
 vim.keymap.set('n', '<leader>mp', '<Cmd>Markview Toggle<CR>', { desc = 'Markdown 预览开关' })
 vim.keymap.set('n', '<leader>ms', '<Cmd>Markview splitToggle<CR>', { desc = 'Markdown 分屏预览' })
+vim.keymap.set('n', '<leader>mw', function()
+  if vim.bo.filetype ~= 'markdown' then
+    vim.notify('当前 buffer 不是 Markdown；换行开关只在 Markdown 下使用', vim.log.levels.WARN)
+    return
+  end
+  vim.wo.wrap = not vim.wo.wrap
+  vim.notify('Markdown wrap: ' .. (vim.wo.wrap and 'on' or 'off'))
+end, { desc = 'Markdown 换行开关（关掉可渲染宽表格）' })
 
 local toc_ok, toc = pcall(require, 'config.markdown_toc')
 if toc_ok then

@@ -7,8 +7,34 @@ All profiles use the Catppuccin Mocha palette defined in
 ${XDG_DATA_HOME:-$HOME/.local/share}/dev_env/terminal/
 ```
 
-It does **not** modify terminal preferences automatically. Import the profile
-once in each terminal you use; this avoids overwriting existing profiles.
+It does **not** modify terminal preferences automatically, with one exception:
+**Ghostty** 的配置是纯文本，由 dev_env 直接管理并链接到
+`~/.config/ghostty/config`。其他终端仍需手动导入配色文件，避免覆盖已有配置。
+
+## Ghostty（macOS / Linux）
+
+dev_env 管理的文件：[`ghostty/config`](./ghostty/config)。
+
+- 主题：Ghostty 内置的 `Catppuccin Mocha`；
+- 字体：`MesloLGS NF` 14（与 iTerm2 配置一致）；
+- 窗口：120×38、8px 留白；
+- 剪贴板：允许写入、读取保持询问（`ask`），配合 nvim 的 OSC 52 和 tmux 的 `set-clipboard`；
+- SSH：启用 `ssh-env` / `ssh-terminfo`。从 Ghostty 里执行 `ssh` 时会自动在远端安装
+  `xterm-ghostty` terminfo；远端没有 `tic` 时回退到 `xterm-256color`。
+
+安装脚本会把本文件链接到 `~/.config/ghostty/config`。手动验证：
+
+```sh
+ghostty +validate-config
+ghostty +show-config
+```
+
+首次 SSH 到新主机时，Ghostty 的 shell 集成会调用 `ghostty +ssh` 完成 terminfo 安装；
+也可以手动执行：
+
+```sh
+ghostty +ssh user@host
+```
 
 ## macOS: iTerm2
 

@@ -1,0 +1,33 @@
+# Ghostty 配置（dev_env）
+#
+# 与其他终端配置的区别：Ghostty 的配置是纯文本，所以由 dev_env 直接管理，
+# 安装脚本会把本文件链接到 ~/.config/ghostty/config；其他终端（iTerm2、
+# kitty、WezTerm 等）仍只提供配色文件，需要手动导入。
+#
+# 验证：ghostty +validate-config
+
+# 与 dev_env 的配色/字体保持一致：Catppuccin Mocha + MesloLGS NF 14。
+theme = "Catppuccin Mocha"
+font-family = "MesloLGS NF"
+font-size = 14
+
+# 窗口留白和默认尺寸；比 80x25 更适合看 RELEASE.md 这类长文。
+window-padding-x = 8
+window-padding-y = 8
+window-width = 120
+window-height = 38
+
+# 剪贴板：只允许应用写入系统剪贴板；读取保持默认询问，避免程序静默读取。
+# macOS 本地走 pbcopy/pbpaste，远程 Linux 走 Neovim 的 OSC 52，由 tmux set-clipboard 转发。
+clipboard-read = ask
+clipboard-write = allow
+
+# Shell 集成：
+#   - ssh-env / ssh-terminfo：SSH 时自动把 xterm-ghostty terminfo 安装到远端；
+#     安装失败会回退 TERM=xterm-256color，避免远端 nvim/tmux 不识别终端。
+#   - path：确保 ghostty 命令在 PATH 中，shell 里的 ssh 包装函数才能生效。
+shell-integration = detect
+shell-integration-features = cursor,no-sudo,title,ssh-env,ssh-terminfo,path
+
+# 输入时隐藏鼠标指针，减少 nvim 编辑时的干扰。
+mouse-hide-while-typing = true

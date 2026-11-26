@@ -49,6 +49,9 @@
 | 搜索替换 | n | `<leader>sR` | search replace file | 当前文件搜索并替换 |
 | Markdown | n | `<leader>mp` | markdown preview | Markdown 预览开关 |
 | Markdown | n | `<leader>ms` | markdown split | Markdown 分屏预览 |
+| Markdown | n | `<leader>mw` | markdown wrap | Markdown 换行开关（关掉可渲染宽表格） |
+| Markdown | n | `<leader>ma` | mermaid ascii | Mermaid ASCII 混合预览开关（normal 显示，insert/visual 隐藏） |
+| Markdown | n | `<leader>mb` | mermaid ascii scroll | Mermaid ASCII 宽图查看（split 内可横向滚动） |
 | Markdown | n | `<leader>mt` | markdown toc | Markdown 目录 |
 | 界面 | n | `<leader>tc` | theme change | 切换 Catppuccin 配色 |
 | 界面 | n | `<leader>?` | which-key buffer | 查看当前 buffer 的全部键位 |
@@ -62,7 +65,7 @@
 - 普通 `y`、`d`、`c`、`p` 仍只使用 Neovim 内部寄存器，不会覆盖系统剪贴板。
 - 复制的是 buffer 文本，不含行号、gitsigns 标记或 markview 装饰。
 - provider 选择：SSH/远程 Linux 统一使用 OSC 52；本地 macOS 使用 `pbcopy`/`pbpaste`；本地 Linux GUI 在匹配的显示服务器下优先原生 provider（X11：`xclip`/`xsel`；Wayland：`wl-copy` + `wl-paste`）。
-- 终端需要允许 OSC 52；tmux 需要 `set-clipboard on` 和 `terminal-features ',*:clipboard'`（dev_env 已设置），`allow-passthrough` 保持关闭。
+- 终端需要允许 OSC 52；tmux 需要 `set-clipboard on` 和 `terminal-features ',*:clipboard'`（dev_env 已设置）。`allow-passthrough` 为 `on`，仅用于 Ghostty 的 Kitty 图片直通，不影响 OSC 52。
 - 支持的终端、终端替换要求和已知限制见 [`../docs/CLIPBOARD.md`](../docs/CLIPBOARD.md)。MobaXterm/PuTTY 不支持 OSC 52；Windows Terminal、WezTerm、Alacritty（写）、iTerm2 等可用。
 - provider 完全不可用时映射会提示，不会报错。
 

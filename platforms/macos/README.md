@@ -23,6 +23,7 @@ bash platforms/macos/install.sh
 | fzf 0.74.5 | 官方 macOS tarball | `~/.local/opt/fzf-0.74.5`，链接到 `~/.local/bin/fzf` |
 | tmux 3.8 | 自包含源码构建（默认） | `~/.local/opt/tmux-3.8`；`--brew-tmux` 改用 Homebrew >=3.8 |
 | Starship 1.27.0 | 官方 macOS tarball | `~/.local/opt/starship-1.27.0` |
+| mermaid-ascii 1.6.2 | 官方 macOS tarball | `~/.local/opt/mermaid-ascii-1.6.2`，Neovim normal 模式 Mermaid ASCII 预览 |
 | Meslo Nerd Font 3.5.1 | Nerd Fonts release | 四个样式安装到 `~/Library/Fonts` |
 | ripgrep | Homebrew（缺失时） | `brew install ripgrep` |
 | fd | Homebrew（缺失时） | `brew install fd` |
@@ -89,7 +90,7 @@ offline/dev_env-macos-<arch>.tar.gz
 bash install.sh
 ```
 
-离线包包含 Neovim、fzf、ripgrep、fd、tree-sitter、tmux 3.8 自包含二进制、Starship、Meslo 字体、Neovim/tmux/shell 配置、Neovim 插件和预编译 `latex.so`；不包含 Homebrew、编译器和 git。详见 [`offline/README.md`](./offline/README.md)。
+离线包包含 Neovim、fzf、ripgrep、fd、tree-sitter、tmux 3.8 自包含二进制、Starship、mermaid-ascii、Meslo 字体、Neovim/tmux/shell 配置、Neovim 插件和预编译 `latex.so`；不包含 Homebrew、编译器和 git。详见 [`offline/README.md`](./offline/README.md)。
 
 ## 验证
 
@@ -103,6 +104,7 @@ fd --version
 fzf --version
 git --version
 tree-sitter --version
+mermaid-ascii --help >/dev/null && echo "mermaid-ascii OK"
 ```
 
 ## 注意

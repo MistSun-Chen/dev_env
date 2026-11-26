@@ -109,16 +109,20 @@ case "$(uname -m)" in
     NVIM_ARCH="x86_64"
     TREE_SITTER_ASSET="tree-sitter-cli-linux-x64.zip"
     STARSHIP_ASSET="starship-x86_64-unknown-linux-musl.tar.gz"
+    MERMAID_ASCII_ASSET="mermaid-ascii_Linux_x86_64.tar.gz"
     TREE_SITTER_SHA256="$TREE_SITTER_SHA256_X86_64"
     STARSHIP_SHA256="$STARSHIP_SHA256_X86_64"
+    MERMAID_ASCII_SHA256="$MERMAID_ASCII_SHA256_X86_64"
     ;;
   aarch64|arm64)
     FZF_ARCH="arm64"
     NVIM_ARCH="arm64"
     TREE_SITTER_ASSET="tree-sitter-cli-linux-arm64.zip"
     STARSHIP_ASSET="starship-aarch64-unknown-linux-musl.tar.gz"
+    MERMAID_ASCII_ASSET="mermaid-ascii_Linux_arm64.tar.gz"
     TREE_SITTER_SHA256="$TREE_SITTER_SHA256_ARM64"
     STARSHIP_SHA256="$STARSHIP_SHA256_ARM64"
+    MERMAID_ASCII_SHA256="$MERMAID_ASCII_SHA256_ARM64"
     ;;
   *)
     die "不支持的 CPU 架构: $(uname -m)"
@@ -248,6 +252,11 @@ download_verified \
   "$STARSHIP_SHA256"
 
 download_verified \
+  "https://github.com/AlexanderGrooff/mermaid-ascii/releases/download/${MERMAID_ASCII_VERSION}/${MERMAID_ASCII_ASSET}" \
+  "$OUT_DIR/$MERMAID_ASCII_ASSET" \
+  "$MERMAID_ASCII_SHA256"
+
+download_verified \
   "https://github.com/ryanoasis/nerd-fonts/releases/download/v${NERD_FONT_VERSION}/${NERD_FONT_ASSET}" \
   "$OUT_DIR/$NERD_FONT_ASSET" \
   "$NERD_FONT_SHA256"
@@ -293,6 +302,7 @@ fzf=${FZF_VERSION}
 tree_sitter=${TREE_SITTER_VERSION}
 tmux=${TMUX_VERSION}
 starship=${STARSHIP_VERSION}
+mermaid_ascii=${MERMAID_ASCII_VERSION}
 nerd_font=${NERD_FONT_VERSION}
 apt_packages=${APT_PACKAGES_OFFLINE}
 EOF

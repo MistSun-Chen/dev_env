@@ -38,7 +38,7 @@ bash tests/ubuntu-24.04-online.sh
 1. 启动 `ubuntu:24.04` 容器；
 2. 把仓库只读挂载到 `/work`，在容器内复制到可写的 `/tmp/work`；
 3. 执行 `install.sh --allow-root`，安装工具、插件和 parser；
-4. 检查 Neovim、tmux、zsh、Starship、rg、fd、fzf、git、tree-sitter 版本，并加载配置；
+4. 检查 Neovim、tmux、zsh、Starship、rg、fd、fzf、git、tree-sitter、mermaid-ascii 版本，并加载配置；
 5. 检查 `~/.zshrc`、`~/.config/tmux/tmux.conf` 链接、`~/.zshrc.local` 权限，以及 tmux 私有 socket 键位。
 
 ### 2.3 离线安装测试
@@ -53,11 +53,11 @@ bash tests/ubuntu-24.04-offline.sh
 2. 把离线包生成到宿主机临时目录；
 3. 启动 `--network none` 的全新 `ubuntu:24.04`；
 4. 执行离线包的 `install.sh --allow-root`，安装插件和预编译 parser；
-5. 检查版本、稳定配置副本（`~/.local/share/dev_env/config`）、配置链接、tmux 私有 socket；
+5. 检查版本、`mermaid-ascii`、稳定配置副本（`~/.local/share/dev_env/config`）、配置链接、tmux 私有 socket；
 6. 再执行一次 `--skip-config`，确认已有 Neovim 插件和 `latex.so` 未被删除；
 7. 清理临时目录。
 
-离线包约 140–150 MB（含 apt deb、插件、parser、tmux 3.8 二进制、Starship 和字体），生成和安装需要几分钟。
+离线包约 140–150 MB（含 apt deb、插件、parser、tmux 3.8 二进制、Starship、`mermaid-ascii` 和字体），生成和安装需要几分钟。
 
 ### 2.4 Docker Desktop 与网络排查
 
@@ -296,7 +296,7 @@ esac
 - `tests/nvim-plugins-smoke.sh` 和四个平台安装器的 Neovim smoke check 增加 `has('clipboard') == 1` 与 `clipboard == ''` 断言；
 - Ubuntu 24.04 在线/离线 Docker 测试增加同样的 Neovim 断言和 tmux 选项断言；
 - `<leader>y` 在本地 macOS、Linux GUI 和 SSH/无 GUI 环境下都可用；SSH + tmux + OSC 52 下 `<leader>p` 不再读取 tmux 旧 buffer，改为提示终端粘贴。
-- tmux 3.8 私有 socket + `script` PTY 验证：`set-clipboard on`、`allow-passthrough off` 时，pane 内原始 OSC 52 仍转发到客户端 PTY（捕获到 `]52;c;VEVTVA==`）；`allow-passthrough` 不是 Neovim OSC 52 的必要条件。
+- tmux 3.8 私有 socket + `script` PTY 验证：`set-clipboard on` 时，pane 内原始 OSC 52 仍转发到客户端 PTY（捕获到 `]52;c;VEVTVA==`）；OSC 52 不依赖 `allow-passthrough`，后者保持 `off`。
 
 2026-11-18 x86_64 Ubuntu 24.04 远程离线安装验证：
 
@@ -319,6 +319,37 @@ esac
 - 不支持：MobaXterm、PuTTY、macOS Terminal.app、GNOME Terminal；
 - 远程临时安装的 `xclip` 和 apt 修复不属于 dev_env 的 SSH 方案，仅用于当时的 MobaXterm/X11 兼容验证；
 - Windows Terminal 的 OSC 52 只写不读；本地→远程粘贴使用终端粘贴快捷键。
+
+2026-11-23 shell 剪贴板切换到 2clip：
+
+- 移除 `shell/aliases.zsh` 中自定义 `clip` / `yp` 和 `_dev_env_clipboard`；
+- vendor `2clip`（上游 commit `bf7e9bc`，MIT）到 `shell/vendor/2clip/`，由 `dev_env_install_2clip` 安装到 `~/.local/bin/2clip`；
+- macOS/Ubuntu 在线和离线安装器都会安装 2clip；`--skip-config` / `--skip-shell` 仍会安装；
+- `tests/shell-config-smoke.sh` 断言 2clip 安装和 OSC 52 输出；
+- `tests/macos-offline-installer-safety-smoke.sh` 断言完整安装与 `--skip-config` 后 2clip 仍存在；
+- 本机 iTerm2 与远程 Ubuntu（`<host>`）实测 2clip 写入剪贴板通过；远程 `~/.local/bin/2clip` 与仓库脚本 SHA256 一致；
+- 在 `ubuntu:24.04` 容器中单独验证 `dev_env_install_2clip` 和 2clip 的 OSC 52 输出通过；未重跑完整在线/离线安装；
+- shell smoke 和 macOS 离线 safety smoke 通过。
+
+2026-11-23 LSP 安装选择：
+
+- 在线安装器新增 `--lsp python,cpp,bash`（默认全部）和 `--no-lsp` / `--lsp none`；离线包不包含 LSP，安装结束会提示；
+- 新增 `nvim/scripts/install-lsp.sh`，幂等安装 pyright 1.1.414、bash-language-server 5.8.1、clangd；npm server 安装到 `~/.local/opt` 并生成 `~/.local/bin` wrapper；
+- 2026-11-26 修正：bashls 5.8.1 要求 Node >=20，Ubuntu 24.04 apt 是 Node 18；现固定 bashls 5.6.0（要求 >=16），`install-lsp.sh` 仍要求 Node >=18；
+
+2026-11-26 Mermaid ASCII 离线包与安全修正：
+
+- macOS/Ubuntu 在线/离线安装器加入 `mermaid-ascii` 1.6.2；离线包下载并校验四个平台的 release 资产；
+- `tests/nvim-mermaid-ascii-smoke.sh` 覆盖两个块的 normal extmark、fold、宽图提示；`tests/macos-offline-installer-safety-smoke.sh` 覆盖合成离线包安装和 `--skip-config`；
+- `tests/tmux-config-smoke.sh`、`tests/shell-config-smoke.sh`、`tests/theme-assets-smoke.sh`、`tests/nvim-plugins-smoke.sh` 通过；
+- `install-lsp.sh --components bash` 在临时 HOME 安装 bashls 5.6.0 并验证版本；`install-lsp.sh --components bogus` 输出预期错误；
+- Ghostty `clipboard-read` 改为 `ask`，`ghostty +validate-config` 通过；tmux `allow-passthrough` 恢复 `off`；
+- 清理插件禁用/切走后的 fold 选项和 state；Markdown 窗口切到非 Markdown 时恢复 `wrap`/`linebreak`；
+- 完整 Ubuntu Docker 离线测试本次未完成：`docker run` 长时间停在创建容器前（`docker ps` 无容器），已中止；离线安装路径由合成包覆盖，完整测试待重跑；
+- Ubuntu 在线安装器在需要时补 apt `npm`；clangd/g++ 由脚本通过 apt 安装；macOS 使用 Xcode CLT 的 clangd；
+- 远程 `user@<host>` 执行 `install-lsp.sh --components python,bash` 通过，headless Neovim 验证 `pyright` / `bashls` 均 attach（`clients=1`）；
+- 远程 clangd 尚未安装：sudo 需要密码，留给用户执行 `install-lsp.sh --components cpp` 或 `sudo apt install clangd`；
+- `tests/ubuntu-24.04-online.sh` 改为 `--lsp python,bash` 并断言 wrapper 和版本；本次未重跑完整 Docker 在线测试。
 
 ## 4. Neovim 插件与预览测试
 
@@ -405,7 +436,8 @@ bash tests/macos-offline-installer-safety-smoke.sh
 
 - tmux 测试使用唯一 socket 和自定义 `XDG_CONFIG_HOME`（不传 `-f`），断言配置发现、`prefix=C-b`、`mouse=off`、`set-clipboard=on`、`allow-passthrough=off`、terminal-features 包含 `clipboard`、`h/j/k/l`、`H/J/K/L`、`Tab`、`r` 的 XDG 重载路径。
 - shell 测试使用临时 `HOME`，断言 `.zshrc` 软链接、`~/.zshrc.local` 权限 600、alias、PATH 和 Starship。
-- 主题测试校验 iTerm2/Terminal/Linux/VS Code 配色文件和 Catppuccin 调色板。
+- 主题测试校验 iTerm2/Terminal/Linux/VS Code 配色文件和 Catppuccin 调色板；Ghostty 配置在 `shell/terminal/ghostty/config`，安装 Ghostty 时可运行 `ghostty +validate-config`。
+- Mermaid ASCII：`nvim/scripts/install-mermaid-ascii.sh` 安装 1.6.2；`tests/nvim-mermaid-ascii-smoke.sh` 在 60 列下验证两个 Mermaid 块的 normal extmark、`foldmethod=expr`、`foldlevel=0`、只有宽图出现一次「图过宽」提示（并回归 mermaid-ascii 行尾对齐空格导致的误报）。insert/visual 清除和 `<leader>mb` 的 split 横向滚动是手动验收步骤，不在这个 smoke 里。Ubuntu 在线/离线安装测试和 macOS 合成离线测试都会断言 `~/.local/bin/mermaid-ascii` 可执行。
 - `macos-offline-installer-safety-smoke.sh` 用合成离线包和临时 HOME 验证：配置链接指向稳定副本，`--skip-config` 不删除已有插件/parser；不需要网络。
 - 慢测试：`DEV_ENV_RUN_SLOW_TESTS=1 bash tests/macos-tmux-build-smoke.sh`，构建 3.8、检查 `otool -L` 不含 Homebrew/构建目录，并用构建出的二进制运行 tmux 配置 smoke。
 
@@ -454,6 +486,7 @@ tests/
 ├── ubuntu-24.04-online.sh
 ├── ubuntu-24.04-offline.sh
 ├── nvim-plugins-smoke.sh
+├── nvim-mermaid-ascii-smoke.sh
 ├── tmux-config-smoke.sh
 ├── shell-config-smoke.sh
 ├── theme-assets-smoke.sh

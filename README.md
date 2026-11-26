@@ -1,6 +1,6 @@
 # dev_env
 
-个人终端开发环境仓库：按平台安装 Neovim、tmux、zsh、Starship、ripgrep、fd、fzf、git、tree-sitter，并部署统一的 Neovim、tmux、shell 配置、终端配色和 Nerd Font。
+个人终端开发环境仓库：按平台安装 Neovim、tmux、zsh、Starship、ripgrep、fd、fzf、git、tree-sitter、mermaid-ascii，并部署统一的 Neovim、tmux、shell 配置、终端配色和 Nerd Font。
 
 当前支持 Ubuntu 24.04 和 macOS（Apple Silicon / Intel），均提供联网安装与离线安装；Windows 待实现。
 

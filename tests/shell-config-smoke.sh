@@ -109,6 +109,17 @@ HOME="$TMP_HOME" ZDOTDIR="$TMP_HOME" "$ZSH_BIN" -f -i "$TMP_HOME/check.zsh" >"$O
   || { cat "$OUT_FILE" >&2; die "zsh 配置加载失败"; }
 grep -q 'PROMPT_OK=' "$OUT_FILE" || die "PROMPT 未设置"
 
+# 2clip: the vendored script installs as a user command and emits OSC 52.
+# Capture the sequence instead of writing to a real terminal/clipboard.
+dev_env_install_2clip "$REPO_ROOT/shell" "$TMP_HOME/.local/bin" >/dev/null \
+  || die "2clip 安装失败"
+[[ -x "$TMP_HOME/.local/bin/2clip" ]] || die "2clip 不可执行"
+EXPECTED_OSC="$(printf 'hello' | base64 | tr -d '\n')"
+ACTUAL_OSC="$(printf 'hello' | "$TMP_HOME/.local/bin/2clip")"
+[[ "$ACTUAL_OSC" == $'\033]52;c;'"$EXPECTED_OSC"$'\a' ]] \
+  || die "2clip OSC 52 输出不正确"
+log "2clip OSC 52 输出通过"
+
 STARSHIP_BIN="${STARSHIP_BIN:-$(command -v starship || true)}"
 if [[ -n "$STARSHIP_BIN" ]]; then
   STARSHIP_CONFIG="$REPO_ROOT/shell/starship.toml" "$STARSHIP_BIN" prompt >/dev/null \

@@ -120,7 +120,7 @@ HOME="$TMP_HOME" XDG_CONFIG_HOME="$TMP_CONFIG" bash platforms/macos/install.sh
 - 不打印或提交 `~/.claude/settings.json`、备份文件、真实 `.zshrc.local`。
 - 新增下载源必须使用 HTTPS、固定版本、校验 SHA256；不使用 `curl | sh`。
 - 安装器默认拒绝 root；容器/CI 才允许 `--allow-root`。
-- 不自动修改终端偏好、登录 shell 或系统级配置；只复制资源并打印说明。
+- 不自动修改终端偏好、登录 shell 或系统级配置；只复制资源并打印说明。Ghostty 例外：其纯文本配置由安装器链接到 `~/.config/ghostty/config`。
 
 ## 7. 文档
 
