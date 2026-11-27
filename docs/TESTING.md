@@ -345,7 +345,7 @@ esac
 - `install-lsp.sh --components bash` 在临时 HOME 安装 bashls 5.6.0 并验证版本；`install-lsp.sh --components bogus` 输出预期错误；
 - Ghostty `clipboard-read` 改为 `ask`，`ghostty +validate-config` 通过；tmux `allow-passthrough` 恢复 `off`；
 - 清理插件禁用/切走后的 fold 选项和 state；Markdown 窗口切到非 Markdown 时恢复 `wrap`/`linebreak`；
-- 完整 Ubuntu Docker 离线测试本次未完成：`docker run` 长时间停在创建容器前（`docker ps` 无容器），已中止；离线安装路径由合成包覆盖，完整测试待重跑；
+- 2026-11-27 完整 Ubuntu Docker 离线测试：Docker Desktop 默认 socket 下 `docker run` 挂起；改用 raw socket（`DOCKER_HOST=unix://$HOME/Library/Containers/com.docker.docker/Data/docker.raw.sock`）重跑 `tests/ubuntu-24.04-offline.sh` 通过：Neovim 0.12.3、tmux 3.8、zsh 5.9、Starship 1.27.0、mermaid-ascii 1.6.2；离线包包含 `mermaid-ascii_Linux_arm64.tar.gz` 且 SHA256 校验通过；`--skip-config` 保留已有插件/parser，并确认 2clip/mermaid-ascii 可执行。
 - Ubuntu 在线安装器在需要时补 apt `npm`；clangd/g++ 由脚本通过 apt 安装；macOS 使用 Xcode CLT 的 clangd；
 - 远程 `user@<host>` 执行 `install-lsp.sh --components python,bash` 通过，headless Neovim 验证 `pyright` / `bashls` 均 attach（`clients=1`）；
 - 远程 clangd 尚未安装：sudo 需要密码，留给用户执行 `install-lsp.sh --components cpp` 或 `sudo apt install clangd`；
