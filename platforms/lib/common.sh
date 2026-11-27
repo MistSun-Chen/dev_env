@@ -25,6 +25,34 @@ dev_env_validate_tmux_version() {
   [[ "$version" =~ ^[0-9]+([.][0-9]+)*[a-z]?$ ]]
 }
 
+dev_env_validate_mermaid_ascii_version() {
+  local version="$1"
+  [[ "$version" =~ ^[0-9]+([.][0-9]+)*$ ]]
+}
+
+# Install a bundled mermaid-ascii tarball offline.
+# dev_env_install_mermaid_ascii <bundle_dir> <version> <asset>
+# The tarball contains a single executable named mermaid-ascii.
+dev_env_install_mermaid_ascii() {
+  local bundle_dir="$1"
+  local version="$2"
+  local asset="$3"
+  local prefix="$HOME/.local/opt/mermaid-ascii-${version}"
+  local local_bin="$HOME/.local/bin"
+
+  dev_env_validate_mermaid_ascii_version "$version" || return 1
+  [[ -n "$asset" && "$asset" != */* ]] || return 1
+  [[ -f "$bundle_dir/$asset" ]] || return 1
+
+  rm -rf "$prefix"
+  install -d "$prefix" "$local_bin"
+  tar -xzf "$bundle_dir/$asset" -C "$prefix"
+  [[ -x "$prefix/mermaid-ascii" ]] || return 1
+  chmod +x "$prefix/mermaid-ascii"
+  ln -sfn "$prefix/mermaid-ascii" "$local_bin/mermaid-ascii"
+  "$local_bin/mermaid-ascii" --help >/dev/null 2>&1
+}
+
 # Portable canonical path. macOS readlink(1) has no reliable -f.
 dev_env_canonical_path() {
   # Avoid the name "path": in zsh it is tied to the PATH array and would
@@ -231,6 +259,18 @@ dev_env_autoconfigure_local() {
   fi
 }
 
+# Ghostty 的配置是纯文本，所以由 dev_env 直接管理；其他终端仍只提供
+# 配色文件，需要在终端里手动导入。
+dev_env_deploy_ghostty_config() {
+  local shell_dir="$1"
+  local xdg_config_home="${2:-${XDG_CONFIG_HOME:-$HOME/.config}}"
+  local src="$shell_dir/terminal/ghostty/config"
+
+  if [[ -f "$src" ]]; then
+    dev_env_link_path "$src" "$xdg_config_home/ghostty/config" "Ghostty 配置"
+  fi
+}
+
 dev_env_deploy_shell_config() {
   local shell_dir="$1"
   local xdg_config_home="${2:-${XDG_CONFIG_HOME:-$HOME/.config}}"
@@ -240,6 +280,7 @@ dev_env_deploy_shell_config() {
 
   dev_env_link_path "$shell_dir/zshrc" "$HOME/.zshrc" "zsh 配置"
   dev_env_link_path "$shell_dir/starship.toml" "$xdg_config_home/starship.toml" "Starship 配置"
+  dev_env_deploy_ghostty_config "$shell_dir" "$xdg_config_home"
 
   if [[ ! -e "$local_file" && ! -L "$local_file" ]]; then
     if [[ -f "$example" ]]; then
@@ -265,6 +306,34 @@ dev_env_deploy_shell_config() {
   else
     dev_env_log "$local_file 已存在，保持不动。"
   fi
+}
+
+# Install the vendored 2clip script as a user command. This is deliberately
+# separate from dev_env_deploy_shell_config: 2clip is a tool, so it is still
+# installed with --skip-config or --skip-shell.
+dev_env_install_2clip() {
+  local shell_dir="$1"
+  local local_bin="${2:-$HOME/.local/bin}"
+  local src="$shell_dir/vendor/2clip/2clip.sh"
+  local dest="$local_bin/2clip"
+  local backup
+
+  [[ -f "$src" ]] || {
+    dev_env_warn "找不到 2clip 脚本: $src"
+    return 1
+  }
+
+  install -d "$local_bin"
+  if [[ -f "$dest" && ! -L "$dest" ]] && ! cmp -s "$src" "$dest"; then
+    backup="$(dev_env_backup_path "$dest")"
+    cp -p "$dest" "$backup"
+    dev_env_log "已备份旧 2clip: $backup"
+  fi
+  # Replace symlinks too: the installed command must keep working if the
+  # offline bundle or repo checkout is later moved or deleted.
+  rm -f "$dest"
+  install -m 755 "$src" "$dest"
+  dev_env_log "已安装 2clip: $dest"
 }
 
 dev_env_deploy_terminal_assets() {

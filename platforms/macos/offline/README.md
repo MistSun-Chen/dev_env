@@ -10,6 +10,7 @@
 - `fd-v*-apple-darwin.tar.gz`：fd 10.5.0
 - `tree-sitter-cli-macos-*.zip`：tree-sitter CLI 0.27.1
 - `starship-*-apple-darwin.tar.gz`：Starship 1.27.0
+- `mermaid-ascii_Darwin_*.tar.gz`：Mermaid ASCII 1.6.2（Neovim normal 模式预览）
 - `Meslo.tar.xz`：Nerd Fonts 3.5.1 Meslo
 - `tmux-bin`、`tmux-build-info.txt`：自包含 tmux 3.8
 - `nvim-plugins/`：lazy.nvim 根目录，含 lazy.nvim、which-key.nvim、gitsigns.nvim、fzf-lua、markview.nvim、grug-far.nvim、neo-tree.nvim、nui.nvim、plenary.nvim、nvim-lspconfig、lazydev.nvim、配色插件（均带 `.git`）
@@ -85,6 +86,7 @@ zsh --version
 ~/.local/bin/fzf --version
 ~/.local/bin/rg --version | head -1
 ~/.local/bin/fd --version
+~/.local/bin/mermaid-ascii --help >/dev/null && echo "mermaid-ascii OK"
 git --version
 ```
 

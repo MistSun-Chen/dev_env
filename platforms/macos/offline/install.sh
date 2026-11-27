@@ -83,6 +83,11 @@ BUNDLE_TMUX_VERSION="$(awk -F= '$1 == "tmux" { print $2 }' "$BUNDLE_DIR/manifest
 dev_env_validate_tmux_version "$BUNDLE_TMUX_VERSION" \
   || die "manifest.txt 的 tmux 版本不合法: ${BUNDLE_TMUX_VERSION}"
 TMUX_VERSION="$BUNDLE_TMUX_VERSION"
+BUNDLE_MERMAID_ASCII_VERSION="$(awk -F= '$1 == "mermaid_ascii" { print $2 }' "$BUNDLE_DIR/manifest.txt")"
+[[ -n "$BUNDLE_MERMAID_ASCII_VERSION" ]] || die "manifest.txt 缺少 mermaid_ascii 版本。"
+dev_env_validate_mermaid_ascii_version "$BUNDLE_MERMAID_ASCII_VERSION" \
+  || die "manifest.txt 的 mermaid_ascii 版本不合法: ${BUNDLE_MERMAID_ASCII_VERSION}"
+MERMAID_ASCII_VERSION="$BUNDLE_MERMAID_ASCII_VERSION"
 
 log "校验离线包完整性..."
 (
@@ -98,6 +103,7 @@ case "$ARCH" in
     FD_ASSET="fd-v${FD_VERSION}-aarch64-apple-darwin.tar.gz"
     TREE_SITTER_ASSET="tree-sitter-cli-macos-arm64.zip"
     STARSHIP_ASSET="starship-aarch64-apple-darwin.tar.gz"
+    MERMAID_ASCII_ASSET="mermaid-ascii_Darwin_arm64.tar.gz"
     ;;
   x86_64)
     NVIM_ASSET="nvim-macos-x86_64.tar.gz"
@@ -106,10 +112,11 @@ case "$ARCH" in
     FD_ASSET="fd-v${FD_VERSION}-x86_64-apple-darwin.tar.gz"
     TREE_SITTER_ASSET="tree-sitter-cli-macos-x64.zip"
     STARSHIP_ASSET="starship-x86_64-apple-darwin.tar.gz"
+    MERMAID_ASCII_ASSET="mermaid-ascii_Darwin_x86_64.tar.gz"
     ;;
 esac
 
-for f in "$NVIM_ASSET" "$FZF_ASSET" "$RG_ASSET" "$FD_ASSET" "$TREE_SITTER_ASSET" "$STARSHIP_ASSET" "$NERD_FONT_ASSET" tmux-bin tmux-build-info.txt; do
+for f in "$NVIM_ASSET" "$FZF_ASSET" "$RG_ASSET" "$FD_ASSET" "$TREE_SITTER_ASSET" "$STARSHIP_ASSET" "$MERMAID_ASCII_ASSET" "$NERD_FONT_ASSET" tmux-bin tmux-build-info.txt; do
   [[ -f "$BUNDLE_DIR/$f" ]] || die "缺少 $f"
 done
 [[ -d "$BUNDLE_DIR/nvim" ]] || die "缺少 nvim/ 配置目录"
@@ -122,6 +129,8 @@ done
 LOCAL_BIN="$HOME/.local/bin"
 LOCAL_OPT="$HOME/.local/opt"
 install -d "$LOCAL_BIN" "$LOCAL_OPT"
+
+dev_env_install_2clip "$BUNDLE_DIR/shell" "$LOCAL_BIN" || die "2clip 安装失败"
 
 log "安装 Neovim $NVIM_VERSION ..."
 NVIM_PREFIX="$LOCAL_OPT/nvim-${NVIM_VERSION}"
@@ -177,6 +186,11 @@ install -d "$STARSHIP_PREFIX"
 tar -xzf "$BUNDLE_DIR/$STARSHIP_ASSET" -C "$STARSHIP_PREFIX"
 [[ -x "$STARSHIP_PREFIX/starship" ]] || die "Starship 压缩包结构不符合预期。"
 ln -sfn "$STARSHIP_PREFIX/starship" "$LOCAL_BIN/starship"
+
+log "安装 mermaid-ascii $MERMAID_ASCII_VERSION ..."
+dev_env_install_mermaid_ascii "$BUNDLE_DIR" "$MERMAID_ASCII_VERSION" "$MERMAID_ASCII_ASSET" \
+  || die "mermaid-ascii 安装失败。"
+log "mermaid-ascii 已安装: $LOCAL_BIN/mermaid-ascii"
 
 log "安装 Nerd Font $NERD_FONT_VERSION ..."
 install -d "$HOME/Library/Fonts"
@@ -240,6 +254,8 @@ TMUX_INSTALLED="$("$LOCAL_BIN/tmux" -V 2>/dev/null | awk '{print $2}')"
 log "tmux ${TMUX_INSTALLED}"
 zsh --version
 "$LOCAL_BIN/starship" --version
+"$LOCAL_BIN/mermaid-ascii" --help >/dev/null
+log "mermaid-ascii ${MERMAID_ASCII_VERSION}"
 if command -v git >/dev/null 2>&1; then
   git --version
 fi
@@ -268,6 +284,8 @@ case ":$PATH:" in
     fi
     ;;
 esac
+
+warn "离线包不包含 LSP server；需要 pyright/clangd/bashls 时请联网运行在线安装器 --lsp python,cpp,bash。"
 
 log "离线安装完成。"
 log "启动 Neovim: $LOCAL_BIN/nvim"

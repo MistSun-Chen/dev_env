@@ -10,6 +10,7 @@
 - `fzf-*-linux_*.tar.gz`：fzf 官方二进制
 - `tree-sitter-cli-linux-*.zip`：tree-sitter CLI
 - `starship-*-unknown-linux-musl.tar.gz`：Starship 1.27.0
+- `mermaid-ascii_Linux_*.tar.gz`：Mermaid ASCII 1.6.2（Neovim normal 模式预览）
 - `Meslo.tar.xz`：Nerd Fonts 3.5.1 Meslo
 - `nvim-plugins/`：lazy.nvim 根目录，含 lazy.nvim、which-key.nvim、gitsigns.nvim、fzf-lua、markview.nvim、grug-far.nvim、neo-tree.nvim、nui.nvim、plenary.nvim、nvim-lspconfig、lazydev.nvim、配色插件（均带 `.git`）
 - `nvim-parser/latex.so`：预编译公式 parser
@@ -88,9 +89,10 @@ fd --version
 fzf --version
 git --version
 tree-sitter --version
+mermaid-ascii --help >/dev/null && echo "mermaid-ascii OK"
 ```
 
-预期与联网安装一致：Neovim 0.12.3、fzf 0.74.5、tmux 3.8、zsh 5.9、Starship 1.27.0。
+预期与联网安装一致：Neovim 0.12.3、fzf 0.74.5、tmux 3.8、zsh 5.9、Starship 1.27.0、mermaid-ascii 1.6.2。
 
 ## 选项
 

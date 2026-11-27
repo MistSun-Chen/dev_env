@@ -89,9 +89,9 @@ check_any() {
 }
 
 check_cmd lua-language-server "lua_ls" "按 nvim/README.md 的 LSP 一节安装"
-check_cmd pyright-langserver "pyright" "先安装 Node.js，再按 nvim/README.md 安装 pyright"
-check_cmd bash-language-server "bashls" "先安装 Node.js，再按 nvim/README.md 安装 bash-language-server"
-check_cmd clangd "clangd" "$clangd_hint"
+check_cmd pyright-langserver "pyright" "bash nvim/scripts/install-lsp.sh --components python"
+check_cmd bash-language-server "bashls" "bash nvim/scripts/install-lsp.sh --components bash"
+check_cmd clangd "clangd" "bash nvim/scripts/install-lsp.sh --components cpp；或 $clangd_hint"
 
 printf '\n'
 check_cmd node "Node.js" "$node_hint"

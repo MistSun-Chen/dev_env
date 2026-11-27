@@ -44,7 +44,7 @@
 
 ## 剪贴板传输
 
-dev_env 只开启 OSC 52 写传输：`set-clipboard on`、`terminal-features ',*:clipboard'`，并保持 `allow-passthrough off`；不接管鼠标，也不定义 copy-mode 键位。
+dev_env 只开启 OSC 52 写传输：`set-clipboard on`、`terminal-features ',*:clipboard'`；`allow-passthrough` 保持 `off`，不使用 Kitty 图片直通。不接管鼠标，也不定义 copy-mode 键位。
 
 Neovim 在 SSH/无 GUI、没有原生剪贴板 provider 时，`<leader>y` 通过 OSC 52 把文本送到本地终端剪贴板；本地 macOS 仍优先使用 `pbcopy`/`pbpaste`。
 

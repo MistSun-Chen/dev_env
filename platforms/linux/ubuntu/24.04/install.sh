@@ -29,6 +29,7 @@ SKIP_CONFIG=0
 SKIP_SHELL=0
 ALLOW_ROOT=0
 SUDO=""
+LSP_COMPONENTS="python,cpp,bash"
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=versions.env
@@ -67,6 +68,8 @@ usage() {
 选项:
   --skip-config   只安装工具，不链接 Neovim/tmux/shell 配置
   --skip-shell    只跳过 shell 配置链接
+  --lsp <list>    安装 LSP：python,cpp,bash（逗号分隔，默认全部）；none 跳过
+  --no-lsp        等同 --lsp none
   --allow-root    允许以 root 运行（仅建议在容器/CI 中使用）
   -h, --help      显示帮助
 
@@ -94,6 +97,19 @@ while [[ $# -gt 0 ]]; do
       SKIP_SHELL=1
       shift
       ;;
+    --lsp)
+      [[ $# -ge 2 ]] || die "--lsp 需要参数（如 python,cpp,bash 或 none）"
+      LSP_COMPONENTS="$2"
+      shift 2
+      ;;
+    --lsp=*)
+      LSP_COMPONENTS="${1#*=}"
+      shift
+      ;;
+    --no-lsp)
+      LSP_COMPONENTS=""
+      shift
+      ;;
     --allow-root)
       ALLOW_ROOT=1
       shift
@@ -107,6 +123,22 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+case "$LSP_COMPONENTS" in
+  all) LSP_COMPONENTS="python,cpp,bash" ;;
+  none|"") LSP_COMPONENTS="" ;;
+esac
+
+# python/bash LSP 通过 npm 安装；nodejs 已在 APT_PACKAGES 中，npm 可能没有。
+if [[ -n "$LSP_COMPONENTS" ]]; then
+  case ",$LSP_COMPONENTS," in
+    *,python,*|*,bash,*)
+      if ! command -v npm >/dev/null 2>&1; then
+        APT_PACKAGES="$APT_PACKAGES npm"
+      fi
+      ;;
+  esac
+fi
 
 # ---------- 基本检查 ----------
 
@@ -400,6 +432,25 @@ install_nerd_font() {
 }
 
 install_nerd_font
+
+# ---------- 2clip ----------
+
+dev_env_install_2clip "$SHELL_CONFIG_SRC" "$LOCAL_BIN" || die "2clip 安装失败"
+
+# ---------- LSP ----------
+
+if [[ -n "$LSP_COMPONENTS" ]]; then
+  bash "$NVIM_CONFIG_SRC/scripts/install-lsp.sh" --components "$LSP_COMPONENTS" \
+    || die "LSP 安装失败"
+else
+  log "已跳过 LSP server 安装（--lsp none）。"
+fi
+
+# ---------- Mermaid ASCII ----------
+
+log "安装 mermaid-ascii ${MERMAID_ASCII_VERSION} ..."
+bash "$NVIM_CONFIG_SRC/scripts/install-mermaid-ascii.sh" \
+  || die "mermaid-ascii 安装失败"
 
 # ---------- Neovim ----------
 

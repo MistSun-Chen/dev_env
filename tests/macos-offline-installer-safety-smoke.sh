@@ -30,6 +30,7 @@ case "$(uname -m)" in
     FD_ASSET="fd-v10.5.0-aarch64-apple-darwin.tar.gz"
     TS_ASSET="tree-sitter-cli-macos-arm64.zip"
     STARSHIP_ASSET="starship-aarch64-apple-darwin.tar.gz"
+    MERMAID_ASCII_ASSET="mermaid-ascii_Darwin_arm64.tar.gz"
     ;;
   x86_64)
     ARCH="x86_64"
@@ -39,6 +40,7 @@ case "$(uname -m)" in
     FD_ASSET="fd-v10.5.0-x86_64-apple-darwin.tar.gz"
     TS_ASSET="tree-sitter-cli-macos-x64.zip"
     STARSHIP_ASSET="starship-x86_64-apple-darwin.tar.gz"
+    MERMAID_ASCII_ASSET="mermaid-ascii_Darwin_x86_64.tar.gz"
     ;;
   *)
     echo "[offline-safety-smoke] 不支持的架构: $(uname -m)，跳过"
@@ -97,6 +99,9 @@ fake_bin "$TMP_ASSETS/tree-sitter" 'echo "tree-sitter 0.27.1"'
 fake_bin "$TMP_ASSETS/starship" 'echo "starship 1.27.0"'
 tar -czf "$BUNDLE/$STARSHIP_ASSET" -C "$TMP_ASSETS" starship
 
+fake_bin "$TMP_ASSETS/mermaid-ascii" 'case "$1" in --help) echo "mermaid-ascii help";; esac'
+tar -czf "$BUNDLE/$MERMAID_ASCII_ASSET" -C "$TMP_ASSETS" mermaid-ascii
+
 fake_bin "$BUNDLE/tmux-bin" 'echo "tmux 3.8"'
 printf 'tmux=3.8\n' > "$BUNDLE/tmux-build-info.txt"
 mkdir -p "$TMP_ASSETS/fonts"
@@ -117,6 +122,7 @@ fd=10.5.0
 tree_sitter=0.27.1
 tmux=3.8
 starship=1.27.0
+mermaid_ascii=1.6.2
 nerd_font=3.5.1
 EOF
 
@@ -131,6 +137,8 @@ PATH="$TMP_HOME/.local/bin:$PATH" HOME="$TMP_HOME" XDG_CONFIG_HOME="$TMP_XDG" \
 CONFIG_ROOT="$(cd "$TMP_HOME/.local/share/dev_env/config" && pwd -P)"
 [[ -f "$CONFIG_ROOT/nvim/init.lua" ]] || { cat "$INSTALL_LOG" >&2; die "缺少稳定 nvim 配置"; }
 [[ -f "$CONFIG_ROOT/shell/zshrc" ]] || { cat "$INSTALL_LOG" >&2; die "缺少稳定 shell 配置"; }
+[[ -x "$TMP_HOME/.local/bin/2clip" ]] || { cat "$INSTALL_LOG" >&2; die "2clip 未安装"; }
+[[ -x "$TMP_HOME/.local/bin/mermaid-ascii" ]] || { cat "$INSTALL_LOG" >&2; die "mermaid-ascii 未安装"; }
 case "$(readlink "$TMP_HOME/.zshrc")" in "$CONFIG_ROOT"/*) ;; *) die ".zshrc 未指向稳定副本" ;; esac
 case "$(readlink "$TMP_XDG/nvim")" in "$CONFIG_ROOT"/*) ;; *) die "nvim 配置未指向稳定副本" ;; esac
 case "$(readlink "$TMP_XDG/tmux/tmux.conf")" in "$CONFIG_ROOT"/*) ;; *) die "tmux 配置未指向稳定副本" ;; esac
@@ -145,5 +153,9 @@ PATH="$TMP_HOME/.local/bin:$PATH" HOME="$TMP_HOME" XDG_CONFIG_HOME="$TMP_XDG" \
   || { cat "$SKIP_LOG" >&2; die "--skip-config 删除了已有插件"; }
 grep -q keep "$TMP_HOME/.local/share/nvim/site/parser/latex.so" \
   || { cat "$SKIP_LOG" >&2; die "--skip-config 覆盖了已有 parser"; }
+[[ -x "$TMP_HOME/.local/bin/2clip" ]] \
+  || { cat "$SKIP_LOG" >&2; die "--skip-config 未保留 2clip"; }
+[[ -x "$TMP_HOME/.local/bin/mermaid-ascii" ]] \
+  || { cat "$SKIP_LOG" >&2; die "--skip-config 未保留 mermaid-ascii"; }
 
 log "通过"

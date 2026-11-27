@@ -194,6 +194,9 @@ Windows 安装脚本尚未实现；当前以复制方式为准，后续会在 `p
 | `<leader>mt` | Markdown 目录（按标题跳转） |
 | `<leader>mp` | Markdown 预览开关 |
 | `<leader>ms` | Markdown 分屏预览 |
+| `<leader>mw` | Markdown 换行开关（关掉可渲染宽表格） |
+| `<leader>ma` | Mermaid ASCII 混合预览开关（normal 显示，insert/visual 隐藏） |
+| `<leader>mb` | Mermaid ASCII 宽图查看（split 内可横向滚动） |
 | `<leader>tc` | 选择配色方案（theme change） |
 | `<leader>?` | 查看当前 buffer 的全部键位（含 LSP/gitsigns 键位） |
 
@@ -230,7 +233,7 @@ Windows 安装脚本尚未实现；当前以复制方式为准，后续会在 `p
 
 ## LSP
 
-当前启用 Lua（`lua_ls`）、Python（`pyright`）、Bash（`bashls`）和 C/C++（`clangd`）。插件由 lazy.nvim 安装，但 **language server 需要手动安装**，平台安装脚本和离线包暂不包含它们（macOS 的 `clangd` 通常由 Xcode Command Line Tools 提供）。
+当前启用 Lua（`lua_ls`）、Python（`pyright`）、Bash（`bashls`）和 C/C++（`clangd`）。插件由 lazy.nvim 安装；在线安装器默认安装 `python,cpp,bash` 三个 LSP，`lua_ls` 仍需手动安装。离线包不包含这些 server（macOS 的 `clangd` 通常由 Xcode Command Line Tools 提供）。
 
 | 语言 | server | 可执行文件 |
 |---|---|---|
@@ -269,27 +272,23 @@ Linux 或 Intel Mac 把压缩包名换成对应平台即可；确保 `~/.local/b
 
 > 不要直接给 `~/.local/bin/lua-language-server` 建符号链接：LuaLS 的 bootstrap 二进制会按自身路径查找 `main.lua`，经符号链接启动时会去 `~/.local/bin/main.lua` 找而失败，所以这里用绝对路径的 wrapper。
 
-### Python 与 Bash
+### Python、Bash 与 C/C++
 
-需要 Node.js（>= 18）和 npm。下面把 server 安装到 `~/.local/opt`，不使用 `npm -g`。Ubuntu 在线安装脚本只装 `nodejs`，如果 `npm` 不存在，先执行 `sudo apt install npm`：
+在线安装器默认安装 `python,cpp,bash` 三个 LSP；也可以手动选择：
 
 ```sh
-mkdir -p ~/.local/opt/pyright-1.1.414 ~/.local/opt/bash-language-server-5.8.1 ~/.local/bin
-npm install --prefix ~/.local/opt/pyright-1.1.414 --no-fund --no-audit pyright@1.1.414
-npm install --prefix ~/.local/opt/bash-language-server-5.8.1 --no-fund --no-audit bash-language-server@5.8.1
-
-cat > ~/.local/bin/pyright-langserver <<'EOF'
-#!/bin/sh
-exec "$HOME/.local/opt/pyright-1.1.414/node_modules/.bin/pyright-langserver" "$@"
-EOF
-cat > ~/.local/bin/bash-language-server <<'EOF'
-#!/bin/sh
-exec "$HOME/.local/opt/bash-language-server-5.8.1/node_modules/.bin/bash-language-server" "$@"
-EOF
-chmod +x ~/.local/bin/pyright-langserver ~/.local/bin/bash-language-server
+bash nvim/scripts/install-lsp.sh --components python,cpp,bash
+bash nvim/scripts/install-lsp.sh --components python,bash
+bash nvim/scripts/install-lsp.sh --none
 ```
 
-确保 `~/.local/bin` 在 `PATH` 中。Pyright 会按 `pyrightconfig.json`、`pyproject.toml` 等识别项目；配置里启用了 `basic` 类型检查，项目自己的 pyright 配置优先。虚拟环境可用 `:LspPyrightSetPythonPath /path/to/venv/bin/python` 指定。
+- Python：pyright 1.1.414（npm）
+- Bash：bash-language-server 5.6.0（npm；5.8.1 要求 Node >=20，Ubuntu 24.04 的 Node 18 不满足）
+- C/C++：clangd（macOS 来自 Xcode CLT；Ubuntu 用 apt，并补 g++ 头文件）
+
+脚本把 npm server 安装到 `~/.local/opt`，不使用 `npm -g`，并在 `~/.local/bin` 生成 wrapper。需要 Node.js >= 18 和 npm；Ubuntu 在线安装器会在需要时安装 apt 的 npm，单独运行脚本且 npm 缺失时先执行 `sudo apt install npm`。
+
+Pyright 会按 `pyrightconfig.json`、`pyproject.toml` 等识别项目；配置里启用了 `basic` 类型检查，项目自己的 pyright 配置优先。虚拟环境可用 `:LspPyrightSetPythonPath /path/to/venv/bin/python` 指定。
 
 `bashls` 会自动使用 `shellcheck` 做额外诊断；没有 shellcheck 时补全、悬停仍然可用。安装示例：macOS `brew install shellcheck`，Ubuntu `sudo apt install shellcheck`。
 
@@ -306,8 +305,7 @@ Linux 可用发行版包，例如 `sudo apt install clangd`；需要更新版本
 
 Ubuntu 24.04 需要区分几种情况：
 
-- 在线安装脚本会装 `gcc` 和 `libc6-dev`（C 标准头文件），但**不装 `clangd`，也不装 `g++`/C++ 标准库头文件**。C 语言只需补 `sudo apt install clangd`；C++ 还需要 `sudo apt install g++` 或 `sudo apt install build-essential`。
-- 最小系统或离线安装可能连 `gcc`、`libc6-dev` 都没有。此时 clangd 即使能启动，也会找不到 `<stdio.h>` 等头文件。补装 `sudo apt install clangd gcc g++ libc6-dev`，或直接安装 `build-essential`。
+- Ubuntu 在线安装器默认安装 `clangd`，并在需要时补 `g++`/C++ 标准库头文件；不需要 C/C++ 时用 `--lsp python,bash` 或 `--lsp none` 跳过。最小系统或离线安装可能连 `gcc`、`libc6-dev` 都没有。此时 clangd 即使能启动，也会找不到 `<stdio.h>` 等头文件。补装 `sudo apt install clangd gcc g++ libc6-dev`，或直接安装 `build-essential`。
 - 纯离线机器无法 `apt install`；要么在离线包里预装 clangd 和编译器，要么暂时不用 C/C++ LSP。
 - 运行 `bash nvim/scripts/check-lsp.sh` 可以查看缺哪些 server、编译器和头文件。打开 C/C++ 文件时，如果 clangd 已启动但找不到对应编译器，Neovim 会给出提示。
 
@@ -375,7 +373,37 @@ Markview 命令：
 
 - Markdown 标题、表格、代码块、引用、链接在 buffer 内渲染。
 - 行内公式 `$...$` 和块公式 `$$...$$` 通过 markview 转成 Unicode 近似显示。
-- `mermaid` 代码块按普通代码块显示，不做渲染；需要查看图表时使用外部工具。
+- `mermaid` 代码块默认保持源码；normal 模式下用 `mermaid-ascii` 显示 ASCII 图，见下节。
+
+### Mermaid ASCII 混合预览
+
+不依赖浏览器、Kitty 图片协议或 Neovim 插件，只调用外部 `mermaid-ascii`：
+
+- **normal 模式**：折叠 Mermaid 代码块，显示 ASCII 图；
+- **insert / visual / command**：自动展开源码、清除 ASCII；
+- `<leader>ma`：开启/关闭混合预览；
+- `<leader>mb`：把当前 Mermaid 块的完整 ASCII 打开到 split，`wrap=false`，用 `h/l`、`zh/zl`（`zL` 半屏）横向滚动，`q` 关闭；
+- 宽图在 normal 的 ASCII 下方会提示 `<leader>mb`；窗口 resize 后按新宽度重新生成，行尾对齐空格不计入宽度。
+
+限制：`mermaid-ascii` 只支持常见图型（flowchart、sequence 等），样式/颜色不还原；超宽图只能靠 `<leader>mb` 横向查看。渲染目前是同步的，超大 Markdown 或超大图在 normal/resize 时可能短暂阻塞（后续可改异步）。安装 `mermaid-ascii`：
+
+```sh
+bash nvim/scripts/install-mermaid-ascii.sh
+```
+
+平台在线安装器会自动调用这个脚本；macOS / Ubuntu 离线包也内置对应平台的 `mermaid-ascii` tarball，安装时不需要网络。
+
+需要真图时使用外部渲染器（如 `mmdc`），不在 Neovim 内显示。
+
+### 换行与宽表格
+
+Markdown 窗口默认 `wrap=true` + `linebreak=true`：长段落按窗口宽度软换行，不会出现横向滚动后看不到行首的问题。
+
+代价是 markview 在 `wrap=true` 时会放弃渲染原始宽度 ≥ 窗口 90% 的宽表格（插件已知限制），这类表格回退成原始 Markdown 文本，仍可阅读和复制。需要看宽表格的渲染边框时，按 `<leader>mw` 临时关闭换行；再看长段落时再按一次打开。
+
+反过来，如果默认用 `nowrap`，长行必须横向滚动，而且窗口一旦横向滚动（`leftcol > 0`），markview 会跳过所有表格渲染，表格会直接消失——所以默认选 `wrap=true`。
+
+注意这里有插件层的硬限制：**宽度超过窗口的表格无法完整渲染**。`wrap=true` 时直接跳过；`nowrap` 时只能看到左侧第一屏，横向滚动后整表消失。完整查看需要窗口宽于表格，或把表格改窄/改用外部预览。
 
 如果只想看原始 Markdown：
 
@@ -437,7 +465,7 @@ catppuccin-mocha
 - 打开 Lua / Python / Bash / C/C++ 文件，`:checkhealth vim.lsp` 应分别显示 `lua_ls` / `pyright` / `bashls` / `clangd`；`K` / `gd` / `grr` 应可用
 - 打开一个 Markdown 文件，按 `<leader>mt` 应弹出标题选择器
 - 按 `<leader>tc` 应打开配色选择器，并可以实时预览
-- `mermaid` 代码块按普通代码块显示，不出现图表或额外提示
+- 打开含 Mermaid 代码块的 Markdown：normal 模式源码折叠、显示 ASCII；按 `i` / `v` 显示源码并隐藏 ASCII；宽图按 `<leader>mb` 可在 split 中横向滚动
 
 ## 修改约定
 

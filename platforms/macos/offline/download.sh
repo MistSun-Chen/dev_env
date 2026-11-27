@@ -76,12 +76,14 @@ case "$(uname -m)" in
     FD_ASSET="fd-v${FD_VERSION}-aarch64-apple-darwin.tar.gz"
     TREE_SITTER_ASSET="tree-sitter-cli-macos-arm64.zip"
     STARSHIP_ASSET="starship-aarch64-apple-darwin.tar.gz"
+    MERMAID_ASCII_ASSET="mermaid-ascii_Darwin_arm64.tar.gz"
     NVIM_SHA="$NVIM_SHA256_ARM64"
     FZF_SHA="$FZF_SHA256_ARM64"
     RG_SHA="$RG_SHA256_ARM64"
     FD_SHA="$FD_SHA256_ARM64"
     TREE_SITTER_SHA="$TREE_SITTER_SHA256_ARM64"
     STARSHIP_SHA="$STARSHIP_SHA256_ARM64"
+    MERMAID_ASCII_SHA="$MERMAID_ASCII_SHA256_ARM64"
     ;;
   x86_64)
     ARCH="x86_64"
@@ -91,12 +93,14 @@ case "$(uname -m)" in
     FD_ASSET="fd-v${FD_VERSION}-x86_64-apple-darwin.tar.gz"
     TREE_SITTER_ASSET="tree-sitter-cli-macos-x64.zip"
     STARSHIP_ASSET="starship-x86_64-apple-darwin.tar.gz"
+    MERMAID_ASCII_ASSET="mermaid-ascii_Darwin_x86_64.tar.gz"
     NVIM_SHA="$NVIM_SHA256_X86_64"
     FZF_SHA="$FZF_SHA256_X86_64"
     RG_SHA="$RG_SHA256_X86_64"
     FD_SHA="$FD_SHA256_X86_64"
     TREE_SITTER_SHA="$TREE_SITTER_SHA256_X86_64"
     STARSHIP_SHA="$STARSHIP_SHA256_X86_64"
+    MERMAID_ASCII_SHA="$MERMAID_ASCII_SHA256_X86_64"
     ;;
   *)
     die "不支持的 CPU 架构: $(uname -m)"
@@ -168,6 +172,11 @@ download_verify \
   "$STARSHIP_SHA"
 
 download_verify \
+  "https://github.com/AlexanderGrooff/mermaid-ascii/releases/download/${MERMAID_ASCII_VERSION}/${MERMAID_ASCII_ASSET}" \
+  "$OUT_DIR/$MERMAID_ASCII_ASSET" \
+  "$MERMAID_ASCII_SHA"
+
+download_verify \
   "https://github.com/ryanoasis/nerd-fonts/releases/download/v${NERD_FONT_VERSION}/${NERD_FONT_ASSET}" \
   "$OUT_DIR/$NERD_FONT_ASSET" \
   "$NERD_FONT_SHA256"
@@ -215,6 +224,7 @@ fd=${FD_VERSION}
 tree_sitter=${TREE_SITTER_VERSION}
 tmux=${TMUX_VERSION}
 starship=${STARSHIP_VERSION}
+mermaid_ascii=${MERMAID_ASCII_VERSION}
 nerd_font=${NERD_FONT_VERSION}
 EOF
 

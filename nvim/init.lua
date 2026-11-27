@@ -149,3 +149,15 @@ if not terminal_ok then
     vim.notify(('dev_env: config.terminal 加载失败：%s'):format(tostring(terminal_err)), vim.log.levels.WARN)
   end)
 end
+
+-- Mermaid ASCII 混合预览：normal 只显示 ASCII，insert/visual 显示源码。
+-- 只依赖外部 mermaid-ascii，不使用图片/浏览器。
+local mermaid_ascii_ok, mermaid_ascii_err = pcall(require, 'config.mermaid_ascii')
+if not mermaid_ascii_ok then
+  vim.schedule(function()
+    vim.notify(
+      ('dev_env: config.mermaid_ascii 加载失败：%s'):format(tostring(mermaid_ascii_err)),
+      vim.log.levels.WARN
+    )
+  end)
+end

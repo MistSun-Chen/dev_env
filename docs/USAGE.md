@@ -106,16 +106,24 @@ bash platforms/macos/install.sh --brew-tmux
 
 `--pinned-tmux` 保留为兼容参数，等同于默认行为。
 
+两个平台的在线安装器默认安装 `python,cpp,bash` LSP。只装其中一部分或跳过：
+
+```sh
+bash platforms/linux/ubuntu/24.04/install.sh --lsp python,bash
+bash platforms/macos/install.sh --lsp none
+```
+
 安装后新开的 tmux server 使用 3.8；已在运行的 server 保持旧版本，退出旧 session 后重启即可，不要 kill server。旧 server 是 Homebrew 3.5a 等旧版本时，3.8 client 执行 `attach` 可能报 `open terminal failed: not a terminal`；用启动旧 server 的 tmux 二进制 attach（例如旧 Homebrew 路径 `$(brew --prefix tmux)/bin/tmux`，或旧的 `~/.local/opt/tmux-<ver>/bin/tmux`），旧 session 结束前不要 `brew uninstall tmux`。macOS 没有 `/usr/bin/tmux`，不要照搬 Ubuntu 的命令。
 
 ### 2.3 安装脚本做了什么
 
 Ubuntu：
 
-- apt 安装 `ca-certificates`、`curl`、`git`、`ripgrep`、`fd-find`、`gcc`、`libc6-dev`、`make`、`bison`、`libncurses-dev`、`libncurses6`、`libncursesw6`、`libtinfo6`、`pkg-config`、`file`、`binutils`、`unzip`、`nodejs`、`zsh`、`ncurses-term`、`xz-utils`；不安装 apt 的 `tmux`、`npm`、`g++`、`clangd` 或 language server；
+- apt 安装 `ca-certificates`、`curl`、`git`、`ripgrep`、`fd-find`、`gcc`、`libc6-dev`、`make`、`bison`、`libncurses-dev`、`libncurses6`、`libncursesw6`、`libtinfo6`、`pkg-config`、`file`、`binutils`、`unzip`、`nodejs`、`zsh`、`ncurses-term`、`xz-utils`；不安装 apt 的 `tmux`；
+- 默认安装 `python,cpp,bash` LSP：需要时补 apt `npm`、`clangd`、`g++`，并调用 `nvim/scripts/install-lsp.sh`；`--lsp none` 跳过，`--lsp python,bash` 只装指定项；
 - 源码构建 tmux 3.8，安装到 `~/.local/opt/tmux-3.8`，链接 `~/.local/bin/tmux`；
 - 补 `~/.local/bin/fd -> fdfind`；
-- 从官方 release 安装 Neovim 0.12.3、fzf 0.74.5、tree-sitter 0.27.1、Starship 1.27.0，并校验 SHA256；
+- 从官方 release 安装 Neovim 0.12.3、fzf 0.74.5、tree-sitter 0.27.1、Starship 1.27.0、mermaid-ascii 1.6.2，并校验 SHA256；
 - 安装 Meslo Nerd Font 的四个样式到 `~/.local/share/fonts`；
 - 备份并链接 `~/.config/nvim`、`~/.config/tmux/tmux.conf`、`~/.zshrc`、`~/.config/starship.toml`；
 - 创建 `~/.zshrc.local`（不存在时，权限 600）；
@@ -125,8 +133,9 @@ macOS：
 
 - 缺失时用 Homebrew 安装 `ripgrep`、`fd`、`git`、`node`；
 - 默认用固定源码构建 tmux 3.8，安装到 `~/.local/opt/tmux-3.8`；`--brew-tmux` 时改用 Homebrew >=3.8；
-- 从官方 release 安装 Neovim 0.12.3、fzf 0.74.5、tree-sitter 0.27.1、Starship 1.27.0，并校验 SHA256；
+- 从官方 release 安装 Neovim 0.12.3、fzf 0.74.5、tree-sitter 0.27.1、Starship 1.27.0、mermaid-ascii 1.6.2，并校验 SHA256；
 - 安装 Meslo Nerd Font 的四个样式到 `~/Library/Fonts`；
+- 默认调用 `nvim/scripts/install-lsp.sh` 安装 `python,cpp,bash` LSP；`--lsp none` 跳过，`--lsp python,bash` 只装指定项；
 - 备份并链接 `~/.config/nvim`、`~/.config/tmux/tmux.conf`、`~/.zshrc`、`~/.config/starship.toml`；
 - 创建 `~/.zshrc.local`（不存在时，权限 600）；
 - 调用 `nvim/scripts/install-plugins.sh` 安装插件，调用 `build-latex-parser.sh` 编译公式 parser。
@@ -138,6 +147,7 @@ macOS：
 ~/.config/tmux/tmux.conf.bak.YYYYMMDD-HHMMSS
 ~/.zshrc.bak.YYYYMMDD-HHMMSS
 ~/.config/starship.toml.bak.YYYYMMDD-HHMMSS
+~/.config/ghostty/config.bak.YYYYMMDD-HHMMSS
 ```
 
 
@@ -254,7 +264,7 @@ grug-far 内部：`<Tab>` 切换输入框，`<Space>r` 执行 Replace，`<Space>
 
 ### 3.6 LSP
 
-当前启用 Lua（`lua_ls`）、Python（`pyright`）、Bash（`bashls`）、C/C++（`clangd`）。插件由 lazy.nvim 安装，language server 需要手动安装；平台脚本和离线包暂不包含 server（macOS 的 `clangd` 通常由 Xcode Command Line Tools 提供）。
+当前启用 Lua（`lua_ls`）、Python（`pyright`）、Bash（`bashls`）、C/C++（`clangd`）。插件由 lazy.nvim 安装；在线安装器默认安装 `python,cpp,bash` 三个 LSP，`lua_ls` 仍需手动安装，离线包不包含这些 server（macOS 的 `clangd` 通常由 Xcode Command Line Tools 提供）。
 
 | 语言 | server | 可执行文件 |
 |---|---|---|
@@ -289,23 +299,15 @@ Linux / Intel Mac 换成对应平台的压缩包；确保 `~/.local/bin` 在 `PA
 
 > 不要直接建符号链接：LuaLS 的 bootstrap 二进制按自身路径查找 `main.lua`，符号链接会去 `~/.local/bin/main.lua` 找而失败；用上面的绝对路径 wrapper。
 
-Python 和 Bash 的 server 需要 Node.js（>= 18）和 npm；安装到 `~/.local/opt`，不使用 `npm -g`。Ubuntu 在线安装脚本只装 `nodejs`，如果 `npm` 不存在，先执行 `sudo apt install npm`：
+Python、Bash 和 C/C++ 的 LSP 可以一次安装：
 
 ```sh
-mkdir -p ~/.local/opt/pyright-1.1.414 ~/.local/opt/bash-language-server-5.8.1 ~/.local/bin
-npm install --prefix ~/.local/opt/pyright-1.1.414 --no-fund --no-audit pyright@1.1.414
-npm install --prefix ~/.local/opt/bash-language-server-5.8.1 --no-fund --no-audit bash-language-server@5.8.1
-
-cat > ~/.local/bin/pyright-langserver <<'EOF'
-#!/bin/sh
-exec "$HOME/.local/opt/pyright-1.1.414/node_modules/.bin/pyright-langserver" "$@"
-EOF
-cat > ~/.local/bin/bash-language-server <<'EOF'
-#!/bin/sh
-exec "$HOME/.local/opt/bash-language-server-5.8.1/node_modules/.bin/bash-language-server" "$@"
-EOF
-chmod +x ~/.local/bin/pyright-langserver ~/.local/bin/bash-language-server
+bash nvim/scripts/install-lsp.sh --components python,cpp,bash
+# 或 --components python,bash
+# 或 --none
 ```
+
+在线安装器默认安装 `python,cpp,bash`；`--lsp none` 跳过，`--lsp python,bash` 只装指定项。脚本把 pyright/bashls 安装到 `~/.local/opt`，不使用 `npm -g`；clangd 在 macOS 使用 Xcode CLT，在 Ubuntu 使用 apt 并补 g++。需要 Node.js >= 18 和 npm；Ubuntu 在线安装器会按需安装 apt 的 npm。
 
 Pyright 会按 `pyrightconfig.json`、`pyproject.toml` 等识别项目；虚拟环境可用 `:LspPyrightSetPythonPath /path/to/venv/bin/python` 指定。Bash 的 shellcheck 诊断需要本机安装 `shellcheck`（macOS `brew install shellcheck`，Ubuntu `sudo apt install shellcheck`）；没有它时补全和悬停仍然可用。
 
@@ -313,7 +315,7 @@ C/C++ 使用 `clangd`。macOS 安装 Xcode Command Line Tools 后通常已有 `/
 
 Ubuntu 24.04 的注意点：
 
-- 在线安装脚本会装 `gcc`、`libc6-dev`，但不装 `clangd`、`g++` 和 C++ 标准库头文件。C 语言补 `sudo apt install clangd`；C++ 再补 `sudo apt install g++`，或直接 `sudo apt install build-essential`。
+- Ubuntu 在线安装器默认安装 `clangd`，并在需要时补 `g++`/C++ 标准库头文件；不需要 C/C++ 时用 `--lsp python,bash` 或 `--lsp none` 跳过。
 - 最小系统/离线安装可能连 C 编译器都没有。此时 clangd 可能能启动，但找不到 `<stdio.h>` 等头文件；补装 `sudo apt install clangd gcc g++ libc6-dev` 或 `build-essential`。
 - 纯离线机器无法 `apt install`：要么在离线包里预装 clangd 和编译器，要么暂时不用 C/C++ LSP。
 - 运行 `bash nvim/scripts/check-lsp.sh` 查看缺少的 server、编译器和头文件。
@@ -373,6 +375,8 @@ LuaLS 首次打开项目需要索引，索引完成前 `K` 可能暂时没有结
 | `<leader>mp` / `:Markview Toggle` | Markdown 预览开关（所有已附加 buffer） |
 | `:Markview toggle` | 只开关当前 buffer 的预览 |
 | `<leader>ms` / `:Markview splitToggle` | 分屏预览 |
+| `<leader>ma` | Mermaid ASCII 混合预览开关（normal 显示，insert/visual 隐藏） |
+| `<leader>mb` | Mermaid ASCII 宽图查看（split 内可横向滚动） |
 | `<leader>tc` / `:FzfLua colorschemes` | 切换 Catppuccin 变体 |
 
 默认配色是 `catppuccin-mocha`；配色切换只在当前 Neovim 会话生效。
@@ -381,13 +385,33 @@ LuaLS 首次打开项目需要索引，索引完成前 `K` 可能暂时没有结
 
 - 标题、表格、代码块、引用、链接在 buffer 内渲染；
 - `$...$` / `$$...$$` 由 markview 转成 Unicode 近似公式；
-- `mermaid` 代码块按普通代码块显示，不做渲染；
+- `mermaid` 代码块在 normal 模式折叠并显示 `mermaid-ascii` 图，insert/visual 显示源码；
 - Markdown 本地图片按链接文本显示，不显示图片像素；
 - 公式不是 TeX 排版，复杂公式可能不理想。
+
+### Mermaid ASCII 混合预览
+
+- normal：Mermaid 源码折叠，只显示 ASCII 图；
+- insert / visual / command：展开源码，清除 ASCII；
+- `<leader>ma`：开关混合预览；
+- `<leader>mb`：当前块在 split 中查看完整 ASCII，`wrap=false`，`h/l`、`zh/zl`（`zL` 半屏）横向滚动，`q` 关闭；
+- 只依赖外部 `mermaid-ascii`，不依赖浏览器、图片协议或 Neovim 插件。
+
+安装：
+
+```sh
+bash nvim/scripts/install-mermaid-ascii.sh
+```
+
+平台在线安装器会自动调用该脚本；离线包内置对应平台的 `mermaid-ascii`，安装时不需要网络。
+
+`mermaid-ascii` 不还原样式，只适合看结构；需要真图请使用外部渲染器。渲染目前是同步的，超大文件/图在 normal 或 resize 时可能短暂阻塞。
 
 ## 4. 离线安装
 
 离线包不提交到仓库；在联网机器上生成，再拷到离线机器。
+
+离线包目前不包含 LSP server（pyright/clangd/bash-language-server）；需要时在目标机联网运行在线安装器 `--lsp python,cpp,bash`，或按 `nvim/README.md` 手动安装。
 
 ### 4.1 Ubuntu 24.04
 
@@ -417,7 +441,7 @@ bash install.sh
 
 说明：
 
-- 离线包包含 apt deb（含 `zsh`、`ncurses-term`、`xz-utils`、`libncurses6`、`libncursesw6`、`libtinfo6`）、自包含 `tmux-bin` 3.8、Neovim、fzf、tree-sitter、Starship、Meslo 字体、Neovim/tmux/shell 配置、Neovim 插件、预编译 `latex.so` 和 `SHA256SUMS`；
+- 离线包包含 apt deb（含 `zsh`、`ncurses-term`、`xz-utils`、`libncurses6`、`libncursesw6`、`libtinfo6`）、自包含 `tmux-bin` 3.8、Neovim、fzf、tree-sitter、Starship、mermaid-ascii、`2clip`、Meslo 字体、Neovim/tmux/shell 配置、Neovim 插件、预编译 `latex.so` 和 `SHA256SUMS`；
 - 安装使用 `dpkg -i` + `dpkg --configure -a`，不访问网络；
 - 下载端和目标端必须同为 Ubuntu 24.04、同一架构（`x86_64` / `arm64`）；
 - `download.sh` 会递归收集完整依赖闭包，不按构建机已安装包裁剪；目标按干净的 Ubuntu 24.04 处理。仍建议在干净的 `ubuntu:24.04` 容器中生成。
@@ -457,7 +481,7 @@ bash install.sh
 
 说明：
 
-- 离线包包含 Neovim、fzf、ripgrep、fd、tree-sitter、tmux 3.8 自包含二进制、Starship、Meslo 字体、Neovim/tmux/shell 配置、Neovim 插件、预编译 `latex.so` 和 `SHA256SUMS`；
+- 离线包包含 Neovim、fzf、ripgrep、fd、tree-sitter、tmux 3.8 自包含二进制、Starship、mermaid-ascii、`2clip`、Meslo 字体、Neovim/tmux/shell 配置、Neovim 插件、预编译 `latex.so` 和 `SHA256SUMS`；
 - 不包含 Homebrew、编译器和 git；macOS 通常已有 Xcode Command Line Tools 提供的 `git`；
 - Apple Silicon 和 Intel 的包不能混用；
 - 安装到 `~/.local/opt/`，命令链接到 `~/.local/bin/`；
@@ -478,6 +502,7 @@ rg --version | head -1
 fd --version
 fzf --version
 git --version
+mermaid-ascii --help >/dev/null && echo "mermaid-ascii OK"
 ```
 
 预期：
@@ -487,6 +512,7 @@ git --version
 - `tmux` 在 macOS 和 Ubuntu 24.04 均为 3.8（在线/离线同一自包含构建）
 - `zsh` 为 5.9（macOS 系统自带；Ubuntu 由 apt 安装）
 - `starship` 为 `1.27.0`
+- `mermaid-ascii` 1.6.2，`--help` 正常退出
 - `rg`、`fd`、`git` 正常输出版本
 
 验证配置：
@@ -564,7 +590,7 @@ macOS 如果已有 `/usr/local/bin/nvim`，它可能优先于 `~/.local/bin` 被
 - macOS：`platforms/macos/versions.env`
 - 公式 parser：`nvim/scripts/versions.env`
 
-修改 `NVIM_VERSION` / `FZF_VERSION` / `RG_VERSION` / `FD_VERSION` / `TREE_SITTER_VERSION` / `TMUX_VERSION` / `STARSHIP_VERSION` / `NERD_FONT_VERSION` 时，必须同步更新对应的 SHA256，否则下载会校验失败。修改 tree-sitter-latex 版本时，同步更新 `nvim/scripts/versions.env` 中的 URL/commit/SHA256，并重新生成离线包。
+修改 `NVIM_VERSION` / `FZF_VERSION` / `RG_VERSION` / `FD_VERSION` / `TREE_SITTER_VERSION` / `TMUX_VERSION` / `STARSHIP_VERSION` / `MERMAID_ASCII_VERSION` / `NERD_FONT_VERSION` 时，必须同步更新对应的 SHA256，否则下载会校验失败。修改 tree-sitter-latex 版本时，同步更新 `nvim/scripts/versions.env` 中的 URL/commit/SHA256，并重新生成离线包。`mermaid-ascii` 的版本在 `nvim/scripts/versions.env` 和两个平台的 `versions.env` 中都有固定值，升级时三处要一起改。
 
 也可以在运行时覆盖：
 
@@ -599,8 +625,11 @@ mv ~/.config/starship.toml.bak.YYYYMMDD-HHMMSS ~/.config/starship.toml
 rm -rf ~/.local/opt/nvim-0.12.3 ~/.local/opt/fzf-0.74.5
 rm -rf ~/.local/opt/tree-sitter-0.27.1
 rm -rf ~/.local/opt/tmux-3.8 ~/.local/opt/starship-1.27.0
+rm -rf ~/.local/opt/mermaid-ascii-1.6.2
+rm -rf ~/.local/opt/pyright-1.1.414 ~/.local/opt/bash-language-server-5.6.0
 rm -f ~/.local/bin/nvim ~/.local/bin/fzf ~/.local/bin/tree-sitter
-rm -f ~/.local/bin/tmux ~/.local/bin/starship
+rm -f ~/.local/bin/tmux ~/.local/bin/starship ~/.local/bin/mermaid-ascii
+rm -f ~/.local/bin/2clip ~/.local/bin/pyright-langserver ~/.local/bin/bash-language-server ~/.local/bin/clangd
 
 # 插件和公式 parser
 rm -rf ~/.local/share/nvim/lazy
@@ -688,13 +717,16 @@ chsh -s "$(command -v zsh)"
 - 键位：`C-b h/j/k/l` 切 pane，`C-b H/J/K/L` 调分割线，`C-b z` 最大化，
   `C-b Tab` 上一个 window。
 - 鼠标：tmux 不接管鼠标（`mouse off`），拖选由终端处理。
-- 剪贴板：SSH/远程 Linux 统一 OSC 52；tmux 只转发 OSC 52 写（`set-clipboard on`、`terminal-features ',*:clipboard'`，`allow-passthrough off`），不定义 copy-mode 键位；SSH + tmux 下 `<leader>p` 提示使用终端粘贴；终端支持列表和替换要求见 [`CLIPBOARD.md`](./CLIPBOARD.md)。
+- 剪贴板：SSH/远程 Linux 统一 OSC 52；tmux 只转发 OSC 52 写（`set-clipboard on`、`terminal-features ',*:clipboard'`），`allow-passthrough` 保持 `off`。tmux 不定义 copy-mode 键位；SSH + tmux 下 `<leader>p` 提示使用终端粘贴；终端支持列表和替换要求见 [`CLIPBOARD.md`](./CLIPBOARD.md)。
 - 配置：`tmux/README.md`。
 - 本地覆盖：`~/.tmux.local.conf`（默认不存在）。
 
 ### 10.2 shell
 
 - `~/.zshrc` 链接到 `dev_env/shell/zshrc`。
+- 复制到系统剪贴板：`2clip`（安装到 `~/.local/bin/2clip`），例如
+  `printf '%s' text | 2clip`、`realpath <file> | 2clip`、`2clip -c '...'`。
+- `2clip` 始终走 OSC 52，本地 macOS 也不再回退 `pbcopy`；Neovim 的剪贴板策略不变。
 - 机器相关路径、代理、密钥、nvm/uv/Docker/OpenClaw 等放 `~/.zshrc.local`。
 - 新建 `~/.zshrc.local` 时，安装器会自动检测 `~/.nvm/nvm.sh` 并启用 nvm，
   安装后新终端可直接使用 nvm 管理的 `node`/`claude`；已有文件保持不动，只有
@@ -710,6 +742,7 @@ chsh -s "$(command -v zsh)"
 - Starship 使用 Catppuccin Mocha Powerline；tmux 使用同色系状态栏。
 - 终端 profile 在 `shell/terminal/`，安装器复制到
   `${XDG_DATA_HOME:-$HOME/.local/share}/dev_env/terminal/`，但不自动修改终端偏好。
+  Ghostty 例外：其纯文本配置由安装器链接到 `~/.config/ghostty/config`。
 - 导入方式：`shell/terminal/README.md`。
 - Nerd Font：MesloLGSNerdFont Regular/Bold/Italic/BoldItalic；macOS 安装到
   `~/Library/Fonts`，Ubuntu 安装到 `~/.local/share/fonts`。

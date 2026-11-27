@@ -15,7 +15,37 @@ bash nvim/scripts/install-plugins.sh --check
 - lazy.nvim 自身由 `nvim/lua/config/lazy.lua` 引导，固定到该文件中的 commit。
 - 插件版本来自 `nvim/lua/config/plugins.lua`，实际 revision 由 `nvim/lazy-lock.json` 固定。
 - 插件目录位于 `$XDG_DATA_HOME/nvim/lazy/`（默认 `~/.local/share/nvim/lazy/`）。
-- 本脚本只安装 Neovim 插件，不安装 language server；`lua-language-server`、`pyright-langserver`、`bash-language-server`、`clangd` 需要按 `nvim/README.md` 的 LSP 一节准备。
+- 本脚本只安装 Neovim 插件，不安装 language server；`lua-language-server` 需要按 `nvim/README.md` 手动准备，pyright/bashls/clangd 可用 `install-lsp.sh`。
+
+## install-lsp.sh
+
+```sh
+bash nvim/scripts/install-lsp.sh --components python,cpp,bash
+bash nvim/scripts/install-lsp.sh --all
+bash nvim/scripts/install-lsp.sh --none
+```
+
+- 在线安装 pyright 1.1.414、bash-language-server 5.6.0 和 clangd；版本在 `versions.env` 固定。bashls 5.8.1 要求 Node >=20，Ubuntu 24.04 的 Node 18 不满足，所以固定 5.6.0。
+- npm server 安装到 `~/.local/opt`，不使用 `npm -g`，并在 `~/.local/bin` 生成 wrapper。
+- Ubuntu 的 clangd 通过 apt 安装（需要 sudo），并补 `g++`；macOS 使用 Xcode CLT 的 clangd。
+- 幂等：已有 server 会跳过；未选择任何组件时直接退出。
+
+## install-mermaid-ascii.sh
+
+```sh
+bash nvim/scripts/install-mermaid-ascii.sh
+```
+
+安装 `mermaid-ascii` 1.6.2 单文件二进制到 `~/.local/opt/mermaid-ascii-1.6.2`，并链接到 `~/.local/bin/mermaid-ascii`。支持 macOS arm64/x86_64 和 Linux arm64/x86_64；版本和 SHA256 固定在 [`versions.env`](./versions.env)。它不需要浏览器、Node、ImageMagick 或 Neovim 插件，是 Neovim 内 Mermaid ASCII 预览的运行时依赖。平台在线安装器会调用本脚本；离线包内置对应平台的 tarball，由离线安装器直接解压，不访问网络。脚本可重复执行，同版本已安装时只修复链接。
+
+## mermaid-view.sh
+
+```sh
+bash nvim/scripts/mermaid-view.sh -n 1 docs/example.md
+COLS=200 bash nvim/scripts/mermaid-view.sh -n 2 docs/example.md
+```
+
+从 Markdown 中提取第 N 个 ` ```mermaid ` 块并输出 ASCII。只依赖 `mermaid-ascii`；在 shell 里查看时可以用 `COLS` 控制宽度。Neovim 内对应 `<leader>mb`（宽图横向滚动）和 normal 模式的自动 ASCII 预览。
 
 ## check-lsp.sh
 
